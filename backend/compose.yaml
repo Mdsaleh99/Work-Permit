@@ -1,0 +1,20 @@
+services:
+  permit-db:
+    image: postgres
+    container_name: permit-db
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=permit
+      - POSTGRES_PASSWORD=permit2025
+    volumes:
+      - my-data:/var/lib/postgresql/data
+    networks:
+      - permit-network
+
+
+volumes:
+  my-data:
+
+networks:
+  permit-network:
