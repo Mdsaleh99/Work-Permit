@@ -1,5 +1,6 @@
 import { body } from "express-validator";
 
+// https://github.com/validatorjs/validator.js?tab=readme-ov-file#validatorjs
 const userRegisterValidator = () => {
     return [
         body("email")
@@ -59,8 +60,41 @@ const userAssignRoleValidator = () => {
     return [body("role").notEmpty().withMessage("Role is required")];
 };
 
+const createCompanyValidator = () => {
+    return [
+        body("compName")
+            .trim()
+            .notEmpty()
+            .withMessage("please provide your company name")
+            .isLength({ min: 3 })
+            .withMessage("company name should be at least 3 character")
+            .isLength({ max: 30 })
+            .withMessage("company name can not exceed 30 character"),
+        body("description")
+            .trim()
+            .optional()
+            .isLength({ max: 200 })
+            .withMessage("description can not be exceed 200 character"),
+        body("email")
+            .trim()
+            .isEmail()
+            .withMessage("please provide valid email")
+            .notEmpty()
+            .withMessage("please provide your company email"),
+        body("mobileNo")
+            .trim()
+            .notEmpty()
+            .withMessage("please provide your company mobile no")
+            //  TODO: later change to saudi arbia to check mobile no
+            .isMobilePhone(["any"])
+            .withMessage("please provide valid mobile no")
+    ];
+}
+
+
 export {
     userAssignRoleValidator,
+    createCompanyValidator,
     userChangeCurrentPasswordValidator,
     userForgotPasswordValidator,
     userLoginValidator,

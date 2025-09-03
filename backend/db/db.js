@@ -18,6 +18,13 @@ export const db = globalForPrisma.prisma || new PrismaClient().$extends({
                 }
 
                 return query(args)
+            },
+            async update({ args, query }) {
+                if (args.data.password) {
+                    args.data.password = await bcrypt.hash(args.data.password, 10)
+                }
+
+                return query(args)
             }
         }
     }

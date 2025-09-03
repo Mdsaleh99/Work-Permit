@@ -12,11 +12,9 @@ import {
     generateRefreshToken,
     generateTemporaryToken,
 } from "../utils/generateToken.js";
-import logger from "../logger/winston.logger.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import passport from "passport";
 
 const signUp = asyncHandler(async (req, res) => {
     const { email, name, password } = req.body;
