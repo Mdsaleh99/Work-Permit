@@ -7,6 +7,7 @@ import cors from "cors"
 // * routes
 import userRouters from "./routes/user.routes.js";
 import companyRouters from "./routes/company.routes.js"
+import workPermitFormRouters from "./routes/workPermitForm.routes.js"
 
 dotenv.config()
 
@@ -27,3 +28,6 @@ app.use("/api/v1/auth", userRouters)
 
 // * company routes
 app.use("/api/v1/company", companyRouters);
+
+// * work Permit Form routes
+app.use("/api/v1/work-permit", workPermitFormRouters);

@@ -2,7 +2,6 @@ import { db } from "../db/db.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { generateTemporaryToken } from "../utils/generateToken.js";
 
 export const createCompany = asyncHandler(async (req, res) => {
     const { compName, description, email, mobileNo } = req.body

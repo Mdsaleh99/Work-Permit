@@ -86,14 +86,14 @@ model WorkPermitForm {
 model WorkPermitSection {
   id               String                       @id @default(uuid())
   workPermitFormId String
-  title            String
+  title            String @unique
   enabled          Boolean                      @default(true)
   components       WorkPermitSectionComponent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workPermitForm WorkPermitForm @relation(fields: [workPermitFormId], references: [id])
+  workPermitForm WorkPermitForm @relation(fields: [workPermitFormId], references: [id], onDelete: Cascade)
 
   @@index([workPermitFormId])
 }
@@ -101,7 +101,7 @@ model WorkPermitSection {
 model WorkPermitSectionComponent {
   id                  String                  @id @default(uuid())
   workPermitSectionId String
-  label               String
+  label               String @unique
   type                WorkPermitComponentType @default(text)
   required            Boolean                 @default(true)
   enabled             Boolean                 @default(true)
@@ -110,7 +110,7 @@ model WorkPermitSectionComponent {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workPermitSection WorkPermitSection @relation(fields: [workPermitSectionId], references: [id])
+  workPermitSection WorkPermitSection @relation(fields: [workPermitSectionId], references: [id], onDelete: Cascade)
 
   @@index([workPermitSectionId])
 }
