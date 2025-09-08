@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/auth/signin'
+import { Route as AbcAppRouteImport } from './routes/abc/app'
+import { Route as AbcAppDashboardRouteImport } from './routes/abc/app.dashboard'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,33 +30,61 @@ const AuthSigninRoute = AuthSigninRouteImport.update({
   path: '/auth/signin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AbcAppRoute = AbcAppRouteImport.update({
+  id: '/abc/app',
+  path: '/abc/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AbcAppDashboardRoute = AbcAppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AbcAppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/abc/app': typeof AbcAppRouteWithChildren
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/abc/app/dashboard': typeof AbcAppDashboardRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/abc/app': typeof AbcAppRouteWithChildren
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/abc/app/dashboard': typeof AbcAppDashboardRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/abc/app': typeof AbcAppRouteWithChildren
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/abc/app/dashboard': typeof AbcAppDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth/signin' | '/auth/signup'
+  fullPaths:
+    | '/'
+    | '/abc/app'
+    | '/auth/signin'
+    | '/auth/signup'
+    | '/abc/app/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/signin' | '/auth/signup'
-  id: '__root__' | '/' | '/auth/signin' | '/auth/signup'
+  to: '/' | '/abc/app' | '/auth/signin' | '/auth/signup' | '/abc/app/dashboard'
+  id:
+    | '__root__'
+    | '/'
+    | '/abc/app'
+    | '/auth/signin'
+    | '/auth/signup'
+    | '/abc/app/dashboard'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AbcAppRoute: typeof AbcAppRouteWithChildren
   AuthSigninRoute: typeof AuthSigninRoute
   AuthSignupRoute: typeof AuthSignupRoute
 }
@@ -82,11 +112,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSigninRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/abc/app': {
+      id: '/abc/app'
+      path: '/abc/app'
+      fullPath: '/abc/app'
+      preLoaderRoute: typeof AbcAppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/abc/app/dashboard': {
+      id: '/abc/app/dashboard'
+      path: '/dashboard'
+      fullPath: '/abc/app/dashboard'
+      preLoaderRoute: typeof AbcAppDashboardRouteImport
+      parentRoute: typeof AbcAppRoute
+    }
   }
 }
 
+interface AbcAppRouteChildren {
+  AbcAppDashboardRoute: typeof AbcAppDashboardRoute
+}
+
+const AbcAppRouteChildren: AbcAppRouteChildren = {
+  AbcAppDashboardRoute: AbcAppDashboardRoute,
+}
+
+const AbcAppRouteWithChildren =
+  AbcAppRoute._addFileChildren(AbcAppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AbcAppRoute: AbcAppRouteWithChildren,
   AuthSigninRoute: AuthSigninRoute,
   AuthSignupRoute: AuthSignupRoute,
 }
