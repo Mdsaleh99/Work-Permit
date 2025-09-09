@@ -1,0 +1,30 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { MailCheck, RefreshCcw } from "lucide-react";
+
+export default function VerifyEmail({ email, onResend }) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-background p-6">
+            <Card className="w-full max-w-md">
+                <CardHeader className="space-y-2 text-center">
+                    <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <MailCheck className="w-6 h-6 text-primary" />
+                    </div>
+                    <CardTitle>Verify your email</CardTitle>
+                    <CardDescription>
+                        We sent a verification link to {email || "your email"}. Please check
+                        your inbox and click the link to continue.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <Button className="w-full" variant="outline" onClick={onResend}>
+                        <RefreshCcw className="w-4 h-4 mr-2" />
+                        Resend verification email
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
+

@@ -28,16 +28,21 @@ import { toast } from "react-hot-toast";
 import { cn, generateId } from "../../lib/utils";
 import { PTW_SECTIONS, PTW_SECTION_TEMPLATES } from "../../lib/constants";
 
-const FormBuilder = () => {
+const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true }) => {
     const [formData, setFormData] = useState({
-        title: "GENERAL WORK PERMIT",
-        sections: PTW_SECTIONS.map((section) => ({
-            id: section.id,
-            title: section.title,
-            enabled: true,
-            components: [],
-        })),
-        selectedSection: "work-description",
+        title: title || "GENERAL WORK PERMIT",
+        sections:
+            startWithTemplate && sectionsTemplate
+                ? sectionsTemplate
+                : PTW_SECTIONS.map((section) => ({
+                      id: section.id,
+                      title: section.title,
+                      enabled: true,
+                      components: [],
+                  })),
+        selectedSection:
+            (startWithTemplate && sectionsTemplate && sectionsTemplate[0]?.id) ||
+            "work-description",
     });
 
     const [editingComponent, setEditingComponent] = useState(null);
@@ -168,8 +173,12 @@ const FormBuilder = () => {
     };
 
     const getSectionTitle = (sectionId) => {
-        const section = PTW_SECTIONS.find((s) => s.id === sectionId);
-        return section ? section.title : sectionId;
+        const inForm = formData.sections.find((s) => s.id === sectionId);
+        if (inForm && typeof inForm.title === "string" && inForm.title.trim() !== "") {
+            return inForm.title;
+        }
+        const base = PTW_SECTIONS.find((s) => s.id === sectionId);
+        return base ? base.title : sectionId;
     };
 
     const selectedSectionData = formData.sections.find(
@@ -179,18 +188,15 @@ const FormBuilder = () => {
     return (
         <div className="ptw-form-builder flex h-screen bg-gray-50">
             {/* Sidebar - Permit Sections */}
-            <div className="no-print w-80 bg-blue-900 text-white flex flex-col">
-                {/* Header */}
-                <div className="p-4 border-b border-blue-800">
-                    <h1 className="text-xl font-bold">Safetymint</h1>
-                </div>
+            <div className="no-print w-80 bg-white text-gray-900 flex flex-col border-r">
+                {/* Header removed as requested */}
 
                 {/* Navigation */}
-                <div className="flex-1 p-4">
+                <div className="flex-1 p-4 overflow-y-auto">
                     <nav className="space-y-2">
-                        <div className="text-sm text-blue-300 uppercase tracking-wider mb-4">
+                        <div className="text-sm text-gray-600 uppercase tracking-wider mb-4">
                             Permit Sections
-                            <div className="text-xs text-blue-400 mt-1 font-normal">
+                            <div className="text-xs text-gray-500 mt-1 font-normal">
                                 Drag to reorder sections
                             </div>
                         </div>
@@ -224,10 +230,10 @@ const FormBuilder = () => {
                                     <div
                                         key={section.id}
                                         className={cn(
-                                            "flex items-center p-3 rounded-lg cursor-pointer transition-colors",
+                                            "flex items-center p-3 rounded-lg cursor-pointer transition-colors border",
                                             isSelected
-                                                ? "bg-blue-700 text-white"
-                                                : "text-blue-200 hover:bg-blue-800",
+                                                ? "bg-gray-100 text-gray-900 border-gray-200"
+                                                : "text-gray-700 hover:bg-gray-50 border-transparent",
                                         )}
                                         onClick={() =>
                                             setFormData({
@@ -236,14 +242,29 @@ const FormBuilder = () => {
                                             })
                                         }
                                     >
-                                        <GripVertical className="w-4 h-4 text-blue-400 mr-2" />
+                                        <GripVertical className="w-4 h-4 text-gray-400 mr-2" />
                                         <Icon className="w-5 h-5 mr-3" />
-                                        <span className="flex-1">
-                                            {getSectionTitle(section.id)}
-                                        </span>
+                                        {isSelected ? (
+                                            <input
+                                                className="flex-1 bg-transparent outline-none text-sm"
+                                                value={getSectionTitle(section.id)}
+                                                onChange={(e) => {
+                                                    const newSections = formData.sections.map((s) =>
+                                                        s.id === section.id
+                                                            ? { ...s, title: e.target.value }
+                                                            : s,
+                                                    );
+                                                    setFormData({ ...formData, sections: newSections });
+                                                }}
+                                            />
+                                        ) : (
+                                            <span className="flex-1">
+                                                {getSectionTitle(section.id)}
+                                            </span>
+                                        )}
                                         <div className="flex items-center space-x-2">
                                             {isEnabled && (
-                                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                                             )}
                                         </div>
                                     </div>
@@ -253,7 +274,25 @@ const FormBuilder = () => {
                     </nav>
 
                     <div className="mt-6">
-                        <Button className="w-full bg-blue-700 hover:bg-blue-600 text-white">
+                        <Button
+                            className="w-full bg-gray-800 hover:bg-gray-700 text-white"
+                            onClick={() => {
+                                const newSectionId = generateId();
+                                const newSection = {
+                                    id: newSectionId,
+                                    title: "New Section",
+                                    enabled: true,
+                                    components: [],
+                                };
+                                const newSections = [...formData.sections, newSection];
+                                setFormData({
+                                    ...formData,
+                                    sections: newSections,
+                                    selectedSection: newSectionId,
+                                });
+                                toast.success("New section added");
+                            }}
+                        >
                             <Plus className="w-4 h-4 mr-2" />
                             Add New Form
                         </Button>
@@ -278,15 +317,13 @@ const FormBuilder = () => {
                                 size="sm"
                                 onClick={() => {
                                     setFormData({
-                                        title: "GENERAL WORK PERMIT",
-                                        sections: PTW_SECTIONS.map(
-                                            (section) => ({
-                                                id: section.id,
-                                                title: section.title,
-                                                enabled: true,
-                                                components: [],
-                                            }),
-                                        ),
+                                        title: title || "GENERAL WORK PERMIT",
+                                        sections: PTW_SECTIONS.map((section) => ({
+                                            id: section.id,
+                                            title: section.title,
+                                            enabled: true,
+                                            components: [],
+                                        })),
                                         selectedSection: "work-description",
                                     });
                                     toast.success("Form reset to empty state");
@@ -304,8 +341,10 @@ const FormBuilder = () => {
                                 size="sm"
                                 onClick={() => {
                                     setFormData({
-                                        title: "GENERAL WORK PERMIT",
-                                        sections: PTW_SECTION_TEMPLATES,
+                                        title: title || "GENERAL WORK PERMIT",
+                                        sections:
+                                            sectionsTemplate ||
+                                            PTW_SECTION_TEMPLATES,
                                         selectedSection: "work-description",
                                     });
                                     toast.success("Loaded predefined template");
@@ -364,9 +403,9 @@ const FormBuilder = () => {
                         <PrintView formData={formData} />
                     </div>
                 ) : (
-                    <div className="flex-1 flex">
+                    <div className="flex-1 flex overflow-hidden">
                         {/* Left Panel - Section Details */}
-                        <div className="w-1/2 p-6 border-r border-gray-200">
+                        <div className="basis-3/4 min-w-0 p-6 border-r border-gray-200 overflow-y-auto">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-semibold text-gray-800">
                                     {getSectionTitle(formData.selectedSection)}
@@ -602,17 +641,20 @@ const FormBuilder = () => {
                                                             value={
                                                                 component.type
                                                             }
-                                                            onChange={(e) =>
+                                                            onChange={(e) => {
+                                                                const newType = e.target.value;
+                                                                const updates = { type: newType };
+                                                                if (newType === "radio") {
+                                                                    updates.options = ["Yes", "No", "N/A"];
+                                                                } else if (newType === "checkbox") {
+                                                                    updates.options = ["Option 1", "Option 2", "Option 3"];
+                                                                }
                                                                 updateComponent(
                                                                     formData.selectedSection,
                                                                     component.id,
-                                                                    {
-                                                                        type: e
-                                                                            .target
-                                                                            .value,
-                                                                    },
-                                                                )
-                                                            }
+                                                                    updates,
+                                                                );
+                                                            }}
                                                             className="border border-gray-300 rounded px-2 py-1 text-sm"
                                                         >
                                                             <option value="text">
@@ -641,7 +683,7 @@ const FormBuilder = () => {
                                                         component.type ===
                                                             "checkbox") && (
                                                         <div className="space-y-2">
-                                                            {component.options.map(
+                                                            {(Array.isArray(component.options) ? component.options : []).map(
                                                                 (
                                                                     option,
                                                                     optionIndex,
@@ -711,10 +753,12 @@ const FormBuilder = () => {
                                                                 size="sm"
                                                                 onClick={() => {
                                                                     const newOptions =
-                                                                        [
-                                                                            ...component.options,
-                                                                            "New Option",
-                                                                        ];
+                                                                        Array.isArray(component.options)
+                                                                            ? [
+                                                                                  ...component.options,
+                                                                                  "New Option",
+                                                                              ]
+                                                                            : ["New Option"];
                                                                     updateComponent(
                                                                         formData.selectedSection,
                                                                         component.id,
@@ -818,8 +862,10 @@ const FormBuilder = () => {
                         </div>
 
                         {/* Right Panel - Component Palette */}
-                        <div className="w-1/2 p-6">
-                            <ComponentPalette />
+                        <div className="basis-1/4 max-w-[420px] min-w-[360px] p-6 overflow-y-auto">
+                            <div className="h-full">
+                                <ComponentPalette />
+                            </div>
                         </div>
                     </div>
                 )}

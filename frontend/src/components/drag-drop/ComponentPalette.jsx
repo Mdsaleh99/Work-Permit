@@ -35,8 +35,8 @@ const ComponentPalette = () => {
 
     return (
         <div className="h-full">
-            <Card className="h-full">
-                <CardHeader>
+            <Card className="h-full flex flex-col">
+                <CardHeader className="pb-2">
                     <CardTitle className="text-lg font-semibold text-gray-800">
                         Form Components
                     </CardTitle>
@@ -44,7 +44,7 @@ const ComponentPalette = () => {
                         Drag and drop components to build your form
                     </p>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex-1 overflow-y-auto pt-0">
                     <div className="space-y-3">
                         {FORM_COMPONENTS.map((component) => {
                             const Icon = componentIcons[component.type] || Type;
@@ -75,7 +75,7 @@ const ComponentPalette = () => {
                         })}
                     </div>
 
-                    <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                         <h4 className="font-medium text-blue-800 mb-2">
                             Quick Tips
                         </h4>

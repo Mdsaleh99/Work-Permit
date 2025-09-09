@@ -8,16 +8,38 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PageAppRouteImport } from './routes/page/app'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/auth/signin'
-import { Route as AbcAppRouteImport } from './routes/abc/app'
-import { Route as AbcAppDashboardRouteImport } from './routes/abc/app.dashboard'
+
+const PageAppUserDashboardLazyRouteImport = createFileRoute(
+  '/page/app/user-dashboard',
+)()
+const PageAppPermitLazyRouteImport = createFileRoute('/page/app/permit')()
+const PageAppObservationLazyRouteImport = createFileRoute(
+  '/page/app/observation',
+)()
+const PageAppFleetManagementLazyRouteImport = createFileRoute(
+  '/page/app/fleet-management',
+)()
+const PageAppDashboardLazyRouteImport = createFileRoute('/page/app/dashboard')()
+const PageAppAuditLazyRouteImport = createFileRoute('/page/app/audit')()
+const PageAppPermitTypeLazyRouteImport = createFileRoute(
+  '/page/app/permit/$type',
+)()
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PageAppRoute = PageAppRouteImport.update({
+  id: '/page/app',
+  path: '/page/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -30,63 +52,145 @@ const AuthSigninRoute = AuthSigninRouteImport.update({
   path: '/auth/signin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AbcAppRoute = AbcAppRouteImport.update({
-  id: '/abc/app',
-  path: '/abc/app',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AbcAppDashboardRoute = AbcAppDashboardRouteImport.update({
+const PageAppUserDashboardLazyRoute =
+  PageAppUserDashboardLazyRouteImport.update({
+    id: '/user-dashboard',
+    path: '/user-dashboard',
+    getParentRoute: () => PageAppRoute,
+  } as any).lazy(() =>
+    import('./routes/page/app.user-dashboard.lazy').then((d) => d.Route),
+  )
+const PageAppPermitLazyRoute = PageAppPermitLazyRouteImport.update({
+  id: '/permit',
+  path: '/permit',
+  getParentRoute: () => PageAppRoute,
+} as any).lazy(() =>
+  import('./routes/page/app.permit.lazy').then((d) => d.Route),
+)
+const PageAppObservationLazyRoute = PageAppObservationLazyRouteImport.update({
+  id: '/observation',
+  path: '/observation',
+  getParentRoute: () => PageAppRoute,
+} as any).lazy(() =>
+  import('./routes/page/app.observation.lazy').then((d) => d.Route),
+)
+const PageAppFleetManagementLazyRoute =
+  PageAppFleetManagementLazyRouteImport.update({
+    id: '/fleet-management',
+    path: '/fleet-management',
+    getParentRoute: () => PageAppRoute,
+  } as any).lazy(() =>
+    import('./routes/page/app.fleet-management.lazy').then((d) => d.Route),
+  )
+const PageAppDashboardLazyRoute = PageAppDashboardLazyRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => AbcAppRoute,
-} as any)
+  getParentRoute: () => PageAppRoute,
+} as any).lazy(() =>
+  import('./routes/page/app.dashboard.lazy').then((d) => d.Route),
+)
+const PageAppAuditLazyRoute = PageAppAuditLazyRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => PageAppRoute,
+} as any).lazy(() =>
+  import('./routes/page/app.audit.lazy').then((d) => d.Route),
+)
+const PageAppPermitTypeLazyRoute = PageAppPermitTypeLazyRouteImport.update({
+  id: '/$type',
+  path: '/$type',
+  getParentRoute: () => PageAppPermitLazyRoute,
+} as any).lazy(() =>
+  import('./routes/page/app.permit.$type.lazy').then((d) => d.Route),
+)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/abc/app': typeof AbcAppRouteWithChildren
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/abc/app/dashboard': typeof AbcAppDashboardRoute
+  '/page/app': typeof PageAppRouteWithChildren
+  '/page/app/audit': typeof PageAppAuditLazyRoute
+  '/page/app/dashboard': typeof PageAppDashboardLazyRoute
+  '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
+  '/page/app/observation': typeof PageAppObservationLazyRoute
+  '/page/app/permit': typeof PageAppPermitLazyRouteWithChildren
+  '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
+  '/page/app/permit/$type': typeof PageAppPermitTypeLazyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/abc/app': typeof AbcAppRouteWithChildren
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/abc/app/dashboard': typeof AbcAppDashboardRoute
+  '/page/app': typeof PageAppRouteWithChildren
+  '/page/app/audit': typeof PageAppAuditLazyRoute
+  '/page/app/dashboard': typeof PageAppDashboardLazyRoute
+  '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
+  '/page/app/observation': typeof PageAppObservationLazyRoute
+  '/page/app/permit': typeof PageAppPermitLazyRouteWithChildren
+  '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
+  '/page/app/permit/$type': typeof PageAppPermitTypeLazyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/abc/app': typeof AbcAppRouteWithChildren
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/abc/app/dashboard': typeof AbcAppDashboardRoute
+  '/page/app': typeof PageAppRouteWithChildren
+  '/page/app/audit': typeof PageAppAuditLazyRoute
+  '/page/app/dashboard': typeof PageAppDashboardLazyRoute
+  '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
+  '/page/app/observation': typeof PageAppObservationLazyRoute
+  '/page/app/permit': typeof PageAppPermitLazyRouteWithChildren
+  '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
+  '/page/app/permit/$type': typeof PageAppPermitTypeLazyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/abc/app'
     | '/auth/signin'
     | '/auth/signup'
-    | '/abc/app/dashboard'
+    | '/page/app'
+    | '/page/app/audit'
+    | '/page/app/dashboard'
+    | '/page/app/fleet-management'
+    | '/page/app/observation'
+    | '/page/app/permit'
+    | '/page/app/user-dashboard'
+    | '/page/app/permit/$type'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/abc/app' | '/auth/signin' | '/auth/signup' | '/abc/app/dashboard'
+  to:
+    | '/'
+    | '/auth/signin'
+    | '/auth/signup'
+    | '/page/app'
+    | '/page/app/audit'
+    | '/page/app/dashboard'
+    | '/page/app/fleet-management'
+    | '/page/app/observation'
+    | '/page/app/permit'
+    | '/page/app/user-dashboard'
+    | '/page/app/permit/$type'
   id:
     | '__root__'
     | '/'
-    | '/abc/app'
     | '/auth/signin'
     | '/auth/signup'
-    | '/abc/app/dashboard'
+    | '/page/app'
+    | '/page/app/audit'
+    | '/page/app/dashboard'
+    | '/page/app/fleet-management'
+    | '/page/app/observation'
+    | '/page/app/permit'
+    | '/page/app/user-dashboard'
+    | '/page/app/permit/$type'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AbcAppRoute: typeof AbcAppRouteWithChildren
   AuthSigninRoute: typeof AuthSigninRoute
   AuthSignupRoute: typeof AuthSignupRoute
+  PageAppRoute: typeof PageAppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -96,6 +200,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/page/app': {
+      id: '/page/app'
+      path: '/page/app'
+      fullPath: '/page/app'
+      preLoaderRoute: typeof PageAppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/signup': {
@@ -112,39 +223,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSigninRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/abc/app': {
-      id: '/abc/app'
-      path: '/abc/app'
-      fullPath: '/abc/app'
-      preLoaderRoute: typeof AbcAppRouteImport
-      parentRoute: typeof rootRouteImport
+    '/page/app/user-dashboard': {
+      id: '/page/app/user-dashboard'
+      path: '/user-dashboard'
+      fullPath: '/page/app/user-dashboard'
+      preLoaderRoute: typeof PageAppUserDashboardLazyRouteImport
+      parentRoute: typeof PageAppRoute
     }
-    '/abc/app/dashboard': {
-      id: '/abc/app/dashboard'
+    '/page/app/permit': {
+      id: '/page/app/permit'
+      path: '/permit'
+      fullPath: '/page/app/permit'
+      preLoaderRoute: typeof PageAppPermitLazyRouteImport
+      parentRoute: typeof PageAppRoute
+    }
+    '/page/app/observation': {
+      id: '/page/app/observation'
+      path: '/observation'
+      fullPath: '/page/app/observation'
+      preLoaderRoute: typeof PageAppObservationLazyRouteImport
+      parentRoute: typeof PageAppRoute
+    }
+    '/page/app/fleet-management': {
+      id: '/page/app/fleet-management'
+      path: '/fleet-management'
+      fullPath: '/page/app/fleet-management'
+      preLoaderRoute: typeof PageAppFleetManagementLazyRouteImport
+      parentRoute: typeof PageAppRoute
+    }
+    '/page/app/dashboard': {
+      id: '/page/app/dashboard'
       path: '/dashboard'
-      fullPath: '/abc/app/dashboard'
-      preLoaderRoute: typeof AbcAppDashboardRouteImport
-      parentRoute: typeof AbcAppRoute
+      fullPath: '/page/app/dashboard'
+      preLoaderRoute: typeof PageAppDashboardLazyRouteImport
+      parentRoute: typeof PageAppRoute
+    }
+    '/page/app/audit': {
+      id: '/page/app/audit'
+      path: '/audit'
+      fullPath: '/page/app/audit'
+      preLoaderRoute: typeof PageAppAuditLazyRouteImport
+      parentRoute: typeof PageAppRoute
+    }
+    '/page/app/permit/$type': {
+      id: '/page/app/permit/$type'
+      path: '/$type'
+      fullPath: '/page/app/permit/$type'
+      preLoaderRoute: typeof PageAppPermitTypeLazyRouteImport
+      parentRoute: typeof PageAppPermitLazyRoute
     }
   }
 }
 
-interface AbcAppRouteChildren {
-  AbcAppDashboardRoute: typeof AbcAppDashboardRoute
+interface PageAppPermitLazyRouteChildren {
+  PageAppPermitTypeLazyRoute: typeof PageAppPermitTypeLazyRoute
 }
 
-const AbcAppRouteChildren: AbcAppRouteChildren = {
-  AbcAppDashboardRoute: AbcAppDashboardRoute,
+const PageAppPermitLazyRouteChildren: PageAppPermitLazyRouteChildren = {
+  PageAppPermitTypeLazyRoute: PageAppPermitTypeLazyRoute,
 }
 
-const AbcAppRouteWithChildren =
-  AbcAppRoute._addFileChildren(AbcAppRouteChildren)
+const PageAppPermitLazyRouteWithChildren =
+  PageAppPermitLazyRoute._addFileChildren(PageAppPermitLazyRouteChildren)
+
+interface PageAppRouteChildren {
+  PageAppAuditLazyRoute: typeof PageAppAuditLazyRoute
+  PageAppDashboardLazyRoute: typeof PageAppDashboardLazyRoute
+  PageAppFleetManagementLazyRoute: typeof PageAppFleetManagementLazyRoute
+  PageAppObservationLazyRoute: typeof PageAppObservationLazyRoute
+  PageAppPermitLazyRoute: typeof PageAppPermitLazyRouteWithChildren
+  PageAppUserDashboardLazyRoute: typeof PageAppUserDashboardLazyRoute
+}
+
+const PageAppRouteChildren: PageAppRouteChildren = {
+  PageAppAuditLazyRoute: PageAppAuditLazyRoute,
+  PageAppDashboardLazyRoute: PageAppDashboardLazyRoute,
+  PageAppFleetManagementLazyRoute: PageAppFleetManagementLazyRoute,
+  PageAppObservationLazyRoute: PageAppObservationLazyRoute,
+  PageAppPermitLazyRoute: PageAppPermitLazyRouteWithChildren,
+  PageAppUserDashboardLazyRoute: PageAppUserDashboardLazyRoute,
+}
+
+const PageAppRouteWithChildren =
+  PageAppRoute._addFileChildren(PageAppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AbcAppRoute: AbcAppRouteWithChildren,
   AuthSigninRoute: AuthSigninRoute,
   AuthSignupRoute: AuthSignupRoute,
+  PageAppRoute: PageAppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

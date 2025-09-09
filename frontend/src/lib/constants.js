@@ -630,3 +630,95 @@ export const PTW_SECTION_TEMPLATES = [
     ]
   }
 ];
+
+// Distinct sample templates per permit type (simplified to highlight differences)
+export const HOT_WORK_SECTION_TEMPLATES = [
+  {
+    id: 'hot-work-details',
+    title: 'Hot Work Details',
+    components: [
+      { id: 'hot-permit-no', type: 'text', label: 'Hot Work Permit No:', required: true, enabled: true, value: '' },
+      { id: 'hot-work-location', type: 'text', label: 'Location:', required: true, enabled: true, value: '' },
+      { id: 'hot-work-date', type: 'date', label: 'Date:', required: true, enabled: true, value: '' },
+      { id: 'hot-work-desc', type: 'textarea', label: 'Description of Hot Work:', required: true, enabled: true, value: '', rows: 3 },
+    ],
+  },
+  {
+    id: 'fire-watch',
+    title: 'Fire Watch & Controls',
+    components: [
+      { id: 'fire-extinguishers', type: 'checkbox', label: 'Fire Protection Available:', required: false, enabled: true, options: ['Extinguisher', 'Fire Blanket', 'Hose Nearby'], selectedValues: [] },
+      { id: 'sparks-containment', type: 'radio', label: 'Sparks Contained?', required: true, enabled: true, options: ['Yes', 'No'], selectedValue: '' },
+    ],
+  },
+  {
+    id: 'authorization',
+    title: 'Authorization',
+    components: [
+      { id: 'issuing-authority', type: 'text', label: 'Issuing Authority', required: true, enabled: true, value: '' },
+      { id: 'hot-sign', type: 'signature', label: 'Sign', required: true, enabled: true, value: '' },
+    ],
+  },
+];
+
+export const COLD_WORK_SECTION_TEMPLATES = [
+  {
+    id: 'cold-work-details',
+    title: 'Cold Work Details',
+    components: [
+      { id: 'cold-permit-no', type: 'text', label: 'Cold Work Permit No:', required: true, enabled: true, value: '' },
+      { id: 'cold-area', type: 'text', label: 'Area:', required: true, enabled: true, value: '' },
+      { id: 'task-summary', type: 'textarea', label: 'Task Summary:', required: true, enabled: true, value: '', rows: 3 },
+    ],
+  },
+  {
+    id: 'risk-checks',
+    title: 'Risk Checks',
+    components: [
+      { id: 'risk-checklist', type: 'checkbox', label: 'Controls in Place:', required: false, enabled: true, options: ['Barricading', 'Isolation', 'Tool Inspection'], selectedValues: [] },
+    ],
+  },
+  {
+    id: 'ack',
+    title: 'Acknowledgement',
+    components: [
+      { id: 'ack-worker', type: 'text', label: 'Responsible Person', required: true, enabled: true, value: '' },
+      { id: 'ack-sign', type: 'signature', label: 'Sign', required: true, enabled: true, value: '' },
+    ],
+  },
+];
+
+export const LOTO_SECTION_TEMPLATES = [
+  {
+    id: 'isolation-plan',
+    title: 'Isolation Plan',
+    components: [
+      { id: 'loto-permit-no', type: 'text', label: 'LOTO Permit No:', required: true, enabled: true, value: '' },
+      { id: 'equipment', type: 'text', label: 'Equipment/Asset:', required: true, enabled: true, value: '' },
+      { id: 'energy-types', type: 'checkbox', label: 'Energy Types:', required: true, enabled: true, options: ['Electrical', 'Mechanical', 'Hydraulic', 'Pneumatic', 'Thermal'], selectedValues: [] },
+    ],
+  },
+  {
+    id: 'lockout-details',
+    title: 'Lockout Details',
+    components: [
+      { id: 'num-locks', type: 'text', label: 'Number of Locks:', required: true, enabled: true, value: '' },
+      { id: 'lock-owner', type: 'text', label: 'Responsible Person:', required: true, enabled: true, value: '' },
+      { id: 'verification', type: 'radio', label: 'Zero Energy Verified?', required: true, enabled: true, options: ['Yes', 'No'], selectedValue: '' },
+    ],
+  },
+  {
+    id: 'restore',
+    title: 'Restoration',
+    components: [
+      { id: 'restore-check', type: 'checkbox', label: 'Restoration Checklist:', required: false, enabled: true, options: ['Remove Locks', 'Tool Cleared', 'Area Safe'], selectedValues: [] },
+    ],
+  },
+];
+
+export const PERMIT_CONFIG = {
+  work: { title: 'GENERAL WORK PERMIT', template: PTW_SECTION_TEMPLATES },
+  hot: { title: 'HOT WORK PERMIT', template: HOT_WORK_SECTION_TEMPLATES },
+  cold: { title: 'COLD WORK PERMIT', template: COLD_WORK_SECTION_TEMPLATES },
+  loto: { title: 'LOTO PERMIT', template: LOTO_SECTION_TEMPLATES },
+};

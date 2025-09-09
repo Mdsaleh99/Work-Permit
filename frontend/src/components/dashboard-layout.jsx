@@ -1,29 +1,51 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, Link, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, BarChart3, FileText, Menu, X } from "lucide-react";
+import { LayoutDashboard, BarChart3, FileText, Menu, X, Dock, Telescope, PencilRuler, Files } from "lucide-react";
+import { UserDetail } from "./user-detail";
 
 const navigation = [
     {
         name: "Dashboard",
-        href: "/abc/app/dashboard",
+        href: "/page/app/dashboard",
         icon: LayoutDashboard,
     },
     {
-        name: "Analysis",
-        href: "/dashboard/analysis",
-        icon: BarChart3,
+        name: "Permits",
+        href: "/page/app/permit",
+        icon: Dock,
     },
     {
-        name: "Work Permit",
-        href: "/dashboard/workpermit",
+        name: "Observations",
+        href: "/page/app/observation",
         icon: FileText,
     },
+    {
+        name: "Fleet Management",
+        href: "/page/app/fleet-management",
+        icon: PencilRuler,
+    },
+    {
+        name: "Audits",
+        href: "/page/app/audit",
+        icon: Files,
+    }
 ];
 
 export function DashboardLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    // Auto-close sidebar on medium and smaller screens, open on large screens
+    useEffect(() => {
+        const handleResize = () => {
+            if (typeof window === "undefined") return;
+            const isLarge = window.innerWidth >= 1024; // lg breakpoint
+            setSidebarOpen(isLarge);
+        };
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
     const location = useLocation();
 
     return (
@@ -57,7 +79,7 @@ export function DashboardLayout() {
 
                     <nav className="flex-1 p-4 space-y-2">
                         {navigation.map((item) => {
-                            const isActive = location.pathname === item.href;
+                            const isActive = location.pathname.startsWith(item.href);
                             return (
                                 <Link
                                     key={item.name}
@@ -77,6 +99,8 @@ export function DashboardLayout() {
                             );
                         })}
                     </nav>
+
+                    <UserDetail isCollapsed={!sidebarOpen} />
                 </div>
             </div>
 
@@ -97,12 +121,8 @@ export function DashboardLayout() {
                 </main>
             </div>
 
-            {sidebarOpen && (
-                <div
-                    className="lg:hidden fixed inset-0 bg-black/50 z-40"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
+            {/* Removed mobile overlay to prevent dimming/fade effect over content */}
         </div>
     );
 }
+
