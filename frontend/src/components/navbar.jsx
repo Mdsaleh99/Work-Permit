@@ -55,19 +55,23 @@ export function Navbar() {
 
                     <div className="flex items-center space-x-4">
                         <div className="hidden sm:flex items-center space-x-3">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="font-medium hover:bg-muted/80 rounded-xl text-foreground"
-                            >
-                                Sign In
-                            </Button>
-                            <Button
-                                size="sm"
-                                className="bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 font-medium px-6 rounded-xl text-primary-foreground"
-                            >
-                                Start Free Trial
-                            </Button>
+                            <Link to={"/auth/signin"}>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="font-medium cursor-pointer rounded-xl text-foreground"
+                                >
+                                    Sign In
+                                </Button>
+                            </Link>
+                            <Link to={"/auth/signup"}>
+                                <Button
+                                    size="sm"
+                                    className="bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 font-medium px-6 rounded-xl text-primary-foreground cursor-pointer"
+                                >
+                                    Sign up
+                                </Button>
+                            </Link>
                         </div>
 
                         <button

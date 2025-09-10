@@ -1,4 +1,5 @@
 import VerifyEmail from "@/components/auth/verify-email";
+import { useAuthStore } from "@/store/useAuthStore";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/auth/verify-email")({
@@ -6,9 +7,10 @@ export const Route = createFileRoute("/auth/verify-email")({
 });
 
 function RouteComponent() {
+    const { authUser, resendEmailVerification } = useAuthStore()
     return (
         <div>
-            <VerifyEmail />
+            <VerifyEmail email={authUser.email} onResendEmail={resendEmailVerification} />
         </div>
     );
 }

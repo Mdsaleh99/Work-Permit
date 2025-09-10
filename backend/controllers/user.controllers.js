@@ -74,7 +74,10 @@ const signUp = asyncHandler(async (req, res) => {
         );
     }
 
-    const emailVerificationUrl = `${process.env.BASE_URL}/api/v1/auth/verify-email/${unHashedToken}`;
+    const verifyBase =
+        process.env.EMAIL_VERIFICATION_REDIRECT_URL ||
+        `${process.env.FRONTEND_URL}/auth/verify-email-success`;
+    const emailVerificationUrl = `${verifyBase}/${unHashedToken}`;
 
     await sendEmail({
         email: newUser.email,
@@ -240,7 +243,10 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
         },
     });
 
-    const emailVerificationUrl = `${process.env.BASE_URL}/api/v1/auth/verify-email/${unHashedToken}`;
+    const verifyBase =
+        process.env.EMAIL_VERIFICATION_REDIRECT_URL ||
+        `${process.env.FRONTEND_URL}/auth/verify-email-success`;
+    const emailVerificationUrl = `${verifyBase}/${unHashedToken}`;
 
     await sendEmail({
         email: user.email,

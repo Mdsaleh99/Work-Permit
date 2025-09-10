@@ -55,4 +55,21 @@ export const useAuthStore = create((set) => ({
             console.error("Error logging out", error);
         }
     },
+
+    resendEmailVerification: async () => {
+        try {
+            await authService.resendEmailVerification();
+        } catch (error) {
+            set({ authError: error });
+            throw error;
+        }
+    },
+    verifyEmail: async (verificationToken) => {
+        try {
+            await authService.verifyEmail(verificationToken);
+        } catch (error) {
+            set({ authError: error });
+            throw error;
+        }
+    },
 }));

@@ -16,6 +16,7 @@ import { Route as PageAppRouteImport } from './routes/page/app'
 import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/auth/signin'
+import { Route as AuthVerifyEmailSuccessVerificationTokenRouteImport } from './routes/auth/verify-email-success.$verificationToken'
 
 const PageAppUserDashboardLazyRouteImport = createFileRoute(
   '/page/app/user-dashboard',
@@ -102,6 +103,12 @@ const PageAppAuditLazyRoute = PageAppAuditLazyRouteImport.update({
 } as any).lazy(() =>
   import('./routes/page/app.audit.lazy').then((d) => d.Route),
 )
+const AuthVerifyEmailSuccessVerificationTokenRoute =
+  AuthVerifyEmailSuccessVerificationTokenRouteImport.update({
+    id: '/auth/verify-email-success/$verificationToken',
+    path: '/auth/verify-email-success/$verificationToken',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PageAppPermitTypeLazyRoute = PageAppPermitTypeLazyRouteImport.update({
   id: '/$type',
   path: '/$type',
@@ -116,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
+  '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
@@ -130,6 +138,7 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
+  '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
@@ -145,6 +154,7 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
+  '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
+    | '/auth/verify-email-success/$verificationToken'
     | '/page/app/audit'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
+    | '/auth/verify-email-success/$verificationToken'
     | '/page/app/audit'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
@@ -189,6 +201,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
+    | '/auth/verify-email-success/$verificationToken'
     | '/page/app/audit'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
@@ -204,6 +217,7 @@ export interface RootRouteChildren {
   AuthSignupRoute: typeof AuthSignupRoute
   AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
   PageAppRoute: typeof PageAppRouteWithChildren
+  AuthVerifyEmailSuccessVerificationTokenRoute: typeof AuthVerifyEmailSuccessVerificationTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -285,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PageAppAuditLazyRouteImport
       parentRoute: typeof PageAppRoute
     }
+    '/auth/verify-email-success/$verificationToken': {
+      id: '/auth/verify-email-success/$verificationToken'
+      path: '/auth/verify-email-success/$verificationToken'
+      fullPath: '/auth/verify-email-success/$verificationToken'
+      preLoaderRoute: typeof AuthVerifyEmailSuccessVerificationTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/page/app/permit/$type': {
       id: '/page/app/permit/$type'
       path: '/$type'
@@ -333,6 +354,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSignupRoute: AuthSignupRoute,
   AuthVerifyEmailRoute: AuthVerifyEmailRoute,
   PageAppRoute: PageAppRouteWithChildren,
+  AuthVerifyEmailSuccessVerificationTokenRoute:
+    AuthVerifyEmailSuccessVerificationTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

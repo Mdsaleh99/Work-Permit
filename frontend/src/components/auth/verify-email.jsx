@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { MailCheck, RefreshCcw } from "lucide-react";
 
-export default function VerifyEmail({ email, onResend }) {
+export default function VerifyEmail({ email, onResendEmail }) {
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-6">
             <Card className="w-full max-w-md">
@@ -17,7 +17,7 @@ export default function VerifyEmail({ email, onResend }) {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    <Button className="w-full" variant="outline" onClick={onResend}>
+                    <Button className="w-full" variant="outline" onClick={onResendEmail}>
                         <RefreshCcw className="w-4 h-4 mr-2" />
                         Resend verification email
                     </Button>
