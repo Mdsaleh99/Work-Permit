@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PageAppRouteImport } from './routes/page/app'
+import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/auth/signin'
 
@@ -40,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
 const PageAppRoute = PageAppRouteImport.update({
   id: '/page/app',
   path: '/page/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
+  id: '/auth/verify-email',
+  path: '/auth/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
@@ -135,6 +143,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/signin'
     | '/auth/signup'
+    | '/auth/verify-email'
     | '/page/app'
     | '/page/app/audit'
     | '/page/app/dashboard'
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/signin'
     | '/auth/signup'
+    | '/auth/verify-email'
     | '/page/app'
     | '/page/app/audit'
     | '/page/app/dashboard'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth/signin'
     | '/auth/signup'
+    | '/auth/verify-email'
     | '/page/app'
     | '/page/app/audit'
     | '/page/app/dashboard'
@@ -190,6 +202,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthSigninRoute: typeof AuthSigninRoute
   AuthSignupRoute: typeof AuthSignupRoute
+  AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
   PageAppRoute: typeof PageAppRouteWithChildren
 }
 
@@ -207,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/page/app'
       fullPath: '/page/app'
       preLoaderRoute: typeof PageAppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/verify-email': {
+      id: '/auth/verify-email'
+      path: '/auth/verify-email'
+      fullPath: '/auth/verify-email'
+      preLoaderRoute: typeof AuthVerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/signup': {
@@ -311,6 +331,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthSigninRoute: AuthSigninRoute,
   AuthSignupRoute: AuthSignupRoute,
+  AuthVerifyEmailRoute: AuthVerifyEmailRoute,
   PageAppRoute: PageAppRouteWithChildren,
 }
 export const routeTree = rootRouteImport

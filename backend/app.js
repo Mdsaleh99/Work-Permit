@@ -8,6 +8,7 @@ import cors from "cors"
 import userRouters from "./routes/user.routes.js";
 import companyRouters from "./routes/company.routes.js"
 import workPermitFormRouters from "./routes/workPermitForm.routes.js"
+import { ApiError } from "./utils/ApiError.js"
 
 dotenv.config()
 
@@ -31,3 +32,30 @@ app.use("/api/v1/company", companyRouters);
 
 // * work Permit Form routes
 app.use("/api/v1/work-permit", workPermitFormRouters);
+
+// * 404 handler
+app.use((req, res, next) => {
+    const notFoundError = new ApiError(404, `Route ${req.originalUrl} not found`)
+    next(notFoundError)
+})
+
+// * Centralized error handler
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+    const isKnownApiError = err instanceof ApiError
+    const statusCode = isKnownApiError ? err.statusCode : 500
+    const message = isKnownApiError ? err.message : "Internal Server Error"
+    const errors = isKnownApiError ? err.errors : []
+
+    // Log server-side for observability
+    if (process.env.NODE_ENV !== "test") {
+        console.error(`[${new Date().toISOString()}]`, err)
+    }
+
+    return res.status(statusCode).json({
+        success: false,
+        message,
+        errors,
+        ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+    })
+})

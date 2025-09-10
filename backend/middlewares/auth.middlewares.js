@@ -31,7 +31,11 @@ export const verifyJWT = async (req, res, next) => {
         req.user = user
         next()
     } catch (error) {
-        throw new ApiError(500, error?.message || "Invalid access token")
+        if (error?.name === "TokenExpiredError") {
+            // 419 Authentication Timeout (commonly used for expired sessions)
+            throw new ApiError(419, "Access token expired");
+        }
+        throw new ApiError(401, "Invalid access token");
     }
 }
 

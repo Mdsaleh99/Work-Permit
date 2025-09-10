@@ -1,3 +1,9 @@
+export const StorageKeys = {
+    ACCESS_TOKEN: "access-token",
+    REFRESH_TOKEN: "refresh-token",
+    ADMIN: "admin",
+};
+
 export const FORM_COMPONENTS = [
   {
     type: 'text',

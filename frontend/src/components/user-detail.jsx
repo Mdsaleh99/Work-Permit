@@ -9,10 +9,25 @@ import { Label } from "@/components/ui/label";
 import { LogOut, Settings } from "lucide-react";
 import { Input } from "./ui/input";
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useAuthStore } from "@/store/useAuthStore";
+import { authService } from "@/services/auth.service";
+import { toast } from "sonner";
 
 export function UserDetail({ isCollapsed }) {
     const [open, setOpen] = useState(false);
+    const { signout, authUser } = useAuthStore()
+    const navigate = useNavigate()
+    
+    const handleSignOut = async () => {
+        try {
+            await signout();
+            navigate({to: "/"})
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     return (
         <div className="border-t border-sidebar-border p-4">
             <div className="flex items-center gap-3">
@@ -24,10 +39,10 @@ export function UserDetail({ isCollapsed }) {
                 {!isCollapsed && (
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-sidebar-foreground truncate">
-                            John Doe
+                            {authUser?.name}
                         </p>
                         <p className="text-xs text-sidebar-foreground/70 truncate">
-                            john.doe@example.com
+                            {authUser?.email}
                         </p>
                     </div>
                 )}
@@ -75,6 +90,7 @@ export function UserDetail({ isCollapsed }) {
                                     <Button
                                         size="sm"
                                         className="cursor-pointer"
+                                        onClick={handleSignOut}
                                     >
                                         Logout
                                     </Button>

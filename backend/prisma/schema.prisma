@@ -19,6 +19,12 @@ enum UserRole {
   SUPER_ADMIN
 }
 
+enum LoginType {
+  GOOGLE
+  MICROSOFT
+  EMAIL_PASSWORD
+}
+
 enum WorkPermitComponentType {
   text
   checkbox
@@ -34,6 +40,7 @@ model User {
   email            String    @unique
   password         String
   role             UserRole  @default(ADMIN)
+  loginType LoginType @default(EMAIL_PASSWORD)
   // verifyCode       String?
   // verifyCodeExpiry DateTime?
   forgotPasswordToken String?

@@ -10,20 +10,68 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-// import { useAuthStore } from "@/store/useAuth";
+import { useAuthStore } from "@/store/useAuthStore";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {z} from "zod";
+import { useForm } from "react-hook-form";
+import { Loader } from "lucide-react";
+
+
+const SignUpSchema = z.object({
+    email: z.email({ error: "Enter valid email" }),
+    password: z
+        .string()
+        .min(8, "Password must be atleast of 8 characters")
+        .max(16, "password cannot exceed 16 characters"),
+    name: z
+        .string()
+        .min(3, "name should be at least 3 character")
+        .max(20, "name cannot exceed 20 character"),
+});
 
 export function SignUpForm({ className, ...props }) {
-    const [form, setForm] = useState({ email: "", password: "", username: "" });
-    const [loading, setLoading] = useState(false);
+    // const [form, setForm] = useState({ email: "", password: "", name: "" });
+    const {register, handleSubmit, formState: {errors}, setError} = useForm({resolver: zodResolver(SignUpSchema)})
     const navigate = useNavigate();
-    // const { signup } = useAuthStore();
+    const { isSignUp, signup, authError } = useAuthStore();
 
-    const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-        console.log(form);
-    };
+    // const handleChange = (e) => {
+            // Copy the old form state (...form)
+            // Update only the field that changed ([e.target.name]) with new value (e.target.value)
+            // [] here means dynamic key, not array.
+            // It uses input's name as the object key. like email, password
+    //     setForm({ ...form, [e.target.name]: e.target.value });
+    //     console.log(form);
+    // };
+    /*
+        const field = "email";
+        const value = "abc@test.com";
+        const obj = {
+        [field]: value,  // creates { email: "abc@test.com" }
+        };
+    */
 
+    
+    const onSubmit = async (data) => {
+        // e.preventDefault()
+        try {
+            console.log(data);
+            await signup(data)
+            // only navigate if signup succeeded
+            navigate({ to: "/auth/verify-email" });
+        } catch (error) {
+            // prevent navigation on error; map server field errors if provided
+            if (Array.isArray(error?.errors)) {
+                error.errors.forEach((e) => {
+                    if (e?.filePath && e?.message) {
+                        setError(e.filePath, { type: "server", message: e.message })
+                    }
+                })
+            }
+        }
+    }
+    
     return (
         <div
             className={cn(
@@ -40,7 +88,17 @@ export function SignUpForm({ className, ...props }) {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
-                    <form className="space-y-6">
+                    <form
+                        className="space-y-6"
+                        onSubmit={handleSubmit(onSubmit)}
+                    >
+                        {authError && (
+                            <Alert variant="destructive">
+                                <AlertDescription>
+                                    {authError.message}
+                                </AlertDescription>
+                            </Alert>
+                        )}
                         <div className="grid gap-4">
                             <div className="grid gap-3">
                                 <Button
@@ -109,25 +167,35 @@ export function SignUpForm({ className, ...props }) {
                             </div>
                             <div className="grid gap-4">
                                 <div className="grid gap-3">
-                                    <Label htmlFor="username">Username</Label>
+                                    <Label htmlFor="name">Full Name</Label>
                                     <Input
-                                        name="username"
-                                        value={form.username}
-                                        onChange={handleChange}
+                                        name="name"
+                                        {...register("name")}
                                         placeholder="john23"
-                                        className="border bg-background placeholder:text-muted-foreground"
+                                        className={`border bg-background placeholder:text-muted-foreground ${
+                                            errors.name ? "input-error" : ""
+                                        }`}
                                     />
+                                    {errors.name && (
+                                        <p className="text-red-500 text-sm">
+                                            {errors.name.message}
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="grid gap-3">
                                     <Label htmlFor="email">Email</Label>
                                     <Input
                                         name="email"
                                         type="email"
-                                        value={form.email}
-                                        onChange={handleChange}
+                                        {...register("email")}
                                         placeholder="m@example.com"
-                                        className="border bg-background placeholder:text-muted-foreground"
+                                        className={`"border bg-background placeholder:text-muted-foreground ${errors.email ? "input-error" : ""}`}
                                     />
+                                    {errors.email && (
+                                        <p className="text-red-500 text-sm">
+                                            {errors.email.message}
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="grid gap-3">
                                     <div className="flex items-center">
@@ -138,17 +206,29 @@ export function SignUpForm({ className, ...props }) {
                                     <Input
                                         name="password"
                                         type="password"
-                                        value={form.password}
-                                        onChange={handleChange}
+                                        {...register("password")}
                                         placeholder="******"
-                                        className="border bg-background placeholder:text-muted-foreground"
+                                        className={`"border bg-background placeholder:text-muted-foreground ${errors.password ? "input-error" : ""}`}
                                     />
+                                    {errors.password && (
+                                        <p className="text-red-500 text-sm">
+                                            {errors.password.message}
+                                        </p>
+                                    )}
                                 </div>
                                 <Button
                                     type="submit"
+                                    disabled={isSignUp} // if isSignUp is ture then disabled
                                     className="w-full cursor-pointer h-10"
                                 >
-                                    Sign up
+                                    {isSignUp ? (
+                                        <>
+                                            <Loader className="h-5 w-5 animate-spin mr-2" />
+                                            Loading...
+                                        </>
+                                    ) : (
+                                        "Sign up"
+                                    )}
                                 </Button>
                             </div>
                             <div className="text-center text-sm text-muted-foreground">

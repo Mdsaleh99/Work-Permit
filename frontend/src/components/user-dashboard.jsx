@@ -15,9 +15,11 @@ import {
     UserPen,
 } from "lucide-react";
 import { useState } from "react";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function UserDashboard() {
     const [copiedField, setCopiedField] = useState(null);
+    const {authUser} = useAuthStore()
 
     const copyToClipboard = async (text, field) => {
         try {
@@ -29,12 +31,17 @@ export default function UserDashboard() {
         }
     };
 
+    const userCreatedDate = new Date(authUser.createdAt)
+    const dateOnly = userCreatedDate.toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})
+
     const userData = {
-        name: "wigit125",
-        email: "wigit49784@decodewp.com",
-        role: "user",
-        accountId: "b67441d9-6547-4402-bd4d-cfd1cbca253c",
+        name: authUser.name,
+        email: authUser.email,
+        role: authUser.role,
+        accountId: authUser.id + "-75dk05",
         avatar: "/placeholder.svg?height=80&width=80",
+        loginType: authUser.loginType,
+        createdAt: dateOnly
     };
 
     return (
@@ -49,15 +56,6 @@ export default function UserDashboard() {
                         <p className="text-muted-foreground">
                             Manage your account and profile settings
                         </p>
-                    </div>
-                    <div className="flex gap-3">
-                        <Button
-                            variant="outline"
-                            className="cursor-pointer"
-                        >
-                            <LogOut className="w-4 h-4 mr-2" />
-                            Logout
-                        </Button>
                     </div>
                 </div>
 
@@ -191,7 +189,7 @@ export default function UserDashboard() {
                                 className="w-full justify-start cursor-pointer"
                             >
                                 <UserPen className="w-4 h-4 mr-2" />
-                                Update Avatar
+                                Company Details
                             </Button>
                             <Button
                                 variant="outline"
@@ -214,7 +212,7 @@ export default function UserDashboard() {
                                         Login Type
                                     </p>
                                     <p className="text-2xl font-bold">
-                                        Email and password
+                                        {userData.loginType}
                                     </p>
                                 </div>
                                 <div className="w-12 h-12 rounded-full flex items-center justify-center bg-primary/10">
@@ -232,7 +230,7 @@ export default function UserDashboard() {
                                         Member Since
                                     </p>
                                     <p className="text-2xl font-bold">
-                                        Today
+                                        {userData.createdAt}
                                     </p>
                                 </div>
                                 <div className="w-12 h-12 rounded-full flex items-center justify-center bg-secondary/20">

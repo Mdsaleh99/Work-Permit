@@ -142,7 +142,7 @@ const signIn = asyncHandler(async (req, res) => {
     });
 
     if (!user) {
-        throw new ApiError(404, "user not found");
+        throw new ApiError(404, "user not found with this given email");
     }
 
     if (!user.isEmailVerified) {
@@ -159,8 +159,8 @@ const signIn = asyncHandler(async (req, res) => {
 
     const cookieOptions = {
         httpOnly: true,
-        secure: true,
-        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production", // false in dev
+        sameSite: "lax", // better for SPAs than "strict"
     };
 
     await db.user.update({
@@ -290,8 +290,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
         const cookieOptions = {
             httpOnly: true,
-            secure: true,
-            sameSite: "strict",
+            secure: process.env.NODE_ENV === "production", // false in dev
+            sameSite: "lax", // better for SPAs than "strict"
         };
 
         const newAccessToken = generateAccessToken(user);

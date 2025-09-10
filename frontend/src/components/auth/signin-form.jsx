@@ -9,9 +9,40 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuthStore } from "@/store/useAuthStore";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader } from "lucide-react";
+
+const SignInSchema = z.object({
+    email: z.email({ error: "incorrect email or password" }),
+    password: z.string()
+});
 
 export function SignInForm({ className, ...props }) {
+    const { register, handleSubmit, formState: { errors }, setError } = useForm({ resolver: zodResolver(SignInSchema) })
+    const {isSignIn, signin, authError} = useAuthStore()
+    const navigate = useNavigate();
+
+    const onSubmit = async (data) => {
+        try {
+            await signin(data)
+            navigate({to: "/page/app/dashboard"})
+        } catch (error) {
+            // Map server field errors to form fields if provided
+            if (Array.isArray(error?.errors)) {
+                error.errors.forEach((e) => {
+                    if (e?.filePath && e?.message) {
+                        setError(e.filePath, { type: "server", message: e.message })
+                    }
+                })
+            }
+        }
+    }
+
     return (
         <div
             className={cn(
@@ -28,16 +59,32 @@ export function SignInForm({ className, ...props }) {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
-                    <form className="space-y-6">
+                    <form
+                        className="space-y-6"
+                        onSubmit={handleSubmit(onSubmit)}
+                    >
+                        {authError && (
+                            <Alert variant="destructive">
+                                <AlertDescription>
+                                    {authError.message}
+                                </AlertDescription>
+                            </Alert>
+                        )}
                         <div className="flex flex-col gap-4">
                             <div className="grid gap-3">
                                 <Label htmlFor="email">Email</Label>
                                 <Input
                                     id="email"
                                     type="email"
+                                    {...register("email")}
                                     placeholder="m@example.com"
-                                    className="border bg-background placeholder:text-muted-foreground"
+                                    className={`"border bg-background placeholder:text-muted-foreground ${errors.email ? "input-error" : ""}`}
                                 />
+                                {errors.email && (
+                                    <p className="text-red-500 text-sm">
+                                        {errors.email.message}
+                                    </p>
+                                )}
                             </div>
                             <div className="grid gap-3">
                                 <div className="flex items-center">
@@ -52,16 +99,26 @@ export function SignInForm({ className, ...props }) {
                                 <Input
                                     id="password"
                                     type="password"
+                                    {...register("password")}
                                     placeholder="*******"
-                                    className="border bg-background placeholder:text-muted-foreground"
+                                    className={`"border bg-background placeholder:text-muted-foreground`}
                                 />
+                            
                             </div>
                             <div className="flex flex-col gap-3">
                                 <Button
                                     type="submit"
+                                    disabled={isSignIn}
                                     className="w-full cursor-pointer h-10"
                                 >
-                                    Login
+                                    {isSignIn ? (
+                                        <>
+                                            <Loader className="h-5 w-5 animate-spin mr-2" />
+                                            Loading...
+                                        </>
+                                    ) : (
+                                        "Login"
+                                    )}
                                 </Button>
                                 <div className="flex flex-col gap-4">
                                     <Button
