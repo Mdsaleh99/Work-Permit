@@ -8,14 +8,17 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import React from "react";
 import z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "lucide-react";
+import { authService } from "@/services/auth.service";
 
 const SignInSchema = z.object({
     email: z.email({ error: "incorrect email or password" }),
@@ -24,12 +27,24 @@ const SignInSchema = z.object({
 
 export function SignInForm({ className, ...props }) {
     const { register, handleSubmit, formState: { errors }, setError } = useForm({ resolver: zodResolver(SignInSchema) })
-    const {isSignIn, signin, authError} = useAuthStore()
+    const {isSignIn, signin, authError, clearAuthError, googleAuth} = useAuthStore()
     const navigate = useNavigate();
+    const search = useSearch({ from: "/auth/signin" })
+
+    React.useEffect(() => {
+        // Clear any stale errors when landing on the page or when query changes
+        clearAuthError()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search?.from])
+
+    // useSearch() is a TanStack Router hook to read search params (query string) from the URL. It auto-syncs with the router and gives you type-safety if your route defines search params.
+    // useLocation() gives you the current location object of the router. Think of it as React Router’s useLocation, but typed and reactive.
+    // useStateRouter() gives you direct access to the router instance. It’s like the “engine” of TanStack Router in hook form.
 
     const onSubmit = async (data) => {
         try {
             await signin(data)
+            clearAuthError()
             navigate({to: "/page/app/dashboard"})
         } catch (error) {
             // Map server field errors to form fields if provided
@@ -63,10 +78,10 @@ export function SignInForm({ className, ...props }) {
                         className="space-y-6"
                         onSubmit={handleSubmit(onSubmit)}
                     >
-                        {authError && (
+                        {(authError || search?.from === "resend") && (
                             <Alert variant="destructive">
                                 <AlertDescription>
-                                    {authError.message}
+                                    {authError?.message || "Please login to continue"}
                                 </AlertDescription>
                             </Alert>
                         )}
@@ -89,17 +104,16 @@ export function SignInForm({ className, ...props }) {
                             <div className="grid gap-3">
                                 <div className="flex items-center">
                                     <Label htmlFor="password">Password</Label>
-                                    <a
-                                        href="#"
+                                    <Link
+                                        to={"/auth/forgot-password"}
                                         className="ml-auto inline-block text-xs text-muted-foreground underline-offset-4 hover:underline"
                                     >
                                         Forgot your password?
-                                    </a>
+                                    </Link>
                                 </div>
-                                <Input
+                                <PasswordInput
                                     id="password"
-                                    type="password"
-                                    {...register("password")}
+                                    register={register("password")}
                                     placeholder="*******"
                                     className={`"border bg-background placeholder:text-muted-foreground`}
                                 />
@@ -124,6 +138,7 @@ export function SignInForm({ className, ...props }) {
                                     <Button
                                         variant="outline"
                                         className="w-full cursor-pointer h-10"
+                                        type="button"
                                     >
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
@@ -167,6 +182,8 @@ export function SignInForm({ className, ...props }) {
                                     <Button
                                         variant="outline"
                                         className="w-full cursor-pointer h-10"
+                                        type="button"
+                                        onClick={() => googleAuth()}
                                     >
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"

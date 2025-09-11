@@ -5,6 +5,7 @@ import {
     forgotPasswordRequest,
     getAllUsers,
     getCurrentUser,
+    googleCallback,
     refreshAccessToken,
     resendEmailVerification,
     resetForgottenPassword,
@@ -24,6 +25,7 @@ import {
 import { validate } from "../middlewares/validate.middlewares.js";
 import { authorizeRoles, verifyJWT } from "../middlewares/auth.middlewares.js";
 import { UserRolesEnum } from "../utils/constants.js";
+import passport from "passport";
 
 const router = express.Router();
 
@@ -71,6 +73,25 @@ router
         userAssignRoleValidator(),
         validate,
         assignRole
+);
+    
+// SSO routes
+router.route("/google").get( // this route for frontend to show the emails page to choose the email and when i click any email googleCallback() function triggers
+    passport.authenticate("google", {
+        scope: ["profile", "email"],
+    }),
+    (req, res) => {
+        res.send("redirecting to google...");
+    },
+);
+
+router
+    .route("/google/callback")
+    .get(
+        passport.authenticate("google", {
+            failureRedirect: `${process.env.FRONTEND_URL}/auth/signin`,
+        }),
+        googleCallback
     );
 
 export default router;

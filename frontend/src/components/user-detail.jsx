@@ -6,13 +6,12 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LogOut, Settings } from "lucide-react";
 import { Input } from "./ui/input";
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuthStore } from "@/store/useAuthStore";
-import { authService } from "@/services/auth.service";
-import { toast } from "sonner";
 
 export function UserDetail({ isCollapsed }) {
     const [open, setOpen] = useState(false);
@@ -33,7 +32,7 @@ export function UserDetail({ isCollapsed }) {
             <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">
                     <AvatarImage src="/user-avatar.jpg" alt="User" />
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarFallback>{authUser?.name?.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
 
                 {!isCollapsed && (
@@ -93,6 +92,7 @@ export function UserDetail({ isCollapsed }) {
                                         onClick={handleSignOut}
                                     >
                                         Logout
+                                        
                                     </Button>
                                 </div>
                             </PopoverContent>

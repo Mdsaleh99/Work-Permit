@@ -8,8 +8,10 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import React from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,7 +36,14 @@ export function SignUpForm({ className, ...props }) {
     // const [form, setForm] = useState({ email: "", password: "", name: "" });
     const {register, handleSubmit, formState: {errors}, setError} = useForm({resolver: zodResolver(SignUpSchema)})
     const navigate = useNavigate();
-    const { isSignUp, signup, authError } = useAuthStore();
+    const { isSignUp, signup, authError, clearAuthError, googleAuth } = useAuthStore();
+    const search = useSearch({ from: "/auth/signup" })
+
+    React.useEffect(() => {
+        // Clear any stale errors when landing on the page or when query changes
+        clearAuthError()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search?.from])
 
     // const handleChange = (e) => {
             // Copy the old form state (...form)
@@ -58,6 +67,7 @@ export function SignUpForm({ className, ...props }) {
         try {
             console.log(data);
             await signup(data)
+            clearAuthError()
             // only navigate if signup succeeded
             navigate({ to: "/auth/verify-email" });
         } catch (error) {
@@ -99,9 +109,17 @@ export function SignUpForm({ className, ...props }) {
                                 </AlertDescription>
                             </Alert>
                         )}
+                        {(authError || search?.from === "resend") && (
+                            <Alert variant="destructive">
+                                <AlertDescription>
+                                    {authError?.message || "Please create an account to continue"}
+                                </AlertDescription>
+                            </Alert>
+                        )}
                         <div className="grid gap-4">
                             <div className="grid gap-3">
                                 <Button
+                                    type="button"
                                     variant="outline"
                                     className="w-full cursor-pointer h-10"
                                 >
@@ -145,8 +163,10 @@ export function SignUpForm({ className, ...props }) {
                                 </Button>
 
                                 <Button
+                                    type="button"
                                     variant="outline"
                                     className="w-full cursor-pointer h-10"
+                                    onClick={() => googleAuth()}
                                 >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -203,12 +223,12 @@ export function SignUpForm({ className, ...props }) {
                                             Password
                                         </Label>
                                     </div>
-                                    <Input
-                                        name="password"
-                                        type="password"
-                                        {...register("password")}
+                                    <PasswordInput
+                                        id="password"
+                                        register={register("password")}
                                         placeholder="******"
                                         className={`"border bg-background placeholder:text-muted-foreground ${errors.password ? "input-error" : ""}`}
+                                        error={errors.password?.message}
                                     />
                                     {errors.password && (
                                         <p className="text-red-500 text-sm">

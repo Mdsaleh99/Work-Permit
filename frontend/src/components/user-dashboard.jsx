@@ -14,12 +14,13 @@ import {
     KeyRound,
     UserPen,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
+import { Link } from "@tanstack/react-router";
 
 export default function UserDashboard() {
     const [copiedField, setCopiedField] = useState(null);
-    const {authUser} = useAuthStore()
+    const { authUser, isAuthCheck } = useAuthStore();
 
     const copyToClipboard = async (text, field) => {
         try {
@@ -31,17 +32,38 @@ export default function UserDashboard() {
         }
     };
 
-    const userCreatedDate = new Date(authUser.createdAt)
-    const dateOnly = userCreatedDate.toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})
+    // console.log("auth user, user dashboard, before useEffect: ", authUser); // here signin data is comming
+    // ✅ Don't call checkAuth() in every component
+    // Root runs it once and sets authUser in store
+    // Components should only read { authUser, isAuthCheck }
+    // Show loading UI until isAuthCheck is false
+    // Logs may show null at first = normal async behavior
+
+    // useEffect(() => {
+    //     checkAuth()
+    //     console.log("auth user, user dashboard, inside useEffect: ", authUser);
+    // }, [])
+    // console.log("auth user, user dashboard, after useEffect: ", authUser);
+
+    if(isAuthCheck || !authUser) {
+        return <div>Loading...</div>;
+    }
+
+    const userCreatedDate = new Date(authUser.createdAt);
+    const dateOnly = userCreatedDate.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
 
     const userData = {
-        name: authUser.name,
-        email: authUser.email,
-        role: authUser.role,
-        accountId: authUser.id + "-75dk05",
+        name: authUser.name || "Unknown",
+        email: authUser.email || "No email",
+        role: authUser.role || "USER",
+        accountId: authUser.id ? `${authUser.id}-75dk05` : "unknown-60hyt7d0",
         avatar: "/placeholder.svg?height=80&width=80",
-        loginType: authUser.loginType,
-        createdAt: dateOnly
+        loginType: authUser.loginType || "Email",
+        createdAt: dateOnly,
     };
 
     return (
@@ -97,7 +119,10 @@ export default function UserDashboard() {
                                         <label className="text-sm font-medium text-muted-foreground block mb-1">
                                             Account Role
                                         </label>
-                                        <Badge variant="secondary" className="flex items-center justify-center text-center">
+                                        <Badge
+                                            variant="secondary"
+                                            className="flex items-center justify-center text-center"
+                                        >
                                             <Shield className="w-3 h-3 mr-0.5" />
                                             <span className="mb-0.5">
                                                 {userData.role}
@@ -191,13 +216,15 @@ export default function UserDashboard() {
                                 <UserPen className="w-4 h-4 mr-2" />
                                 Company Details
                             </Button>
-                            <Button
-                                variant="outline"
-                                className="w-full justify-start cursor-pointer"
-                            >
-                                <KeyRound className="w-4 h-4 mr-2" />
-                                Change Password
-                            </Button>
+                            <Link to={"/page/app/change-password"}>
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-start cursor-pointer"
+                                >
+                                    <KeyRound className="w-4 h-4 mr-2" />
+                                    Change Password
+                                </Button>
+                            </Link>
                         </CardContent>
                     </Card>
                 </div>

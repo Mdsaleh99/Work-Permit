@@ -148,9 +148,9 @@ const signIn = asyncHandler(async (req, res) => {
         throw new ApiError(404, "user not found with this given email");
     }
 
-    if (!user.isEmailVerified) {
-        throw new ApiError(400, "Please verify Email before login");
-    }
+    // if (!user.isEmailVerified) {
+    //     throw new ApiError(400, "Please verify Email before login");
+    // }
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) {
@@ -466,7 +466,6 @@ const getCurrentUser = asyncHandler(async (req, res) => {
             emailVerificationToken: true,
             forgotPasswordExpiry: true,
             forgotPasswordToken: true,
-            isEmailVerified: true,
             refreshToken: true,
         },
     });
@@ -529,11 +528,41 @@ const getAllUsers = asyncHandler(async (req, res) => {
     );
 });
 
+const googleCallback = asyncHandler(async (req, res) => {
+    const user = await db.user.findUnique({
+        where: {
+            id: req.user?.id,
+        },
+    });
+
+    if (!user) {
+        throw new ApiError(404, "User does not exist");
+    }
+
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+    };
+
+    return res
+        .status(301)
+        .cookie("accessToken", accessToken, options) // set the access token in the cookie
+        .cookie("refreshToken", refreshToken, options) // set the refresh token in the cookie
+        .redirect(
+            // redirect user to the frontend with access and refresh token in case user is not using cookies
+            `${process.env.CLIENT_SSO_REDIRECT_URL}`
+        );
+});
+
 export {
     getAllUsers,
     changeCurrentPassword,
     forgotPasswordRequest,
     getCurrentUser,
+    googleCallback,
     signIn,
     assignRole,
     signOut,

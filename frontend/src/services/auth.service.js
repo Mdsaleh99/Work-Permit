@@ -25,6 +25,22 @@ export const authService = {
 
         return response.data.data;
     },
+    forgotPassword: async (email) => {
+        const response = await axiosInstance.post("/auth/forgot-password", { email });
+        
+        return response.data.data;
+    },
+    resetPassword: async (resetToken, newPassword) => {
+        const response = await axiosInstance.post(`/auth/reset-password/${resetToken}`, { newPassword });
+        return response.data.data;
+    },
+    // changePassword: async (data) => {
+    // OR
+    changePassword: async (oldPassword, newPassword) => {
+        // const response = await axiosInstance.post("/auth/change-password", { data }); OR
+        const response = await axiosInstance.post("/auth/change-password", { oldPassword, newPassword });
+        return response.data.data;
+    },
     resendEmailVerification: async () => {
         const response = await axiosInstance.post(
             "/auth/resend-email-verification",
@@ -38,5 +54,9 @@ export const authService = {
         );
 
         return response.data.data;
+    },
+    googleLoginUrl: () => {
+        const base = axiosInstance.defaults.baseURL || "";
+        return `${base}/auth/google`;
     }
 };

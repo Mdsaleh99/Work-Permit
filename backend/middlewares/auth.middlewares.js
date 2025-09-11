@@ -20,7 +20,8 @@ export const verifyJWT = async (req, res, next) => {
                 id: true,
                 name: true,
                 email: true,
-                role: true
+                role: true,
+                isEmailVerified: true
             }
         })
 

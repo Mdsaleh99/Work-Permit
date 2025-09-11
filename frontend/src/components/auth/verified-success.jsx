@@ -2,8 +2,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function VerifiedSuccess() {
+    const { authUser } = useAuthStore();
+    const isLoggedIn = Boolean(authUser);
+
+    const targetHref = isLoggedIn ? "/page/app/dashboard" : "/auth/signin";
+    const ctaText = isLoggedIn ? "Go to Dashboard" : "Go to Sign in";
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-6">
             <Card className="w-full max-w-md">
@@ -18,7 +25,7 @@ export default function VerifiedSuccess() {
                 </CardHeader>
                 <CardContent>
                     <Button asChild className="w-full">
-                        <Link to="/auth/signin">Go to Sign in</Link>
+                        <Link to={targetHref}>{ctaText}</Link>
                     </Button>
                 </CardContent>
             </Card>

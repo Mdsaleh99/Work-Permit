@@ -1,8 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { MailCheck, RefreshCcw } from "lucide-react";
+import { MailCheck } from "lucide-react";
 
-export default function VerifyEmail({ email, onResendEmail }) {
+export default function VerifyEmail({ email }) {
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-6">
             <Card className="w-full max-w-md">
@@ -16,11 +15,9 @@ export default function VerifyEmail({ email, onResendEmail }) {
                         your inbox and click the link to continue.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                    <Button className="w-full" variant="outline" onClick={onResendEmail}>
-                        <RefreshCcw className="w-4 h-4 mr-2" />
-                        Resend verification email
-                    </Button>
+                <CardContent className="space-y-3 text-center text-sm text-muted-foreground">
+                    If you don't see the email, check your spam folder. You can request a new
+                    verification link from your account later if needed.
                 </CardContent>
             </Card>
         </div>

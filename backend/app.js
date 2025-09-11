@@ -2,13 +2,15 @@ import express from "express"
 import dotenv from "dotenv"
 import cookieParser from "cookie-parser"
 import cors from "cors"
+import { ApiError } from "./utils/ApiError.js"
+import session from "express-session"
+import passport from "./passport/index.js"
 
 
 // * routes
 import userRouters from "./routes/user.routes.js";
 import companyRouters from "./routes/company.routes.js"
 import workPermitFormRouters from "./routes/workPermitForm.routes.js"
-import { ApiError } from "./utils/ApiError.js"
 
 dotenv.config()
 
@@ -23,6 +25,16 @@ app.use(cors({
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true
 }))
+// required for passport
+app.use(
+    session({
+        secret: process.env.EXPRESS_SESSION_SECRET,
+        resave: true,
+        saveUninitialized: true,
+    }),
+); // session secret
+app.use(passport.initialize());
+app.use(passport.session()); // persistent login sessions
 
 // * user Routes
 app.use("/api/v1/auth", userRouters)

@@ -16,7 +16,10 @@ import { Route as PageAppRouteImport } from './routes/page/app'
 import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/auth/signin'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as PageAppChangePasswordRouteImport } from './routes/page/app.change-password'
 import { Route as AuthVerifyEmailSuccessVerificationTokenRouteImport } from './routes/auth/verify-email-success.$verificationToken'
+import { Route as AuthResetPasswordResetTokenRouteImport } from './routes/auth/reset-password.$resetToken'
 
 const PageAppUserDashboardLazyRouteImport = createFileRoute(
   '/page/app/user-dashboard',
@@ -57,6 +60,11 @@ const AuthSignupRoute = AuthSignupRouteImport.update({
 const AuthSigninRoute = AuthSigninRouteImport.update({
   id: '/auth/signin',
   path: '/auth/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PageAppUserDashboardLazyRoute =
@@ -103,10 +111,21 @@ const PageAppAuditLazyRoute = PageAppAuditLazyRouteImport.update({
 } as any).lazy(() =>
   import('./routes/page/app.audit.lazy').then((d) => d.Route),
 )
+const PageAppChangePasswordRoute = PageAppChangePasswordRouteImport.update({
+  id: '/change-password',
+  path: '/change-password',
+  getParentRoute: () => PageAppRoute,
+} as any)
 const AuthVerifyEmailSuccessVerificationTokenRoute =
   AuthVerifyEmailSuccessVerificationTokenRouteImport.update({
     id: '/auth/verify-email-success/$verificationToken',
     path: '/auth/verify-email-success/$verificationToken',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthResetPasswordResetTokenRoute =
+  AuthResetPasswordResetTokenRouteImport.update({
+    id: '/auth/reset-password/$resetToken',
+    path: '/auth/reset-password/$resetToken',
     getParentRoute: () => rootRouteImport,
   } as any)
 const PageAppPermitTypeLazyRoute = PageAppPermitTypeLazyRouteImport.update({
@@ -119,11 +138,14 @@ const PageAppPermitTypeLazyRoute = PageAppPermitTypeLazyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
+  '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
+  '/page/app/change-password': typeof PageAppChangePasswordRoute
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
@@ -134,11 +156,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
+  '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
+  '/page/app/change-password': typeof PageAppChangePasswordRoute
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
@@ -150,11 +175,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
+  '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
+  '/page/app/change-password': typeof PageAppChangePasswordRoute
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
@@ -167,11 +195,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth/forgot-password'
     | '/auth/signin'
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
+    | '/auth/reset-password/$resetToken'
     | '/auth/verify-email-success/$verificationToken'
+    | '/page/app/change-password'
     | '/page/app/audit'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
@@ -182,11 +213,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth/forgot-password'
     | '/auth/signin'
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
+    | '/auth/reset-password/$resetToken'
     | '/auth/verify-email-success/$verificationToken'
+    | '/page/app/change-password'
     | '/page/app/audit'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
@@ -197,11 +231,14 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth/forgot-password'
     | '/auth/signin'
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
+    | '/auth/reset-password/$resetToken'
     | '/auth/verify-email-success/$verificationToken'
+    | '/page/app/change-password'
     | '/page/app/audit'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
@@ -213,10 +250,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthSigninRoute: typeof AuthSigninRoute
   AuthSignupRoute: typeof AuthSignupRoute
   AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
   PageAppRoute: typeof PageAppRouteWithChildren
+  AuthResetPasswordResetTokenRoute: typeof AuthResetPasswordResetTokenRoute
   AuthVerifyEmailSuccessVerificationTokenRoute: typeof AuthVerifyEmailSuccessVerificationTokenRoute
 }
 
@@ -255,6 +294,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/signin'
       fullPath: '/auth/signin'
       preLoaderRoute: typeof AuthSigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/page/app/user-dashboard': {
@@ -299,11 +345,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PageAppAuditLazyRouteImport
       parentRoute: typeof PageAppRoute
     }
+    '/page/app/change-password': {
+      id: '/page/app/change-password'
+      path: '/change-password'
+      fullPath: '/page/app/change-password'
+      preLoaderRoute: typeof PageAppChangePasswordRouteImport
+      parentRoute: typeof PageAppRoute
+    }
     '/auth/verify-email-success/$verificationToken': {
       id: '/auth/verify-email-success/$verificationToken'
       path: '/auth/verify-email-success/$verificationToken'
       fullPath: '/auth/verify-email-success/$verificationToken'
       preLoaderRoute: typeof AuthVerifyEmailSuccessVerificationTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/reset-password/$resetToken': {
+      id: '/auth/reset-password/$resetToken'
+      path: '/auth/reset-password/$resetToken'
+      fullPath: '/auth/reset-password/$resetToken'
+      preLoaderRoute: typeof AuthResetPasswordResetTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/page/app/permit/$type': {
@@ -328,6 +388,7 @@ const PageAppPermitLazyRouteWithChildren =
   PageAppPermitLazyRoute._addFileChildren(PageAppPermitLazyRouteChildren)
 
 interface PageAppRouteChildren {
+  PageAppChangePasswordRoute: typeof PageAppChangePasswordRoute
   PageAppAuditLazyRoute: typeof PageAppAuditLazyRoute
   PageAppDashboardLazyRoute: typeof PageAppDashboardLazyRoute
   PageAppFleetManagementLazyRoute: typeof PageAppFleetManagementLazyRoute
@@ -337,6 +398,7 @@ interface PageAppRouteChildren {
 }
 
 const PageAppRouteChildren: PageAppRouteChildren = {
+  PageAppChangePasswordRoute: PageAppChangePasswordRoute,
   PageAppAuditLazyRoute: PageAppAuditLazyRoute,
   PageAppDashboardLazyRoute: PageAppDashboardLazyRoute,
   PageAppFleetManagementLazyRoute: PageAppFleetManagementLazyRoute,
@@ -350,10 +412,12 @@ const PageAppRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthSigninRoute: AuthSigninRoute,
   AuthSignupRoute: AuthSignupRoute,
   AuthVerifyEmailRoute: AuthVerifyEmailRoute,
   PageAppRoute: PageAppRouteWithChildren,
+  AuthResetPasswordResetTokenRoute: AuthResetPasswordResetTokenRoute,
   AuthVerifyEmailSuccessVerificationTokenRoute:
     AuthVerifyEmailSuccessVerificationTokenRoute,
 }
