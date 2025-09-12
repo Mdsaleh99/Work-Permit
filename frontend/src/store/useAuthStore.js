@@ -113,6 +113,7 @@ export const useAuthStore = create((set, get) => ({
             const url = authService.googleLoginUrl?.()
                 || `${location.origin.replace(/:\\d+$/, '')}/api/v1/auth/google`; 
             window.location.href = url;
+        // eslint-disable-next-line no-unused-vars
         } catch (__) {
             window.location.href = `${location.origin.replace(/:\\d+$/, '')}/api/v1/auth/google`;
         }

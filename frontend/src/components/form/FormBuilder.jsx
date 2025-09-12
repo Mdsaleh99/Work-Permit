@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ReorderableList from "../drag-drop/ReorderableList";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
@@ -48,6 +48,177 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true }) => {
     const [editingComponent, setEditingComponent] = useState(null);
     const [showPrintView, setShowPrintView] = useState(false);
     const [dragOver, setDragOver] = useState(false);
+    const [declarationChecks, setDeclarationChecks] = useState({}); // key: componentId, value: boolean
+    const [showAgreeModal, setShowAgreeModal] = useState(false);
+
+    // Multi-draft autosave/load using localStorage (Gmail-like)
+    const DRAFTS_KEY = "gwpt_form_drafts_v1";
+    const [currentDraftId, setCurrentDraftId] = useState(null);
+    const [showDraftsModal, setShowDraftsModal] = useState(false);
+    const saveTimerRef = useRef(null);
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(DRAFTS_KEY);
+            const drafts = raw ? JSON.parse(raw) : [];
+            if (Array.isArray(drafts) && drafts.length > 0) {
+                const latest = drafts.sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0))[0];
+                setCurrentDraftId(latest.id);
+                setFormData(latest.formData);
+                setDeclarationChecks(latest.declarationChecks || {});
+                toast.success("Latest draft loaded");
+            } else {
+                // initialize first draft
+                const initId = generateId();
+                setCurrentDraftId(initId);
+                const first = { id: initId, title: "Untitled", formData, declarationChecks: {}, updatedAt: Date.now() };
+                localStorage.setItem(DRAFTS_KEY, JSON.stringify([first]));
+            }
+        } catch (_) {}
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => {
+            try {
+                const raw = localStorage.getItem(DRAFTS_KEY);
+                const drafts = raw ? JSON.parse(raw) : [];
+                const titleStr = formData?.title || "Untitled";
+                const updated = { id: currentDraftId || generateId(), title: titleStr, formData, declarationChecks, updatedAt: Date.now() };
+                let nextDrafts;
+                const idx = drafts.findIndex((d)=> d.id === updated.id);
+                if (idx >= 0) { nextDrafts = [...drafts]; nextDrafts[idx] = updated; }
+                else { nextDrafts = [...drafts, updated]; if (!currentDraftId) setCurrentDraftId(updated.id); }
+                localStorage.setItem(DRAFTS_KEY, JSON.stringify(nextDrafts));
+            } catch (_) {}
+        }, 400);
+        return () => saveTimerRef.current && clearTimeout(saveTimerRef.current);
+    }, [formData, declarationChecks, currentDraftId]);
+
+    const clearDraft = () => {
+        try {
+            const raw = localStorage.getItem(DRAFTS_KEY);
+            const drafts = raw ? JSON.parse(raw) : [];
+            const next = drafts.filter((d)=> d.id !== currentDraftId);
+            localStorage.setItem(DRAFTS_KEY, JSON.stringify(next));
+            toast.success("Draft removed");
+        } catch (_) {}
+    };
+
+    const createNewDraft = () => {
+        const newId = generateId();
+        const empty = {
+            title: title || "GENERAL WORK PERMIT",
+            sections: PTW_SECTIONS.map((section) => ({
+                id: section.id,
+                title: section.title,
+                enabled: true,
+                components: [],
+            })),
+            selectedSection: "work-description",
+        };
+        setFormData(empty);
+        setDeclarationChecks({});
+        setCurrentDraftId(newId);
+        try {
+            const raw = localStorage.getItem(DRAFTS_KEY);
+            const drafts = raw ? JSON.parse(raw) : [];
+            drafts.push({ id: newId, title: empty.title, formData: empty, declarationChecks: {}, updatedAt: Date.now() });
+            localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+        } catch (_) {}
+        toast.success("Started a new draft");
+    };
+
+    const loadDraft = (id) => {
+        try {
+            const drafts = JSON.parse(localStorage.getItem(DRAFTS_KEY) || "[]");
+            const d = drafts.find((x)=> x.id === id);
+            if (!d) return;
+            setCurrentDraftId(id);
+            setFormData(d.formData);
+            setDeclarationChecks(d.declarationChecks || {});
+            toast.success("Draft loaded");
+            setShowDraftsModal(false);
+        } catch (_) {}
+    };
+
+    const deleteDraft = (id) => {
+        try {
+            const drafts = JSON.parse(localStorage.getItem(DRAFTS_KEY) || "[]");
+            const next = drafts.filter((d)=> d.id !== id);
+            localStorage.setItem(DRAFTS_KEY, JSON.stringify(next));
+            if (id === currentDraftId && next.length) {
+                const latest = next.sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0))[0];
+                loadDraft(latest.id);
+            }
+            toast.success("Draft deleted");
+        } catch (_) {}
+    };
+
+    const duplicateForm = () => {
+        const duplicated = {
+            ...formData,
+            sections: formData.sections.map((s) => ({
+                ...s,
+                id: s.id, // keep same IDs for simplicity in editor
+                components: s.components.map((c) => ({ ...c, id: generateId() })),
+            })),
+        };
+        setFormData(duplicated);
+        toast.success("Form duplicated. You can now edit it.");
+    };
+
+    const getDeclarationComponents = () => {
+        const sec = formData.sections.find((s) => s.id === "declaration");
+        return (sec?.components || []).filter((c) => c.enabled !== false);
+    };
+
+    const initDeclarationChecks = () => {
+        const comps = getDeclarationComponents();
+        const next = { ...declarationChecks };
+        comps.forEach((c) => {
+            if (typeof next[c.id] !== "boolean") next[c.id] = false;
+        });
+        // prune removed
+        Object.keys(next).forEach((key) => {
+            if (!comps.find((c) => c.id === key)) delete next[key];
+        });
+        setDeclarationChecks(next);
+    };
+
+    const validateDeclaration = () => {
+        const comps = getDeclarationComponents();
+        const missing = comps.filter((c) => c.required && !declarationChecks[c.id]);
+        if (missing.length > 0) {
+            alert("Please agree to all mandatory declaration items before creating the form.");
+            return false;
+        }
+        return true;
+    };
+
+    const submitForm = async () => {
+        if (!validateDeclaration()) return;
+        try {
+            // 1) Simulate backend submission
+            await new Promise((res) => setTimeout(res, 500));
+
+            // 2) Simulate PDF generation and Cloudinary upload
+            const fakePdfBlob = new Blob([JSON.stringify(formData, null, 2)], {
+                type: "application/pdf",
+            });
+            await new Promise((res) => setTimeout(res, 500));
+
+            console.log("Submitted payload:", formData);
+            console.log("Uploaded to Cloudinary (dummy):", fakePdfBlob.size, "bytes");
+
+            toast.success("Form submitted and PDF uploaded (dummy)");
+            clearDraft();
+            setShowAgreeModal(false);
+        } catch (err) {
+            toast.error("Submission failed. Try again.");
+        }
+    };
 
     const sectionIcons = {
         "work-description": FileText,
@@ -188,6 +359,7 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true }) => {
     return (
         <div className="ptw-form-builder flex h-screen bg-gray-50">
             {/* Sidebar - Permit Sections */}
+            {!showPrintView && (
             <div className="no-print w-80 bg-white text-gray-900 flex flex-col border-r">
                 {/* Header removed as requested */}
 
@@ -235,12 +407,16 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true }) => {
                                                 ? "bg-gray-100 text-gray-900 border-gray-200"
                                                 : "text-gray-700 hover:bg-gray-50 border-transparent",
                                         )}
-                                        onClick={() =>
+                                        onClick={() => {
                                             setFormData({
                                                 ...formData,
                                                 selectedSection: section.id,
-                                            })
-                                        }
+                                            });
+                                            if (section.id === "declaration") {
+                                                initDeclarationChecks();
+                                                setShowAgreeModal(true);
+                                            }
+                                        }}
                                     >
                                         <GripVertical className="w-4 h-4 text-gray-400 mr-2" />
                                         <Icon className="w-5 h-5 mr-3" />
@@ -299,22 +475,25 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true }) => {
                     </div>
                 </div>
             </div>
+            )}
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col">
-                {/* Top Header */}
-                <div className="no-print bg-gray-100 border-b border-gray-200 px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
+                {/* Top Header (visible on screen in both modes, hidden when printing) */}
+                <div className="no-print bg-gray-100 border-b border-gray-200 px-4 md:px-6 py-3 md:py-4">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div className="flex items-center min-w-0">
                             <Flame className="w-6 h-6 text-orange-500 mr-3" />
-                            <h2 className="text-xl font-semibold text-gray-800">
+                            <h2 className="text-lg md:text-xl font-semibold text-gray-800 truncate">
                                 {formData.title}
                             </h2>
                         </div>
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-end overflow-x-auto">
+                            {/* Open declaration modal on submit instead of inline checkboxes */}
                             <Button
                                 variant="outline"
                                 size="sm"
+                                className="rounded-full shadow-sm"
                                 onClick={() => {
                                     setFormData({
                                         title: title || "GENERAL WORK PERMIT",
@@ -332,13 +511,31 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true }) => {
                                 <Plus className="w-4 h-4 mr-2" />
                                 Reset Form
                             </Button>
-                            <Button size="sm">
+                            <Button size="sm" className="rounded-full shadow-sm" onClick={() => toast.success("Draft saved") }>
                                 <Save className="w-4 h-4 mr-2" />
-                                Save
+                                <span className="hidden sm:inline">Save</span>
+                            </Button>
+                            <Button size="sm" className="rounded-full shadow-sm bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { initDeclarationChecks(); setShowAgreeModal(true); }}>
+                                <FileCheck className="w-4 h-4 mr-2" />
+                                <span className="hidden sm:inline">Submit</span>
                             </Button>
                             <Button
                                 variant="outline"
                                 size="sm"
+                                className="rounded-full shadow-sm"
+                                onClick={() => setShowDraftsModal(true)}
+                            >
+                                <span className="hidden sm:inline">Drafts</span>
+                                <span className="sm:hidden">Drfts</span>
+                            </Button>
+                            <Button size="sm" className="rounded-full shadow-sm" onClick={createNewDraft}>
+                                <span className="hidden sm:inline">New Form</span>
+                                <span className="sm:hidden">New</span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full shadow-sm"
                                 onClick={() => {
                                     setFormData({
                                         title: title || "GENERAL WORK PERMIT",
@@ -351,23 +548,32 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true }) => {
                                 }}
                             >
                                 <FileText className="w-4 h-4 mr-2" />
-                                Load Template
+                                <span className="hidden sm:inline">Load Template</span>
+                                <span className="sm:hidden">Template</span>
                             </Button>
+                            {/* Duplicate action will be shown on the list page, not here */}
                             <Button
                                 variant="outline"
                                 size="sm"
+                                className="rounded-full shadow-sm"
                                 onClick={() => setShowPrintView(!showPrintView)}
                             >
                                 <Printer className="w-4 h-4 mr-2" />
-                                {showPrintView ? "Builder" : "Print View"}
+                                <span className="hidden sm:inline">{showPrintView ? "Builder" : "Print View"}</span>
+                                <span className="sm:hidden">{showPrintView ? "Build" : "Print"}</span>
+                            </Button>
+                            <Button variant="ghost" size="sm" className="rounded-full" onClick={clearDraft}>
+                                <span className="hidden sm:inline">Clear Draft</span>
+                                <span className="sm:hidden">Clear</span>
                             </Button>
                             {showPrintView && (
                                 <Button
                                     size="sm"
+                                    className="rounded-full shadow-sm"
                                     onClick={() => window.print()}
                                 >
                                     <Printer className="w-4 h-4 mr-2" />
-                                    Print
+                                    <span className="hidden sm:inline">Print</span>
                                 </Button>
                             )}
                             {showPrintView && (
@@ -399,11 +605,76 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true }) => {
 
                 {/* Main Content */}
                 {showPrintView ? (
-                    <div className="flex-1 p-6">
-                        <PrintView formData={formData} />
+                    <div className="flex-1 overflow-auto bg-gray-50">
+                        <div className="ptw-preview-wrap">
+                            <PrintView formData={formData} />
+                        </div>
                     </div>
                 ) : (
                     <div className="flex-1 flex overflow-hidden">
+                        {/* Agreement Modal */}
+                        {showAgreeModal && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                                <div className="bg-white rounded-md shadow-lg w-full max-w-md p-6">
+                                    <h4 className="text-lg font-semibold mb-3">Declaration</h4>
+                                    <p className="text-sm text-gray-600 mb-3">Please confirm all declaration items. Items marked Mandatory must be checked.</p>
+                                    <div className="space-y-3 max-h-[60vh] overflow-y-auto mb-4">
+                                        {getDeclarationComponents().map((c) => (
+                                            <label key={c.id} className="text-sm inline-flex items-start space-x-2">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!declarationChecks[c.id]}
+                                                    onChange={(e) =>
+                                                        setDeclarationChecks((prev) => ({
+                                                            ...prev,
+                                                            [c.id]: e.target.checked,
+                                                        }))
+                                                    }
+                                                />
+                                                <span>
+                                                    {c.label}
+                                                    {c.required ? <span className="text-red-500 ml-1">(Mandatory)</span> : null}
+                                                </span>
+                                            </label>
+                                        ))}
+                                        {getDeclarationComponents().length === 0 && (
+                                            <div className="text-xs text-gray-500">No declaration items configured in this section.</div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center justify-end space-x-2">
+                                        <Button variant="outline" size="sm" onClick={() => setShowAgreeModal(false)}>Cancel</Button>
+                                        <Button size="sm" onClick={submitForm}>Confirm & Submit</Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {showDraftsModal && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                                <div className="bg-white rounded-md shadow-lg w-full max-w-2xl p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-lg font-semibold">Drafts</h4>
+                                        <Button variant="ghost" size="sm" onClick={() => setShowDraftsModal(false)}>Close</Button>
+                                    </div>
+                                    <div className="max-h-[60vh] overflow-y-auto divide-y">
+                                        {(JSON.parse(localStorage.getItem(DRAFTS_KEY) || "[]") || []).sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0)).map((d)=> (
+                                            <div key={d.id} className="py-3 flex items-center justify-between">
+                                                <div>
+                                                    <div className="font-medium">{d.title || "Untitled"}</div>
+                                                    <div className="text-xs text-gray-500">Updated {new Date(d.updatedAt||Date.now()).toLocaleString()}</div>
+                                                </div>
+                                                <div className="space-x-2">
+                                                    <Button variant="outline" size="sm" onClick={() => loadDraft(d.id)}>Open</Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => deleteDraft(d.id)}>Delete</Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {((JSON.parse(localStorage.getItem(DRAFTS_KEY) || "[]") || []).length === 0) && (
+                                            <div className="text-sm text-gray-500">No drafts yet.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         {/* Left Panel - Section Details */}
                         <div className="basis-3/4 min-w-0 p-6 border-r border-gray-200 overflow-y-auto">
                             <div className="flex items-center justify-between mb-6">

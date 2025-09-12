@@ -21,25 +21,65 @@ export const createCompany = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found")
     }
 
-    // const {hashedToken, unHashedToken, tokenExpiry} = generateTemporaryToken()
-
-    const company = await db.company.create({
-        data: {
-            compName,
-            email,
-            mobileNo,
-            description,
-            userId: user.id
+    // Check if company name already exists
+    const existingCompany = await db.company.findFirst({
+        where: {
+            compName
         }
     })
 
-    if (!company) {
-        throw new ApiError(401, "company creation failed")
+    if (existingCompany) {
+        throw new ApiError(409, "Company name already exists")
     }
 
-    return res
-        .status(201)
-        .json(new ApiResponse(201, company, "company created successfully"));
+    // Check if email already exists
+    const existingEmail = await db.company.findFirst({
+        where: {
+            email
+        }
+    })
+
+    if (existingEmail) {
+        throw new ApiError(409, "Email already exists")
+    }
+
+    const existingMobileNo = await db.company.findFirst({
+        where: {
+            mobileNo
+        }
+    })
+
+    if (existingMobileNo) {
+        throw new ApiError(409, "Mobile No already exists")
+    }
+
+    try {
+        const company = await db.company.create({
+            data: {
+                compName,
+                email,
+                mobileNo,
+                description,
+                userId: user.id
+            }
+        })
+
+        return res
+            .status(201)
+            .json(new ApiResponse(201, company, "company created successfully"));
+    } catch (error) {
+        if (error.code === 'P2002') {
+            // Handle unique constraint violations
+            if (error.meta?.target?.includes('compName')) {
+                throw new ApiError(409, "Company name already exists")
+            }
+            if (error.meta?.target?.includes('email')) {
+                throw new ApiError(409, "Email already exists")
+            }
+            throw new ApiError(409, "Company with this information already exists")
+        }
+        throw error
+    }
 })
 
 export const getCompanyByUser = asyncHandler(async (req, res) => {

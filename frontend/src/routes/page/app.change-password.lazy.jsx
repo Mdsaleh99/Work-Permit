@@ -1,5 +1,5 @@
 import React from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,12 +12,13 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/page/app/change-password")({
+export const Route = createLazyFileRoute("/page/app/change-password")({
     component: RouteComponent,
 });
 
@@ -89,31 +90,21 @@ function RouteComponent() {
                         )}
                         <div className="grid gap-3">
                             <Label htmlFor="oldPassword">Old Password</Label>
-                            <Input
+                            <PasswordInput
                                 id="oldPassword"
-                                type="password"
+                                register={register("oldPassword")}
                                 placeholder="******"
-                                {...register("oldPassword")}
+                                error={errors.oldPassword?.message}
                             />
-                            {errors.oldPassword && (
-                                <p className="text-red-500 text-sm">
-                                    {errors.oldPassword.message}
-                                </p>
-                            )}
                         </div>
                         <div className="grid gap-3">
                             <Label htmlFor="newPassword">New Password</Label>
-                            <Input
+                            <PasswordInput
                                 id="newPassword"
-                                type="password"
+                                register={register("newPassword")}
                                 placeholder="******"
-                                {...register("newPassword")}
+                                error={errors.newPassword?.message}
                             />
-                            {errors.newPassword && (
-                                <p className="text-red-500 text-sm">
-                                    {errors.newPassword.message}
-                                </p>
-                            )}
                         </div>
                         <Button
                             type="submit"

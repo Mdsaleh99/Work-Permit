@@ -45,7 +45,7 @@ export function SignInForm({ className, ...props }) {
         try {
             await signin(data)
             clearAuthError()
-            navigate({to: "/page/app/dashboard"})
+            navigate({to: "/company"})
         } catch (error) {
             // Map server field errors to form fields if provided
             if (Array.isArray(error?.errors)) {
