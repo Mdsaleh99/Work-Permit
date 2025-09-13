@@ -8,7 +8,8 @@ export const companyService = {
     },
     getCompanyByUser: async () => {
         const response = await axiosInstance.get("/company/get-company")
-
+        console.log(response.data);
+        
         return response.data.data
     }
 };

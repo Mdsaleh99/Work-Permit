@@ -32,6 +32,10 @@ enum WorkPermitComponentType {
   textarea
   date
   time
+  signature
+  table
+  header
+  logo
 }
 
 model User {
@@ -53,18 +57,20 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company        Company[]
+  company        Company?
   workPermitForm WorkPermitForm[]
+  workPermitDraft WorkPermitDraft[]
 }
 
 model Company {
   id             String           @id @default(uuid())
-  userId         String
+  userId         String           @unique
   compName       String           @unique
   description    String?
   email          String           @unique
   mobileNo       String           @unique
   workPermitForm WorkPermitForm[]
+  workPermitDraft WorkPermitDraft[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -93,7 +99,7 @@ model WorkPermitForm {
 model WorkPermitSection {
   id               String                       @id @default(uuid())
   workPermitFormId String
-  title            String @unique
+  title            String
   enabled          Boolean                      @default(true)
   components       WorkPermitSectionComponent[]
 
@@ -108,7 +114,7 @@ model WorkPermitSection {
 model WorkPermitSectionComponent {
   id                  String                  @id @default(uuid())
   workPermitSectionId String
-  label               String @unique
+  label               String
   type                WorkPermitComponentType @default(text)
   required            Boolean                 @default(true)
   enabled             Boolean                 @default(true)
@@ -120,4 +126,55 @@ model WorkPermitSectionComponent {
   workPermitSection WorkPermitSection @relation(fields: [workPermitSectionId], references: [id], onDelete: Cascade)
 
   @@index([workPermitSectionId])
+}
+
+// Draft Models for Work Permit Forms
+model WorkPermitDraft {
+  id        String              @id @default(uuid())
+  title     String
+  userId    String
+  companyId String
+  isAutoSave Boolean            @default(false) // true for auto-save, false for manual save
+  sections  WorkPermitDraftSection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([userId])
+  @@index([companyId])
+}
+
+model WorkPermitDraftSection {
+  id               String                       @id @default(uuid())
+  workPermitDraftId String
+  title            String
+  enabled          Boolean                      @default(true)
+  components       WorkPermitDraftComponent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workPermitDraft WorkPermitDraft @relation(fields: [workPermitDraftId], references: [id], onDelete: Cascade)
+
+  @@index([workPermitDraftId])
+}
+
+model WorkPermitDraftComponent {
+  id                  String                  @id @default(uuid())
+  workPermitDraftSectionId String
+  label               String
+  type                WorkPermitComponentType @default(text)
+  required            Boolean                 @default(true)
+  enabled             Boolean                 @default(true)
+  options             String[]                @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workPermitDraftSection WorkPermitDraftSection @relation(fields: [workPermitDraftSectionId], references: [id], onDelete: Cascade)
+
+  @@index([workPermitDraftSectionId])
 }

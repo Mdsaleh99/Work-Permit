@@ -27,7 +27,9 @@ import {
     FileText,
     Files,
     PencilRuler,
+    Plus,
 } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 
 const permitStats = [
     {
@@ -124,6 +126,16 @@ const permitsByLocation = [
 ];
 
 export function PermitsDashboard() {
+    const navigate = useNavigate();
+
+    const handleCreateNewForm = () => {
+        navigate({ to: "/page/app/form-builder" });
+    };
+
+    const handleViewWorkPermits = () => {
+        navigate({ to: "/page/app/work-permits" });
+    };
+
     return (
         <div className="p-6 space-y-6 bg-background min-h-screen">
             {/* Alert Notifications */}
@@ -187,10 +199,28 @@ export function PermitsDashboard() {
                                 19 - 23 Mar 2023
                             </p>
                         </div>
-                        <Button variant="outline" size="sm" className="self-start sm:self-auto">
-                            <Filter className="h-4 w-4 mr-2" />
-                            All Sites
-                        </Button>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <Button 
+                                onClick={handleCreateNewForm}
+                                size="sm" 
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create New Form
+                            </Button>
+                            <Button 
+                                onClick={handleViewWorkPermits}
+                                variant="outline" 
+                                size="sm"
+                            >
+                                <FileText className="h-4 w-4 mr-2" />
+                                View All Forms
+                            </Button>
+                            <Button variant="outline" size="sm" className="self-start sm:self-auto">
+                                <Filter className="h-4 w-4 mr-2" />
+                                All Sites
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Stats Cards */}

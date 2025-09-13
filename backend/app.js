@@ -11,6 +11,7 @@ import passport from "./passport/index.js"
 import userRouters from "./routes/user.routes.js";
 import companyRouters from "./routes/company.routes.js"
 import workPermitFormRouters from "./routes/workPermitForm.routes.js"
+import { workPermitDraftRouters } from "./routes/workPermitDraft.routes.js"
 
 dotenv.config()
 
@@ -44,6 +45,9 @@ app.use("/api/v1/company", companyRouters);
 
 // * work Permit Form routes
 app.use("/api/v1/work-permit", workPermitFormRouters);
+
+// * work Permit Draft routes
+app.use("/api/v1/work-permit-draft", workPermitDraftRouters);
 
 // * 404 handler
 app.use((req, res, next) => {

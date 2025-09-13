@@ -177,7 +177,7 @@ export const updateWorkPermitForm = asyncHandler(async (req, res) => {
     }
 
     // Use transaction for data consistency
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
         // 1. Update form basic info
         const updatedForm = await tx.workPermitForm.update({
             where: { id: workPermitFormId },
@@ -344,7 +344,7 @@ export const updateWorkPermitForm = asyncHandler(async (req, res) => {
         } else if (sections.length === 0) {
             // If sections array is empty, delete all existing sections
             await tx.workPermitSection.deleteMany({
-                where: { workPermitFormId: id },
+                where: { workPermitFormId: workPermitFormId },
             });
         }
 
@@ -372,5 +372,40 @@ export const updateWorkPermitForm = asyncHandler(async (req, res) => {
             result,
             "work permit form updated successfully"
         )
+    );
+});
+
+export const deleteWorkPermitForm = asyncHandler(async (req, res) => {
+    const { workPermitFormId } = req.params;
+    const userId = req.user.id;
+
+    if (!workPermitFormId) {
+        throw new ApiError(401, "work permit id is required");
+    }
+
+    if (!userId) {
+        throw new ApiError(401, "user id is required");
+    }
+
+    // Check if form exists and user has permission
+    const existingForm = await db.workPermitForm.findUnique({
+        where: { id: workPermitFormId },
+    });
+
+    if (!existingForm) {
+        throw new ApiError(404, "Work permit form not found");
+    }
+
+    if (existingForm.userId !== userId) {
+        throw new ApiError(403, "Unauthorized to delete this form");
+    }
+
+    // Delete the form (sections and components will be cascade deleted)
+    await db.workPermitForm.delete({
+        where: { id: workPermitFormId },
+    });
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Work permit form deleted successfully")
     );
 });

@@ -21,6 +21,13 @@ import { Route as AuthVerifyEmailSuccessVerificationTokenRouteImport } from './r
 import { Route as AuthResetPasswordResetTokenRouteImport } from './routes/auth/reset-password.$resetToken'
 
 const CompanyIndexLazyRouteImport = createFileRoute('/company/')()
+const AuthSsoCallbackLazyRouteImport = createFileRoute('/auth/sso-callback')()
+const AuthCreateCompanyLazyRouteImport = createFileRoute(
+  '/auth/create-company',
+)()
+const PageAppWorkPermitsLazyRouteImport = createFileRoute(
+  '/page/app/work-permits',
+)()
 const PageAppUserDashboardLazyRouteImport = createFileRoute(
   '/page/app/user-dashboard',
 )()
@@ -28,16 +35,25 @@ const PageAppPermitLazyRouteImport = createFileRoute('/page/app/permit')()
 const PageAppObservationLazyRouteImport = createFileRoute(
   '/page/app/observation',
 )()
+const PageAppFormBuilderLazyRouteImport = createFileRoute(
+  '/page/app/form-builder',
+)()
 const PageAppFleetManagementLazyRouteImport = createFileRoute(
   '/page/app/fleet-management',
 )()
 const PageAppDashboardLazyRouteImport = createFileRoute('/page/app/dashboard')()
+const PageAppCompanyDetailsLazyRouteImport = createFileRoute(
+  '/page/app/company-details',
+)()
 const PageAppChangePasswordLazyRouteImport = createFileRoute(
   '/page/app/change-password',
 )()
 const PageAppAuditLazyRouteImport = createFileRoute('/page/app/audit')()
 const PageAppPermitTypeLazyRouteImport = createFileRoute(
   '/page/app/permit/$type',
+)()
+const PageAppFormBuilderWorkPermitIdLazyRouteImport = createFileRoute(
+  '/page/app/form-builder/$workPermitId',
 )()
 
 const IndexRoute = IndexRouteImport.update({
@@ -50,6 +66,20 @@ const CompanyIndexLazyRoute = CompanyIndexLazyRouteImport.update({
   path: '/company/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/company/index.lazy').then((d) => d.Route))
+const AuthSsoCallbackLazyRoute = AuthSsoCallbackLazyRouteImport.update({
+  id: '/auth/sso-callback',
+  path: '/auth/sso-callback',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/auth/sso-callback.lazy').then((d) => d.Route),
+)
+const AuthCreateCompanyLazyRoute = AuthCreateCompanyLazyRouteImport.update({
+  id: '/auth/create-company',
+  path: '/auth/create-company',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/auth/create-company.lazy').then((d) => d.Route),
+)
 const PageAppRoute = PageAppRouteImport.update({
   id: '/page/app',
   path: '/page/app',
@@ -75,6 +105,13 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PageAppWorkPermitsLazyRoute = PageAppWorkPermitsLazyRouteImport.update({
+  id: '/work-permits',
+  path: '/work-permits',
+  getParentRoute: () => PageAppRoute,
+} as any).lazy(() =>
+  import('./routes/page/app.work-permits.lazy').then((d) => d.Route),
+)
 const PageAppUserDashboardLazyRoute =
   PageAppUserDashboardLazyRouteImport.update({
     id: '/user-dashboard',
@@ -97,6 +134,13 @@ const PageAppObservationLazyRoute = PageAppObservationLazyRouteImport.update({
 } as any).lazy(() =>
   import('./routes/page/app.observation.lazy').then((d) => d.Route),
 )
+const PageAppFormBuilderLazyRoute = PageAppFormBuilderLazyRouteImport.update({
+  id: '/form-builder',
+  path: '/form-builder',
+  getParentRoute: () => PageAppRoute,
+} as any).lazy(() =>
+  import('./routes/page/app.form-builder.lazy').then((d) => d.Route),
+)
 const PageAppFleetManagementLazyRoute =
   PageAppFleetManagementLazyRouteImport.update({
     id: '/fleet-management',
@@ -112,6 +156,14 @@ const PageAppDashboardLazyRoute = PageAppDashboardLazyRouteImport.update({
 } as any).lazy(() =>
   import('./routes/page/app.dashboard.lazy').then((d) => d.Route),
 )
+const PageAppCompanyDetailsLazyRoute =
+  PageAppCompanyDetailsLazyRouteImport.update({
+    id: '/company-details',
+    path: '/company-details',
+    getParentRoute: () => PageAppRoute,
+  } as any).lazy(() =>
+    import('./routes/page/app.company-details.lazy').then((d) => d.Route),
+  )
 const PageAppChangePasswordLazyRoute =
   PageAppChangePasswordLazyRouteImport.update({
     id: '/change-password',
@@ -146,6 +198,16 @@ const PageAppPermitTypeLazyRoute = PageAppPermitTypeLazyRouteImport.update({
 } as any).lazy(() =>
   import('./routes/page/app.permit.$type.lazy').then((d) => d.Route),
 )
+const PageAppFormBuilderWorkPermitIdLazyRoute =
+  PageAppFormBuilderWorkPermitIdLazyRouteImport.update({
+    id: '/$workPermitId',
+    path: '/$workPermitId',
+    getParentRoute: () => PageAppFormBuilderLazyRoute,
+  } as any).lazy(() =>
+    import('./routes/page/app.form-builder.$workPermitId.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -154,16 +216,22 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
+  '/auth/create-company': typeof AuthCreateCompanyLazyRoute
+  '/auth/sso-callback': typeof AuthSsoCallbackLazyRoute
   '/company': typeof CompanyIndexLazyRoute
   '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/change-password': typeof PageAppChangePasswordLazyRoute
+  '/page/app/company-details': typeof PageAppCompanyDetailsLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
+  '/page/app/form-builder': typeof PageAppFormBuilderLazyRouteWithChildren
   '/page/app/observation': typeof PageAppObservationLazyRoute
   '/page/app/permit': typeof PageAppPermitLazyRouteWithChildren
   '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
+  '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
+  '/page/app/form-builder/$workPermitId': typeof PageAppFormBuilderWorkPermitIdLazyRoute
   '/page/app/permit/$type': typeof PageAppPermitTypeLazyRoute
 }
 export interface FileRoutesByTo {
@@ -173,16 +241,22 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
+  '/auth/create-company': typeof AuthCreateCompanyLazyRoute
+  '/auth/sso-callback': typeof AuthSsoCallbackLazyRoute
   '/company': typeof CompanyIndexLazyRoute
   '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/change-password': typeof PageAppChangePasswordLazyRoute
+  '/page/app/company-details': typeof PageAppCompanyDetailsLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
+  '/page/app/form-builder': typeof PageAppFormBuilderLazyRouteWithChildren
   '/page/app/observation': typeof PageAppObservationLazyRoute
   '/page/app/permit': typeof PageAppPermitLazyRouteWithChildren
   '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
+  '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
+  '/page/app/form-builder/$workPermitId': typeof PageAppFormBuilderWorkPermitIdLazyRoute
   '/page/app/permit/$type': typeof PageAppPermitTypeLazyRoute
 }
 export interface FileRoutesById {
@@ -193,16 +267,22 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
+  '/auth/create-company': typeof AuthCreateCompanyLazyRoute
+  '/auth/sso-callback': typeof AuthSsoCallbackLazyRoute
   '/company/': typeof CompanyIndexLazyRoute
   '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/change-password': typeof PageAppChangePasswordLazyRoute
+  '/page/app/company-details': typeof PageAppCompanyDetailsLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
+  '/page/app/form-builder': typeof PageAppFormBuilderLazyRouteWithChildren
   '/page/app/observation': typeof PageAppObservationLazyRoute
   '/page/app/permit': typeof PageAppPermitLazyRouteWithChildren
   '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
+  '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
+  '/page/app/form-builder/$workPermitId': typeof PageAppFormBuilderWorkPermitIdLazyRoute
   '/page/app/permit/$type': typeof PageAppPermitTypeLazyRoute
 }
 export interface FileRouteTypes {
@@ -214,16 +294,22 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
+    | '/auth/create-company'
+    | '/auth/sso-callback'
     | '/company'
     | '/auth/reset-password/$resetToken'
     | '/auth/verify-email-success/$verificationToken'
     | '/page/app/audit'
     | '/page/app/change-password'
+    | '/page/app/company-details'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
+    | '/page/app/form-builder'
     | '/page/app/observation'
     | '/page/app/permit'
     | '/page/app/user-dashboard'
+    | '/page/app/work-permits'
+    | '/page/app/form-builder/$workPermitId'
     | '/page/app/permit/$type'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -233,16 +319,22 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
+    | '/auth/create-company'
+    | '/auth/sso-callback'
     | '/company'
     | '/auth/reset-password/$resetToken'
     | '/auth/verify-email-success/$verificationToken'
     | '/page/app/audit'
     | '/page/app/change-password'
+    | '/page/app/company-details'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
+    | '/page/app/form-builder'
     | '/page/app/observation'
     | '/page/app/permit'
     | '/page/app/user-dashboard'
+    | '/page/app/work-permits'
+    | '/page/app/form-builder/$workPermitId'
     | '/page/app/permit/$type'
   id:
     | '__root__'
@@ -252,16 +344,22 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
+    | '/auth/create-company'
+    | '/auth/sso-callback'
     | '/company/'
     | '/auth/reset-password/$resetToken'
     | '/auth/verify-email-success/$verificationToken'
     | '/page/app/audit'
     | '/page/app/change-password'
+    | '/page/app/company-details'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
+    | '/page/app/form-builder'
     | '/page/app/observation'
     | '/page/app/permit'
     | '/page/app/user-dashboard'
+    | '/page/app/work-permits'
+    | '/page/app/form-builder/$workPermitId'
     | '/page/app/permit/$type'
   fileRoutesById: FileRoutesById
 }
@@ -272,6 +370,8 @@ export interface RootRouteChildren {
   AuthSignupRoute: typeof AuthSignupRoute
   AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
   PageAppRoute: typeof PageAppRouteWithChildren
+  AuthCreateCompanyLazyRoute: typeof AuthCreateCompanyLazyRoute
+  AuthSsoCallbackLazyRoute: typeof AuthSsoCallbackLazyRoute
   CompanyIndexLazyRoute: typeof CompanyIndexLazyRoute
   AuthResetPasswordResetTokenRoute: typeof AuthResetPasswordResetTokenRoute
   AuthVerifyEmailSuccessVerificationTokenRoute: typeof AuthVerifyEmailSuccessVerificationTokenRoute
@@ -291,6 +391,20 @@ declare module '@tanstack/react-router' {
       path: '/company'
       fullPath: '/company'
       preLoaderRoute: typeof CompanyIndexLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/sso-callback': {
+      id: '/auth/sso-callback'
+      path: '/auth/sso-callback'
+      fullPath: '/auth/sso-callback'
+      preLoaderRoute: typeof AuthSsoCallbackLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/create-company': {
+      id: '/auth/create-company'
+      path: '/auth/create-company'
+      fullPath: '/auth/create-company'
+      preLoaderRoute: typeof AuthCreateCompanyLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/page/app': {
@@ -328,6 +442,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/page/app/work-permits': {
+      id: '/page/app/work-permits'
+      path: '/work-permits'
+      fullPath: '/page/app/work-permits'
+      preLoaderRoute: typeof PageAppWorkPermitsLazyRouteImport
+      parentRoute: typeof PageAppRoute
+    }
     '/page/app/user-dashboard': {
       id: '/page/app/user-dashboard'
       path: '/user-dashboard'
@@ -349,6 +470,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PageAppObservationLazyRouteImport
       parentRoute: typeof PageAppRoute
     }
+    '/page/app/form-builder': {
+      id: '/page/app/form-builder'
+      path: '/form-builder'
+      fullPath: '/page/app/form-builder'
+      preLoaderRoute: typeof PageAppFormBuilderLazyRouteImport
+      parentRoute: typeof PageAppRoute
+    }
     '/page/app/fleet-management': {
       id: '/page/app/fleet-management'
       path: '/fleet-management'
@@ -361,6 +489,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/page/app/dashboard'
       preLoaderRoute: typeof PageAppDashboardLazyRouteImport
+      parentRoute: typeof PageAppRoute
+    }
+    '/page/app/company-details': {
+      id: '/page/app/company-details'
+      path: '/company-details'
+      fullPath: '/page/app/company-details'
+      preLoaderRoute: typeof PageAppCompanyDetailsLazyRouteImport
       parentRoute: typeof PageAppRoute
     }
     '/page/app/change-password': {
@@ -398,8 +533,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PageAppPermitTypeLazyRouteImport
       parentRoute: typeof PageAppPermitLazyRoute
     }
+    '/page/app/form-builder/$workPermitId': {
+      id: '/page/app/form-builder/$workPermitId'
+      path: '/$workPermitId'
+      fullPath: '/page/app/form-builder/$workPermitId'
+      preLoaderRoute: typeof PageAppFormBuilderWorkPermitIdLazyRouteImport
+      parentRoute: typeof PageAppFormBuilderLazyRoute
+    }
   }
 }
+
+interface PageAppFormBuilderLazyRouteChildren {
+  PageAppFormBuilderWorkPermitIdLazyRoute: typeof PageAppFormBuilderWorkPermitIdLazyRoute
+}
+
+const PageAppFormBuilderLazyRouteChildren: PageAppFormBuilderLazyRouteChildren =
+  {
+    PageAppFormBuilderWorkPermitIdLazyRoute:
+      PageAppFormBuilderWorkPermitIdLazyRoute,
+  }
+
+const PageAppFormBuilderLazyRouteWithChildren =
+  PageAppFormBuilderLazyRoute._addFileChildren(
+    PageAppFormBuilderLazyRouteChildren,
+  )
 
 interface PageAppPermitLazyRouteChildren {
   PageAppPermitTypeLazyRoute: typeof PageAppPermitTypeLazyRoute
@@ -415,21 +572,27 @@ const PageAppPermitLazyRouteWithChildren =
 interface PageAppRouteChildren {
   PageAppAuditLazyRoute: typeof PageAppAuditLazyRoute
   PageAppChangePasswordLazyRoute: typeof PageAppChangePasswordLazyRoute
+  PageAppCompanyDetailsLazyRoute: typeof PageAppCompanyDetailsLazyRoute
   PageAppDashboardLazyRoute: typeof PageAppDashboardLazyRoute
   PageAppFleetManagementLazyRoute: typeof PageAppFleetManagementLazyRoute
+  PageAppFormBuilderLazyRoute: typeof PageAppFormBuilderLazyRouteWithChildren
   PageAppObservationLazyRoute: typeof PageAppObservationLazyRoute
   PageAppPermitLazyRoute: typeof PageAppPermitLazyRouteWithChildren
   PageAppUserDashboardLazyRoute: typeof PageAppUserDashboardLazyRoute
+  PageAppWorkPermitsLazyRoute: typeof PageAppWorkPermitsLazyRoute
 }
 
 const PageAppRouteChildren: PageAppRouteChildren = {
   PageAppAuditLazyRoute: PageAppAuditLazyRoute,
   PageAppChangePasswordLazyRoute: PageAppChangePasswordLazyRoute,
+  PageAppCompanyDetailsLazyRoute: PageAppCompanyDetailsLazyRoute,
   PageAppDashboardLazyRoute: PageAppDashboardLazyRoute,
   PageAppFleetManagementLazyRoute: PageAppFleetManagementLazyRoute,
+  PageAppFormBuilderLazyRoute: PageAppFormBuilderLazyRouteWithChildren,
   PageAppObservationLazyRoute: PageAppObservationLazyRoute,
   PageAppPermitLazyRoute: PageAppPermitLazyRouteWithChildren,
   PageAppUserDashboardLazyRoute: PageAppUserDashboardLazyRoute,
+  PageAppWorkPermitsLazyRoute: PageAppWorkPermitsLazyRoute,
 }
 
 const PageAppRouteWithChildren =
@@ -442,6 +605,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSignupRoute: AuthSignupRoute,
   AuthVerifyEmailRoute: AuthVerifyEmailRoute,
   PageAppRoute: PageAppRouteWithChildren,
+  AuthCreateCompanyLazyRoute: AuthCreateCompanyLazyRoute,
+  AuthSsoCallbackLazyRoute: AuthSsoCallbackLazyRoute,
   CompanyIndexLazyRoute: CompanyIndexLazyRoute,
   AuthResetPasswordResetTokenRoute: AuthResetPasswordResetTokenRoute,
   AuthVerifyEmailSuccessVerificationTokenRoute:

@@ -209,13 +209,15 @@ export default function UserDashboard() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
+                            <Link to={"/page/app/company-details"}>
                             <Button
                                 variant="outline"
-                                className="w-full justify-start cursor-pointer"
+                                className="w-full mb-2 justify-start cursor-pointer"
                             >
                                 <UserPen className="w-4 h-4 mr-2" />
                                 Company Details
                             </Button>
+                            </Link>
                             <Link to={"/page/app/change-password"}>
                                 <Button
                                     variant="outline"

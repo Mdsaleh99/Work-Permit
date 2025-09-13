@@ -18,7 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "lucide-react";
-import { authService } from "@/services/auth.service";
+import { useCompanyStore } from "@/store/useCompanyStore";
 
 const SignInSchema = z.object({
     email: z.email({ error: "incorrect email or password" }),
@@ -27,15 +27,30 @@ const SignInSchema = z.object({
 
 export function SignInForm({ className, ...props }) {
     const { register, handleSubmit, formState: { errors }, setError } = useForm({ resolver: zodResolver(SignInSchema) })
-    const {isSignIn, signin, authError, clearAuthError, googleAuth} = useAuthStore()
+    const { isSignIn, signin, authError, clearAuthError, googleAuth } = useAuthStore()
+    const { getCompanyByUser } = useCompanyStore();
     const navigate = useNavigate();
     const search = useSearch({ from: "/auth/signin" })
+
+
+
+    // const targetHref = companyData ? "/page/app/dashboard" : "/company";
+    // console.log("companyData in signin before useEffect: ", companyData);
+    // console.log("targetHref in signin before useEffect: ", targetHref);
+    
 
     React.useEffect(() => {
         // Clear any stale errors when landing on the page or when query changes
         clearAuthError()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [search?.from])
+
+    // React.useEffect(() => {
+    //     getCompanyByUser()
+    // }, [])
+
+    // console.log("signin companyData: ", companyData);
+    
 
     // useSearch() is a TanStack Router hook to read search params (query string) from the URL. It auto-syncs with the router and gives you type-safety if your route defines search params.
     // useLocation() gives you the current location object of the router. Think of it as React Router’s useLocation, but typed and reactive.
@@ -45,7 +60,26 @@ export function SignInForm({ className, ...props }) {
         try {
             await signin(data)
             clearAuthError()
-            navigate({to: "/company"})
+            
+            // After successful signin, check if user has a company
+            try {
+                const company = await getCompanyByUser();
+                if (company) {
+                    // User has a company, go to dashboard
+                    navigate({to: "/page/app/dashboard"});
+                } else {
+                    // User doesn't have a company, go to create company
+                    navigate({to: "/company/"});
+                }
+            } catch (companyError) {
+                // If 404 error, user doesn't have a company
+                if (companyError.response?.status === 404) {
+                    navigate({to: "/company/"});
+                } else {
+                    // For other errors, still go to dashboard and let it handle the error
+                    navigate({to: "/page/app/dashboard"});
+                }
+            }
         } catch (error) {
             // Map server field errors to form fields if provided
             if (Array.isArray(error?.errors)) {

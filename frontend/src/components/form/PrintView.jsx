@@ -1,11 +1,120 @@
 import React from "react";
 import { format } from "date-fns";
 
-// Fixed, single-page template to match the provided reference exactly
-const PrintView = () => {
+// COMPONENT JSX (No changes, this logic is stable)
+const PrintView = ({ formData, customSectionNames = {} }) => {
+    if (!formData) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <p className="text-gray-500">No form data available</p>
+            </div>
+        );
+    }
+    
+    const getSectionDisplayName = (sectionId) => {
+        if (customSectionNames[sectionId]) {
+            return customSectionNames[sectionId].toUpperCase();
+        }
+        const defaultDisplayNames = {
+            'work-description': 'WORK DESCRIPTION',
+            'tools-equipment': 'TOOLS & EQUIPMENT',
+            'ppe-checklist': 'PPE',
+            'hazard-identification': 'HAZARD IDENTIFICATION',
+            'certificate': 'CERTIFICATE',
+            'safe-system-work': 'SSOW',
+            'last-minute-risk': 'LMRA',
+            'declaration': 'DECLARATION',
+            'opening-ptw': 'OPENING/PTW',
+            'closure': 'CLOSURE'
+        };
+        return defaultDisplayNames[sectionId] || sectionId.toUpperCase();
+    };
+
+    const renderComponent = (component, sectionId) => {
+        // This entire function is stable and correct. No changes.
+        switch (component.type) {
+            case 'text':
+                return (
+                    <div className={`ptw-component-inner ${['work-description', 'tools-equipment', 'certificate'].includes(sectionId) ? 'ptw-field-horizontal' : ''}`}>
+                        <div className="ptw-label">{component.label}:</div>
+                        <div className="ptw-input-line"></div>
+                    </div>
+                );
+            case 'textarea':
+                return (
+                    <div className="ptw-component-inner">
+                        <div className="ptw-label">{component.label}:</div>
+                        <div className="ptw-textarea"></div>
+                    </div>
+                );
+            case 'date':
+                return (
+                    <div className={`ptw-component-inner ${['work-description', 'declaration', 'opening-ptw', 'closure'].includes(sectionId) ? 'ptw-field-horizontal' : ''}`}>
+                        <div className="ptw-label">{component.label}:</div>
+                        <div className="ptw-input-line"></div>
+                    </div>
+                );
+            case 'time':
+                 return (
+                    <div className={`ptw-component-inner ${['work-description', 'opening-ptw', 'closure'].includes(sectionId) ? 'ptw-field-horizontal' : ''}`}>
+                        <div className="ptw-label">{component.label}:</div>
+                        <div className="ptw-input-line"></div>
+                    </div>
+                );
+            case 'checkbox':
+                return (
+                    <div className="ptw-component-inner">
+                        <div className="ptw-label mb-2">{component.label}:</div>
+                        <div className="ptw-checkbox-grid">
+                            {component.options && component.options.map((option, index) => (
+                                <div key={index} className="ptw-checkbox-item">
+                                    <div className="ptw-checkbox">☐</div>
+                                    <span className="ptw-checkbox-label">{option}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            case 'radio':
+                return (
+                    <div className="ptw-component-inner">
+                        <div className="ptw-label mb-2">{component.label}:</div>
+                        <div className="ptw-radio-group">
+                            {component.options && component.options.map((option, index) => (
+                                <div key={index} className="ptw-radio-item">
+                                    <div className="ptw-radio">□</div>
+                                    <span className="ptw-radio-label">{option}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            case 'signature':
+                 return (
+                    <div className={`ptw-component-inner ptw-field-horizontal`}>
+                        <div className="ptw-label">{component.label}:</div>
+                        <div className="ptw-signature-line"></div>
+                    </div>
+                );
+            case 'header':
+                return (
+                    <div className="ptw-component-inner">
+                        <div className="ptw-section-subtitle">{component.label}</div>
+                    </div>
+                );
+            default:
+                return (
+                    <div className="ptw-component-inner">
+                        <div className="ptw-label">{component.label}:</div>
+                        <div className="ptw-input-line"></div>
+                    </div>
+                );
+        }
+    };
+
     return (
         <div className="ptw-form-print no-print:w-[210mm] no-print:mx-auto no-print:bg-white no-print:shadow no-print:p-2">
-            {/* Header */}
+            {/* Header, Main Content, and Footer will now stack as simple blocks */ }
             <div className="ptw-header">
                 <div className="ptw-header-left">
                     <div className="ptw-doc-info">
@@ -15,7 +124,7 @@ const PrintView = () => {
                     </div>
                 </div>
                 <div className="ptw-header-center">
-                    <div className="ptw-title">GENERAL WORK PERMIT</div>
+                    <div className="ptw-title">{formData.title || "GENERAL WORK PERMIT"}</div>
                 </div>
                 <div className="ptw-header-right">
                     <div className="ptw-logo">
@@ -24,272 +133,248 @@ const PrintView = () => {
                 </div>
             </div>
 
-            {/* WORK DESCRIPTION */}
-            <div className="ptw-section" data-section="work-description">
-                <div className="ptw-section-label">WORK DESCRIPTION</div>
-                <div className="ptw-section-content">
-                    <div className="grid grid-cols-2 gap-2">
-                        <div>
-                            <div className="ptw-label">Work Order No.:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">Work Permit No.:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">Division/Department.:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">Area of Work.:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">Location.:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">Work Starting Date.:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">Time.:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">Work Ending Date.:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div className="col-span-2">
-                            <div className="ptw-label">Description Of the Work.:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* TOOLS & EQUIPMENT */}
-            <div className="ptw-section" data-section="tools-equipment">
-                <div className="ptw-section-label">TOOLS & EQUIPMENT</div>
-                <div className="ptw-section-content">
-                    <div className="ptw-label">
-                        LISTING OF IDENTIFIED TOOLS AND/OR EQUIPMENT TO BE USED FOR THE ACTIVITY.:
-                    </div>
-                    <div className="ptw-table">
-                        <div className="ptw-table-header">
-                            {Array.from({ length: 6 }).map((_, i) => (
-                                <div key={i} className="ptw-table-cell">{i + 1}</div>
-                            ))}
-                        </div>
-                        <div className="ptw-table-row">
-                            {Array.from({ length: 6 }).map((_, i) => (
-                                <div key={i} className="ptw-table-cell">
-                                    <div className="ptw-textarea-line"></div>
-                                    <div className="ptw-textarea-line"></div>
+            <div className="ptw-main-content">
+                {formData.sections && formData.sections.length > 0 ? (
+                    formData.sections
+                        .filter(section => section.enabled !== false)
+                        .map((section) => (
+                            <div key={section.id} className="ptw-section-row" data-section={section.id}>
+                                <div className="ptw-sidebar-label-wrapper">
+                                    <div className="ptw-sidebar-label">
+                                        {getSectionDisplayName(section.id)}
+                                    </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* PPE CHECKLIST */}
-            <div className="ptw-section" data-section="ppe">
-                <div className="ptw-section-label">PPE CHECKLIST</div>
-                <div className="ptw-section-content">
-                    <div className="ptw-label">
-                        PERSONAL PROTECTIVE EQUIPMENT (CROSS WITH AN X)::
-                    </div>
-                    <div className="ptw-checkbox-grid">
-                        {[
-                            'Helmet','Welder\'s Helmet','Welder\'s Apron','Work Clothes','Dust Mask',
-                            'Hear Protectors','Emergency Respirator','Protective Goggles','Safety Belts','Gas Mask',
-                            'Safety Shoes','Anti-Dust Overalls','Dielectric Boots','Dielectric Gloves','Rubber Safety Boots',
-                            'Welders Breeches','Safety Harness','Safety Gloves','Safety Glasses','H2S Mask',
-                        ].map((label, idx) => (
-                            <div key={idx} className="ptw-checkbox-item">
-                                <div className="ptw-checkbox">☐</div>
-                                <span className="ptw-checkbox-label">{label}</span>
+                                <div className="ptw-content-wrapper">
+                                    {section.components && section.components.length > 0 ? (
+                                        <div className="ptw-component-wrapper">
+                                            {section.components
+                                                .filter(component => component.enabled !== false)
+                                                .map((component) => (
+                                                    <div key={component.id} className="ptw-component">
+                                                        {renderComponent(component, section.id)}
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    ) : (
+                                        <div className="ptw-label text-gray-500">No components configured.</div>
+                                    )}
+                                </div>
                             </div>
-                        ))}
+                        ))
+                ) : (
+                    <div className="ptw-section-row">
+                         <div className="ptw-sidebar-label-wrapper">
+                             <div className="ptw-sidebar-label">NO SECTIONS</div>
+                         </div>
+                         <div className="ptw-content-wrapper">
+                             <div className="ptw-label text-gray-500">No sections have been configured.</div>
+                         </div>
                     </div>
-                    <div className="ptw-label mt-1">Other Safety Measures::</div>
-                    <div className="ptw-input-line"></div>
-                </div>
+                )}
             </div>
 
-            {/* HAZARD IDENTIFICATION */}
-            <div className="ptw-section" data-section="hazard-identification">
-                <div className="ptw-section-label">HAZARD IDENTIFICATION</div>
-                <div className="ptw-section-content">
-                    <div className="ptw-label">HAZARD IDENTIFICATION (CROSS WITH AN X)::</div>
-                    <div className="ptw-checkbox-grid" style={{gridTemplateColumns:'repeat(5,1fr)'}}>
-                        {[
-                            'Hand tools inspected','Work area barricaded','Required PPE worn','Worker competent','Worker Fit-To-Work',
-                            'Slip/Trip and Fall','Dust, fumes or mist','Risk of Fall','Noise','Vibration',
-                            'Pinch Points','Fall of objects','Illumination','Blind spots','Visibility',
-                            'Electrical hazards','Use of chemical','Release of energy','Release of pressure','Likelihood of fire',
-                        ].map((label, idx) => (
-                            <div key={idx} className="ptw-checkbox-item">
-                                <div className="ptw-checkbox">☐</div>
-                                <span className="ptw-checkbox-label">{label}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* SAFE SYSTEMS OF WORK / CERTIFICATE REQUIREMENTS */}
-            <div className="ptw-section" data-section="ssow">
-                <div className="ptw-section-label">SSOW</div>
-                <div className="ptw-section-content">
-                    <div className="grid grid-cols-3 gap-1">
-                        <div>
-                            <div className="ptw-label">Is Electrical Certificate Required?</div>
-                            <div className="ptw-radio-group"><div className="ptw-radio">□</div><span className="ptw-radio-label">Yes</span><div className="ptw-radio">□</div><span className="ptw-radio-label">No</span><div className="ptw-radio">□</div><span className="ptw-radio-label">N/A</span></div>
-                            <div className="ptw-label">If Yes Certificate Number:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">Is Excavation Certificate Required?</div>
-                            <div className="ptw-radio-group"><div className="ptw-radio">□</div><span className="ptw-radio-label">Yes</span><div className="ptw-radio">□</div><span className="ptw-radio-label">No</span><div className="ptw-radio">□</div><span className="ptw-radio-label">N/A</span></div>
-                            <div className="ptw-label">If Yes Certificate Number:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">Is Radiography Certificate Required?</div>
-                            <div className="ptw-radio-group"><div className="ptw-radio">□</div><span className="ptw-radio-label">Yes</span><div className="ptw-radio">□</div><span className="ptw-radio-label">No</span><div className="ptw-radio">□</div><span className="ptw-radio-label">N/A</span></div>
-                            <div className="ptw-label">If Yes Certificate Number:</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-1 mt-1">
-                        <div className="ptw-label">Has Toolbox Talk been conducted?</div>
-                        <div className="ptw-label">Has the scope of work been explained to workers?</div>
-                        <div className="ptw-label">Is the Risk Assessment attached or explained?</div>
-                        {[0,1,2].map((i)=> (
-                            <div key={i} className="ptw-radio-group"><div className="ptw-radio">□</div><span className="ptw-radio-label">Yes</span><div className="ptw-radio">□</div><span className="ptw-radio-label">No</span></div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* LAST MINUTE RISK ASSESSMENT */}
-            <div className="ptw-section" data-section="lmra">
-                <div className="ptw-section-label">LMRA</div>
-                <div className="ptw-section-content">
-                    <div className="grid grid-cols-2 gap-1">
-                        <div>
-                            {["Is access / egress adequate.","Is lighting adequate for the activity.","Do workers understand the task.","Is the task safe to do in today's weather condition"].map((q,idx)=> (
-                                <div key={idx} className="flex items-center justify-between">
-                                    <span className="ptw-label" style={{width:'70%'}}>{q}</span>
-                                    <div className="ptw-radio-group"><div className="ptw-radio">□</div><span className="ptw-radio-label">Yes</span><div className="ptw-radio">□</div><span className="ptw-radio-label">No</span></div>
-                                </div>
-                            ))}
-                        </div>
-                        <div>
-                            {["Are all tools inspected by the user.","Is the work area clear of tripping hazards.","Are the workers aware of emergency procedure.","Are the emergency escape routes established?"].map((q,idx)=> (
-                                <div key={idx} className="flex items-center justify-between">
-                                    <span className="ptw-label" style={{width:'60%'}}>{q}</span>
-                                    <div className="ptw-radio-group"><div className="ptw-radio">□</div><span className="ptw-radio-label">Yes</span><div className="ptw-radio">□</div><span className="ptw-radio-label">No</span></div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* DECLARATION */}
-            <div className="ptw-section" data-section="declaration">
-                <div className="ptw-section-label">DECLARATION</div>
-                <div className="ptw-section-content">
-                    <div className="grid grid-cols-2 gap-1">
-                        <div>
-                            <div className="ptw-label">Site Preparation completed and work can commence.</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">I fully understand the safety precaution to be taken as described above.</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 mt-1">
-                        <div className="grid grid-cols-3 gap-1 items-end">
-                            <div className="ptw-label">Permit Issuing Authority</div>
-                            <div className="ptw-input-line"></div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1 items-end">
-                            <div className="ptw-label">Permit Receiving Authority</div>
-                            <div className="ptw-input-line"></div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* OPENING OF PERMIT TO WORK */}
-            <div className="ptw-section" data-section="opening-ptw">
-                <div className="ptw-section-label">OPENING PTW</div>
-                <div className="ptw-section-content">
-                    <div className="ptw-label">
-                        The below signed persons are responsible for ensuring the work is performed under all the conditions mentioned and required safety precautions.
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mt-1">
-                        <div>
-                            <div className="ptw-label">Permit Issuing Authority Name:</div>
-                            <div className="ptw-input-line"></div>
-                            <div className="ptw-label">Permit Issuing Authority Sign:</div>
-                            <div className="ptw-input-line"></div>
-                            <div className="grid grid-cols-2 gap-2"><div><div className="ptw-label">Date:</div><div className="ptw-input-line"></div></div><div><div className="ptw-label">Time:</div><div className="ptw-input-line"></div></div></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">Permit Receiving Authority Name:</div>
-                            <div className="ptw-input-line"></div>
-                            <div className="ptw-label">Permit Receiving Authority Sign:</div>
-                            <div className="ptw-input-line"></div>
-                            <div className="grid grid-cols-2 gap-2"><div><div className="ptw-label">Date:</div><div className="ptw-input-line"></div></div><div><div className="ptw-label">Time:</div><div className="ptw-input-line"></div></div></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* CLOSURE */}
-            <div className="ptw-section" data-section="closure">
-                <div className="ptw-section-label">CLOSURE</div>
-                <div className="ptw-section-content">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <div className="ptw-label">The Work is completed and working area cleared.</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div>
-                            <div className="ptw-label">The Work is completed and working area cleared.</div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6 mt-1">
-                        <div className="grid grid-cols-3 gap-2 items-end">
-                            <div className="ptw-label">Permit Issuing Authority</div>
-                            <div className="ptw-input-line"></div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 items-end">
-                            <div className="ptw-label">Permit Receiving Authority</div>
-                            <div className="ptw-input-line"></div>
-                            <div className="ptw-input-line"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Footer */}
             <div className="ptw-footer">
-                <div>The permit content fits on one A4 page.</div>
-                <div>Page 1 of 1</div>
+                <div className="ptw-footer-content">
+                    <div>The permit content fits on one A4 page.</div>
+                    <div>Page 1 of X</div>
+                </div>
             </div>
+
+            {/* ================================================================
+            === CSS UPDATED TO USE BLOCK LAYOUT FOR PRINTING =================
+            ================================================================ */}
+            <style jsx>{`
+                /* --- Base Form & Header --- */
+                .ptw-form-print {
+                    width: 210mm;
+                    min-height: 297mm; /* Set a min-height for screen, but allow it to grow */
+                    margin: 0 auto;
+                    background: white;
+                    font-family: Arial, sans-serif;
+                    font-size: 10px;
+                    line-height: 1.2;
+                    color: #000;
+                    border: 2px solid #000;
+                    box-sizing: border-box;
+                    /* REMOVED: display: flex and flex-direction. Let it be a simple block. */
+                }
+                .ptw-header {
+                    display: flex; /* Flex is fine INSIDE the header */
+                    justify-content: space-between;
+                    align-items: center;
+                    border-bottom: 2px solid #000;
+                    padding: 8px;
+                    box-sizing: border-box;
+                    page-break-inside: avoid; /* Don't split the header */
+                }
+                .ptw-header-left { flex: 1; }
+                .ptw-doc-info div { font-size: 9px; }
+                .ptw-header-center { flex: 2; text-align: center; }
+                .ptw-title { font-size: 18px; font-weight: bold; text-transform: uppercase; }
+                .ptw-header-right { flex: 1; text-align: right; }
+                .ptw-logo-text { font-size: 12px; font-weight: bold; color: #0066cc; }
+
+                /* --- Core Row Layout --- */
+                .ptw-main-content {
+                    /* REMOVED: display: flex, flex-direction, and flex: 1 */
+                    /* This is now just a simple div, allowing its children to break across pages */
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+                .ptw-section-row {
+                    display: flex; /* Flex is needed HERE to put label + content side-by-side */
+                    flex-direction: row;
+                    border-bottom: 1px solid #999;
+                    width: 100%;
+                    box-sizing: border-box;
+                    page-break-inside: avoid !important; /* This rule will now work */
+                }
+                .ptw-section-row:last-child { border-bottom: none; }
+
+                /* 1. Sidebar Label Wrapper */
+                .ptw-sidebar-label-wrapper {
+                    width: 25mm;
+                    flex-shrink: 0;
+                    border-right: 2px solid #000;
+                    background: #333;
+                    color: #fff;
+                    display: flex; /* Use flex to center the vertical text */
+                    align-items: center;
+                    justify-content: center;
+                    padding: 4px 0;
+                    box-sizing: border-box;
+                }
+                .ptw-sidebar-label {
+                    writing-mode: vertical-rl;
+                    transform: rotate(180deg);
+                    font-size: 10px;
+                    font-weight: bold;
+                    text-align: center;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    padding: 8px 0;
+                }
+                
+                /* 2. Content Wrapper */
+                .ptw-content-wrapper {
+                    flex: 1 1 auto;
+                    padding: 8px 10px;
+                    background: #fff;
+                    box-sizing: border-box;
+                    width: calc(100% - 25mm);
+                }
+                
+                .ptw-component-wrapper {
+                     display: flex;
+                     flex-direction: column;
+                     gap: 4px;
+                }
+                .ptw-component-inner { width: 100%; }
+
+                /* --- Base Component Styles --- */
+                .ptw-label { font-size: 9px; font-weight: bold; margin-bottom: 2px; display: block; }
+                .ptw-input-line { border-bottom: 1px solid #000; height: 12px; margin-bottom: 5px; }
+                .ptw-textarea { border: 1px solid #000; height: 30px; margin-bottom: 5px; }
+                .ptw-signature-line { border-bottom: 1px solid #000; height: 20px; margin-bottom: 5px; }
+                .ptw-checkbox-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+                .ptw-checkbox-item, .ptw-radio-item { display: flex; align-items: center; font-size: 9px; }
+                .ptw-checkbox, .ptw-radio { margin-right: 4px; font-size: 11px; }
+                .ptw-checkbox-label, .ptw-radio-label { font-size: 9px; }
+                .ptw-radio-group { display: flex; gap: 12px; }
+                .ptw-section-subtitle { font-weight: bold; font-size: 9px; }
+
+                .ptw-footer { 
+                    border-top: 2px solid #000; 
+                    padding: 5px 8px; 
+                    box-sizing: border-box; 
+                    page-break-inside: avoid; /* Don't split the footer */
+                }
+                .ptw-footer-content { display: flex; justify-content: space-between; font-size: 8px; }
+
+                /* ================================================================
+                === DYNAMIC GRID & LAYOUT OVERRIDES (Same as before) ==========
+                ================================================================ */
+
+                .ptw-field-horizontal { display: flex; flex-direction: row; align-items: baseline; gap: 5px; }
+                .ptw-field-horizontal .ptw-label { margin-bottom: 0; flex-shrink: 0; white-space: nowrap; }
+                .ptw-field-horizontal .ptw-input-line,
+                .ptw-field-horizontal .ptw-signature-line { flex: 1 1 auto; }
+
+                .ptw-section-row[data-section="work-description"] .ptw-component-wrapper {
+                    display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px 10px;
+                }
+                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(1) { grid-column: span 2; }
+                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(2) { grid-column: span 2; }
+                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(3) { grid-column: span 2; }
+                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(4) { grid-column: span 3; }
+                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(5) { grid-column: span 3; }
+                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(6) { grid-column: span 2; }
+                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(7) { grid-column: span 1; }
+                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(8) { grid-column: span 2; }
+                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(9) { grid-column: span 1; }
+                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(10) { grid-column: span 6; }
+                 .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(10) .ptw-component-inner { display: block; }
+
+                .ptw-section-row[data-section="tools-equipment"] .ptw-component-wrapper {
+                    display: grid; grid-template-columns: repeat(6, 1fr); gap: 0 10px;
+                }
+
+                /* --- PPE (YOUR REQUEST: 4 COLS) --- */
+                .ptw-section-row[data-section="ppe-checklist"] .ptw-checkbox-grid {
+                    grid-template-columns: repeat(4, 1fr);
+                }
+
+                /* --- HAZARD ID (YOUR REQUEST: 5 COLS) --- */
+                .ptw-section-row[data-section="hazard-identification"] .ptw-checkbox-grid {
+                    grid-template-columns: repeat(5, 1fr);
+                }
+
+                .ptw-section-row[data-section="certificate"] .ptw-component-wrapper {
+                    display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 10px;
+                }
+                 .ptw-section-row[data-section="certificate"] .ptw-component { display: flex; flex-direction: column; }
+
+                .ptw-section-row[data-section="last-minute-risk"] .ptw-component-wrapper {
+                    display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px 15px;
+                }
+
+                .ptw-section-row[data-section="declaration"] .ptw-component-wrapper {
+                    display: grid; grid-template-columns: 1fr 1fr; gap: 5px 15px;
+                }
+                .ptw-section-row[data-section="declaration"] .ptw-component:nth-child(1) { grid-column: 1 / -1; }
+                .ptw-section-row[data-section="declaration"] .ptw-component:nth-child(2) { grid-column: 1; grid-row: 2; }
+                .ptw-section-row[data-section="declaration"] .ptw-component:nth-child(3) { grid-column: 2; grid-row: 2; }
+                .ptw-section-row[data-section="declaration"] .ptw-component:nth-child(4) { grid-column: 2; grid-row: 3; }
+
+                .ptw-section-row[data-section="opening-ptw"] .ptw-component-wrapper {
+                    display: grid; grid-template-columns: 1fr 1fr; gap: 5px 15px;
+                }
+                .ptw-section-row[data-section="opening-ptw"] .ptw-component:first-child { grid-column: 1 / -1; }
+
+                .ptw-section-row[data-section="closure"] .ptw-component-wrapper {
+                    display: grid; grid-template-columns: 1fr 1fr; gap: 5px 15px;
+                }
+                
+                /* --- Print Media Query (Updated for multi-page) --- */
+                @media print {
+                   html, body {
+                       margin: 0;
+                       padding: 0;
+                       background: #fff; /* Ensure background is white */
+                   }
+                   .ptw-form-print {
+                       width: 100%;
+                       min-height: auto;
+                       margin: 0;
+                       padding: 0;
+                       border: none;
+                       box-shadow: none;
+                   }
+                   .no-print {
+                       display: none !important;
+                   }
+                }
+            `}</style>
         </div>
     );
 };

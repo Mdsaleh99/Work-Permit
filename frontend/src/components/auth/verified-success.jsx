@@ -20,7 +20,10 @@ export default function VerifiedSuccess() {
                     </div>
                     <CardTitle>Email verified</CardTitle>
                     <CardDescription>
-                        Your email has been successfully verified. You can now sign in.
+                        {isLoggedIn 
+                            ? "Your email has been verified! Complete your setup by creating your company profile."
+                            : "Your email has been successfully verified. You can now sign in."
+                        }
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

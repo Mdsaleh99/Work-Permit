@@ -33,17 +33,7 @@ import { useWorkPermitDraftStore } from "@/store/useWorkPermitDraftStore";
 import { useNavigate } from "@tanstack/react-router";
 
 const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPermitId = null }) => {
-    console.log("FormBuilder props:", { title, sectionsTemplate, startWithTemplate, workPermitId });
-    const { 
-        createWorkPermit, 
-        updateWorkPermit, 
-        getWorkPermitById,
-        currentWorkPermit,
-        isCreating, 
-        isUpdating, 
-        isFetching,
-        workPermitError 
-    } = useWorkPermitStore();
+    const { createWorkPermit, updateWorkPermit, isCreating, isUpdating, workPermitError } = useWorkPermitStore();
     const { companyData, getCompanyByUser, isGetCompany } = useCompanyStore();
     const { 
         createOrUpdateDraft, 
@@ -76,19 +66,6 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
             "work-description",
     });
 
-    // Update formData when sectionsTemplate changes (for edit mode)
-    useEffect(() => {
-        if (workPermitId && sectionsTemplate && sectionsTemplate.length > 0) {
-            console.log("Updating formData with sectionsTemplate:", sectionsTemplate);
-            setFormData(prevFormData => ({
-                title: title || prevFormData.title,
-                sections: sectionsTemplate,
-                selectedSection: sectionsTemplate[0]?.id || "work-description"
-            }));
-            toast.success("Work permit data loaded successfully");
-        }
-    }, [workPermitId, sectionsTemplate, title]);
-
     const [editingComponent, setEditingComponent] = useState(null);
     const [showPrintView, setShowPrintView] = useState(false);
     const [dragOver, setDragOver] = useState(false);
@@ -116,17 +93,13 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
         loadCompanyData();
     }, [companyData, getCompanyByUser]);
 
-
-    // Load drafts from database when FormBuilder mounts (only for new forms, not edit mode)
+    // Load drafts from database when FormBuilder mounts
     useEffect(() => {
         const loadDrafts = async () => {
-            // Don't load drafts if we're in edit mode (workPermitId exists)
-            if (workPermitId) return;
-            
             try {
                 await getAllDrafts();
-                // If we have drafts and no sectionsTemplate (meaning we're not in edit mode), load the latest one
-                if (drafts.length > 0 && !sectionsTemplate) {
+                // If we have drafts, load the latest one
+                if (drafts.length > 0) {
                     const latestDraft = drafts[0]; // Already sorted by updatedAt desc
                     setCurrentDraftId(latestDraft.id);
                     
@@ -159,14 +132,11 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
         };
 
         loadDrafts();
-    }, [getAllDrafts, workPermitId, sectionsTemplate]);
+    }, [getAllDrafts]);
 
-    // Auto-save to database every 2 seconds (only for new forms, not edit mode)
+    // Auto-save to database every 2 seconds
     useEffect(() => {
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-        
-        // Don't auto-save if we're in edit mode (workPermitId exists)
-        if (workPermitId) return;
         
         // Only auto-save if we have company data and form data
         if (!companyData?.id || !formData?.title) return;
@@ -199,7 +169,7 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
         }, 2000); // Auto-save every 2 seconds
         
         return () => saveTimerRef.current && clearTimeout(saveTimerRef.current);
-    }, [formData, companyData, createOrUpdateDraft, currentDraftId, workPermitId]);
+    }, [formData, companyData, createOrUpdateDraft, currentDraftId]);
 
     const clearDraft = async () => {
         if (!currentDraftId) return;
@@ -391,7 +361,7 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
         
         if (!companyData?.id) {
             toast.error("Company information is required. Please create a company first.");
-            navigate({ to: "/company/" });
+            navigate({ to: "/page/app/create-company" });
             return;
         }
 
@@ -632,7 +602,7 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                     <h2 className="text-xl font-semibold text-gray-900 mb-2">Company Required</h2>
                     <p className="text-gray-600 mb-4">You need to create a company before you can create work permit forms.</p>
                     <button
-                        onClick={() => navigate({ to: "/company/" })}
+                        onClick={() => navigate({ to: "/page/app/create-company" })}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
                     >
                         Create Company
@@ -888,26 +858,13 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                         </div>
                     </div>
                 </div>
-            
+            )}
 
             {/* Main Content */}
             {showPrintView ? (
                 <div className="flex-1 overflow-auto bg-gray-50">
                     <div className="ptw-preview-wrap">
-                        <PrintView 
-                            formData={formData} 
-                            customSectionNames={{
-                                'work-description': 'Work Description',
-                                'tools-equipment': 'Tools & Equipment',
-                                'ppe-checklist': 'PPE Checklist',
-                                'hazard-identification': 'Hazard Identification',
-                                'safe-system-work': 'Safe System of Work',
-                                'last-minute-risk': 'Last Minute Risk Assessment',
-                                'declaration': 'Declaration',
-                                'opening-ptw': 'Opening PTW',
-                                'closure': 'Closure'
-                            }}
-                        />
+                        <PrintView formData={formData} />
                     </div>
                 </div>
             ) : (
@@ -921,88 +878,85 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                                 <div className="space-y-3 max-h-[60vh] overflow-y-auto mb-4">
                                     {getDeclarationComponents().map((c) => (
                                         <label key={c.id} className="text-sm inline-flex items-start space-x-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={!!declarationChecks[c.id]}
-                                                onChange={(e) =>
-                                                    setDeclarationChecks((prev) => ({
-                                                        ...prev,
-                                                        [c.id]: e.target.checked,
-                                                    }))
-                                                }
-                                            />
-                                            <span>
-                                                {c.label}
-                                                {c.required ? <span className="text-red-500 ml-1">(Mandatory)</span> : null}
-                                            </span>
-                                        </label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!declarationChecks[c.id]}
+                                                    onChange={(e) =>
+                                                        setDeclarationChecks((prev) => ({
+                                                            ...prev,
+                                                            [c.id]: e.target.checked,
+                                                        }))
+                                                    }
+                                                />
+                                                <span>
+                                                    {c.label}
+                                                    {c.required ? <span className="text-red-500 ml-1">(Mandatory)</span> : null}
+                                                </span>
+                                            </label>
                                         ))}
                                         {getDeclarationComponents().length === 0 && (
                                             <div className="text-xs text-gray-500">No declaration items configured in this section.</div>
-                                    )}
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-2">
-                                        {isAutoSaving && (
-                                            <div className="flex items-center text-xs text-blue-500">
-                                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 mr-1"></div>
-                                                Auto-saving...
-                                            </div>
                                         )}
                                     </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Button variant="outline" size="sm" onClick={() => setShowAgreeModal(false)}>Cancel</Button>
-                                        <Button 
-                                            size="sm" 
-                                            onClick={submitForm}
-                                            disabled={isCreating || isUpdating}
-                                        >
-                                            {isCreating || isUpdating ? (
-                                                <>
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                                    {workPermitId ? "Updating..." : "Creating..."}
-                                                </>
-                                            ) : (
-                                                "Confirm & Submit"
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-2">
+                                            {isAutoSaving && (
+                                                <div className="flex items-center text-xs text-blue-500">
+                                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 mr-1"></div>
+                                                    Auto-saving...
+                                                </div>
                                             )}
-                                        </Button>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <Button variant="outline" size="sm" onClick={() => setShowAgreeModal(false)}>Cancel</Button>
+                                            <Button 
+                                                size="sm" 
+                                                onClick={submitForm}
+                                                disabled={isCreating || isUpdating}
+                                            >
+                                                {isCreating || isUpdating ? (
+                                                    <>
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                        {workPermitId ? "Updating..." : "Creating..."}
+                                                    </>
+                                                ) : (
+                                                    "Confirm & Submit"
+                                                )}
+                                            </Button>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                    
-                    {/* Drafts Modal */}
-                    {showDraftsModal && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                            <div className="bg-white rounded-md shadow-lg w-full max-w-2xl p-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h4 className="text-lg font-semibold">Drafts</h4>
-                                    <Button variant="ghost" size="sm" onClick={() => setShowDraftsModal(false)}>Close</Button>
-                                </div>
-                                <div className="max-h-[60vh] overflow-y-auto divide-y">
-                                    {drafts.map((draft) => (
-                                        <div key={draft.id} className="py-3 flex items-center justify-between">
-                                            <div>
-                                                <div className="font-medium">{draft.title || "Untitled"}</div>
-                                                <div className="text-xs text-gray-500">
-                                                    Updated {new Date(draft.updatedAt).toLocaleString()}
-                                                    {draft.isAutoSave && <span className="ml-2 text-blue-500">(Auto-saved)</span>}
+                        )}
+                        {showDraftsModal && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                                <div className="bg-white rounded-md shadow-lg w-full max-w-2xl p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-lg font-semibold">Drafts</h4>
+                                        <Button variant="ghost" size="sm" onClick={() => setShowDraftsModal(false)}>Close</Button>
+                                    </div>
+                                    <div className="max-h-[60vh] overflow-y-auto divide-y">
+                                        {drafts.map((draft) => (
+                                            <div key={draft.id} className="py-3 flex items-center justify-between">
+                                                <div>
+                                                    <div className="font-medium">{draft.title || "Untitled"}</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        Updated {new Date(draft.updatedAt).toLocaleString()}
+                                                        {draft.isAutoSave && <span className="ml-2 text-blue-500">(Auto-saved)</span>}
+                                                    </div>
+                                                </div>
+                                                <div className="space-x-2">
+                                                    <Button variant="outline" size="sm" onClick={() => loadDraft(draft.id)}>Open</Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => deleteDraftById(draft.id)}>Delete</Button>
                                                 </div>
                                             </div>
-                                            <div className="space-x-2">
-                                                <Button variant="outline" size="sm" onClick={() => loadDraft(draft.id)}>Open</Button>
-                                                <Button variant="ghost" size="sm" onClick={() => deleteDraftById(draft.id)}>Delete</Button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {drafts.length === 0 && (
-                                        <div className="text-sm text-gray-500">No drafts yet.</div>
-                                    )}
+                                        ))}
+                                        {drafts.length === 0 && (
+                                            <div className="text-sm text-gray-500">No drafts yet.</div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
                         {/* Left Panel - Section Details */}
                         <div className="basis-3/4 min-w-0 p-6 border-r border-gray-200 overflow-y-auto">
                             <div className="flex items-center justify-between mb-6">
@@ -1468,8 +1422,7 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                         </div>
                     </div>
                 )}
-                </div>
-            
+            )}
         </div>
     );
 };
