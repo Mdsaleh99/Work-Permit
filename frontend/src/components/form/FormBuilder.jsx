@@ -20,6 +20,8 @@ import {
     FileCheck,
     Flame,
     Printer,
+    Menu,
+    X,
 } from "lucide-react";
 import ComponentPalette from "../drag-drop/ComponentPalette";
 // DroppableSection no longer needed with pragmatic dnd
@@ -94,11 +96,32 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
     const [dragOver, setDragOver] = useState(false);
     const [declarationChecks, setDeclarationChecks] = useState({}); // key: componentId, value: boolean
     const [showAgreeModal, setShowAgreeModal] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isCreatingNewForm, setIsCreatingNewForm] = useState(false);
+    const [lastSavedTime, setLastSavedTime] = useState(null);
 
     // Database-backed draft system
     const [currentDraftId, setCurrentDraftId] = useState(null);
     const [showDraftsModal, setShowDraftsModal] = useState(false);
     const saveTimerRef = useRef(null);
+
+    // Responsive behavior
+    useEffect(() => {
+        const checkScreenSize = () => {
+            const mobile = window.innerWidth < 768; // md breakpoint
+            setIsMobile(mobile);
+            // Auto-collapse sidebar on small screens to give more space to main content
+            if (window.innerWidth < 1024) { // lg breakpoint
+                setSidebarCollapsed(true);
+            }
+        };
+
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+        
+        return () => window.removeEventListener('resize', checkScreenSize);
+    }, []);
 
     // Load company data when FormBuilder mounts
     useEffect(() => {
@@ -125,33 +148,8 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
             
             try {
                 await getAllDrafts();
-                // If we have drafts and no sectionsTemplate (meaning we're not in edit mode), load the latest one
-                if (drafts.length > 0 && !sectionsTemplate) {
-                    const latestDraft = drafts[0]; // Already sorted by updatedAt desc
-                    setCurrentDraftId(latestDraft.id);
-                    
-                    // Convert database draft format to formData format
-                    const convertedFormData = {
-                        title: latestDraft.title,
-                        sections: latestDraft.sections.map(section => ({
-                            id: section.id,
-                            title: section.title,
-                            enabled: section.enabled,
-                            components: section.components.map(component => ({
-                                id: component.id,
-                                label: component.label,
-                                type: component.type,
-                                required: component.required,
-                                enabled: component.enabled,
-                                options: component.options || []
-                            }))
-                        })),
-                        selectedSection: latestDraft.sections[0]?.id || "work-description"
-                    };
-                    
-                    setFormData(convertedFormData);
-                    toast.success("Latest draft loaded from database");
-                }
+                // Don't auto-load any draft - start with clean template
+                // User can manually open drafts from the drafts modal
             } catch (error) {
                 console.error("Error loading drafts:", error);
                 toast.error("Failed to load drafts");
@@ -168,8 +166,21 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
         // Don't auto-save if we're in edit mode (workPermitId exists)
         if (workPermitId) return;
         
+        // Don't auto-save if we're creating a new form
+        if (isCreatingNewForm) return;
+        
         // Only auto-save if we have company data and form data
-        if (!companyData?.id || !formData?.title) return;
+        if (!companyData?.id || !formData?.title) {
+            console.log("Auto-save skipped: Missing company data or form title");
+            return;
+        }
+        
+        // Don't auto-save if form is empty (no components)
+        const hasComponents = formData.sections.some(section => section.components.length > 0);
+        if (!hasComponents) {
+            console.log("Auto-save skipped: No components to save");
+            return;
+        }
         
         saveTimerRef.current = setTimeout(async () => {
             try {
@@ -177,21 +188,29 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                     title: formData.title,
                     sections: formData.sections.map(section => ({
                         title: section.title,
-                        enabled: section.enabled,
+                        enabled: section.enabled !== false,
                         components: section.components.map(component => ({
                             label: component.label,
                             type: component.type,
-                            required: component.required,
-                            enabled: component.enabled,
+                            required: component.required || false,
+                            enabled: component.enabled !== false,
                             options: component.options || []
                         }))
                     }))
                 };
 
-                const savedDraft = await createOrUpdateDraft(draftData, companyData.id, true); // isAutoSave = true
+                console.log("Auto-saving draft data:", draftData);
+                
+                // Always overwrite current draft (over draft behavior)
+                const savedDraft = await createOrUpdateDraft(draftData, companyData.id, true); // Auto-save overwrites current draft
                 if (!currentDraftId) {
                     setCurrentDraftId(savedDraft.id);
                 }
+                
+                // Show subtle auto-save indicator
+                const saveTime = new Date();
+                setLastSavedTime(saveTime);
+                console.log("✅ Auto-saved successfully at", saveTime.toLocaleTimeString());
             } catch (error) {
                 console.error("Auto-save failed:", error);
                 // Don't show toast for auto-save failures to avoid spam
@@ -199,7 +218,7 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
         }, 2000); // Auto-save every 2 seconds
         
         return () => saveTimerRef.current && clearTimeout(saveTimerRef.current);
-    }, [formData, companyData, createOrUpdateDraft, currentDraftId, workPermitId]);
+    }, [formData, companyData, createOrUpdateDraft, currentDraftId, workPermitId, isCreatingNewForm]);
 
     const clearDraft = async () => {
         if (!currentDraftId) return;
@@ -207,11 +226,24 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
         try {
             await deleteDraft(currentDraftId);
             setCurrentDraftId(null);
+            setLastSavedTime(null);
             toast.success("Draft removed");
         } catch (error) {
             console.error("Error deleting draft:", error);
             toast.error("Failed to delete draft");
         }
+    };
+
+    // Debug function to test auto-save
+    const testAutoSave = () => {
+        console.log("🔍 Auto-save Debug Info:");
+        console.log("- Company Data:", companyData?.id ? "✅ Present" : "❌ Missing");
+        console.log("- Form Title:", formData?.title ? "✅ Present" : "❌ Missing");
+        console.log("- Has Components:", formData?.sections?.some(s => s.components.length > 0) ? "✅ Yes" : "❌ No");
+        console.log("- Is Creating New Form:", isCreatingNewForm ? "❌ Yes (blocking)" : "✅ No");
+        console.log("- Work Permit ID:", workPermitId ? "❌ Present (blocking)" : "✅ None");
+        console.log("- Current Draft ID:", currentDraftId || "None");
+        console.log("- Last Saved:", lastSavedTime ? lastSavedTime.toLocaleTimeString() : "Never");
     };
 
     const createNewDraft = async () => {
@@ -220,9 +252,16 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
             return;
         }
 
-        const empty = {
+        // Set flag to prevent auto-save conflicts
+        setIsCreatingNewForm(true);
+        
+        // Clear current draft ID to prevent auto-save from overwriting
+        setCurrentDraftId(null);
+
+        // Start with template that includes all sections and components
+        const templateForm = {
             title: title || "GENERAL WORK PERMIT",
-            sections: PTW_SECTIONS.map((section) => ({
+            sections: PTW_SECTION_TEMPLATES || PTW_SECTIONS.map((section) => ({
                 id: section.id,
                 title: section.title,
                 enabled: true,
@@ -231,67 +270,97 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
             selectedSection: "work-description",
         };
         
-        setFormData(empty);
+        setFormData(templateForm);
         setDeclarationChecks({});
         
         try {
             const draftData = {
-                title: empty.title,
-                sections: empty.sections.map(section => ({
+                title: templateForm.title,
+                sections: templateForm.sections.map(section => ({
                     title: section.title,
-                    enabled: section.enabled,
+                    enabled: section.enabled !== false,
                     components: section.components.map(component => ({
                         label: component.label,
                         type: component.type,
-                        required: component.required,
-                        enabled: component.enabled,
+                        required: component.required || false,
+                        enabled: component.enabled !== false,
                         options: component.options || []
                     }))
                 }))
             };
 
-            const savedDraft = await createOrUpdateDraft(draftData, companyData.id, false); // Manual save
+            console.log("Creating new draft with data:", draftData);
+            const savedDraft = await createOrUpdateDraft(draftData, companyData.id, true); // Auto-save (over draft)
             setCurrentDraftId(savedDraft.id);
-            toast.success("Started a new draft");
+            toast.success("New form created with template");
         } catch (error) {
             console.error("Error creating new draft:", error);
             toast.error("Failed to create new draft");
+        } finally {
+            // Reset flag after a short delay to allow form data to settle
+            setTimeout(() => {
+                setIsCreatingNewForm(false);
+            }, 1000);
         }
     };
 
     const loadDraft = async (id) => {
         try {
+            console.log("Loading draft with ID:", id);
+            
+            // Set flag to prevent auto-save conflicts
+            setIsCreatingNewForm(true);
+            
             const draft = await getDraftById(id);
-            if (!draft) return;
+            console.log("Draft data received:", draft);
+            
+            if (!draft) {
+                console.log("No draft found");
+                return;
+            }
             
             setCurrentDraftId(id);
             
-            // Convert database draft format to formData format
+            // Load the actual draft data with proper structure mapping
             const convertedFormData = {
-                title: draft.title,
-                sections: draft.sections.map(section => ({
-                    id: section.id,
-                    title: section.title,
-                    enabled: section.enabled,
-                    components: section.components.map(component => ({
-                        id: component.id,
-                        label: component.label,
-                        type: component.type,
-                        required: component.required,
-                        enabled: component.enabled,
-                        options: component.options || []
-                    }))
-                })),
-                selectedSection: draft.sections[0]?.id || "work-description"
+                title: draft.title || "GENERAL WORK PERMIT",
+                sections: draft.sections.map(section => {
+                    // Find the corresponding section from PTW_SECTIONS to get the correct ID
+                    const baseSection = PTW_SECTIONS.find(s => s.title === section.title) || { id: section.title.toLowerCase().replace(/\s+/g, '-') };
+                    
+                    return {
+                        id: baseSection.id,
+                        title: section.title,
+                        enabled: section.enabled !== false,
+                        components: section.components.map(component => ({
+                            id: component.id || generateId(),
+                            label: component.label,
+                            type: component.type,
+                            required: component.required || false,
+                            enabled: component.enabled !== false,
+                            options: component.options || []
+                        }))
+                    };
+                }),
+                selectedSection: draft.sections[0] ? 
+                    (PTW_SECTIONS.find(s => s.title === draft.sections[0].title)?.id || "work-description") : 
+                    "work-description"
             };
             
+            console.log("Converted form data:", convertedFormData);
             setFormData(convertedFormData);
             setDeclarationChecks({}); // Reset declaration checks
-            toast.success("Draft loaded");
+            toast.success("Draft loaded with saved data");
             setShowDraftsModal(false);
+            
+            // Reset flag after a short delay to allow form data to settle
+            setTimeout(() => {
+                setIsCreatingNewForm(false);
+            }, 1000);
         } catch (error) {
             console.error("Error loading draft:", error);
             toast.error("Failed to load draft");
+            setIsCreatingNewForm(false);
         }
     };
 
@@ -646,18 +715,54 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
         <div className="ptw-form-builder flex h-screen bg-gray-50">
             {/* Sidebar - Permit Sections */}
             {!showPrintView && (
-                <div className="no-print w-80 bg-white text-gray-900 flex flex-col border-r">
-                {/* Header removed as requested */}
+                <>
+                    {/* Mobile Overlay */}
+                    {isMobile && !sidebarCollapsed && (
+                        <div 
+                            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+                            onClick={() => setSidebarCollapsed(true)}
+                        />
+                    )}
+                    
+                    {/* Sidebar */}
+                    <div className={cn(
+                        "no-print bg-white text-gray-900 flex flex-col border-r transition-all duration-300 ease-in-out",
+                        // Mobile: Fixed positioning with overlay
+                        isMobile && !sidebarCollapsed && "fixed left-0 top-0 h-full w-80 z-50 shadow-lg",
+                        // Mobile: Hidden when collapsed
+                        isMobile && sidebarCollapsed && "hidden",
+                        // Small screens: Narrower sidebar
+                        !isMobile && sidebarCollapsed && "w-16",
+                        !isMobile && !sidebarCollapsed && "w-64 lg:w-80"
+                    )}>
+                        {/* Sidebar Header with Toggle */}
+                        <div className="flex items-center justify-between p-3 md:p-4 border-b">
+                            {!sidebarCollapsed && (
+                                <h3 className="text-lg font-semibold text-gray-800">Dashboard</h3>
+                            )}
+                            <button
+                                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                {sidebarCollapsed ? (
+                                    <Menu className="w-5 h-5 text-gray-600" />
+                                ) : (
+                                    <X className="w-5 h-5 text-gray-600" />
+                                )}
+                            </button>
+                        </div>
 
                 {/* Navigation */}
-                <div className="flex-1 p-4 overflow-y-auto">
+                <div className="flex-1 p-3 md:p-4 overflow-y-auto">
                     <nav className="space-y-2">
+                        {!sidebarCollapsed && (
                         <div className="text-sm text-gray-600 uppercase tracking-wider mb-4">
                             Permit Sections
-                            <div className="text-xs text-gray-500 mt-1 font-normal">
+                                <div className="text-xs text-gray-500 mt-1 font-normal hidden md:block">
                                 Drag to reorder sections
                             </div>
                         </div>
+                        )}
 
                         <ReorderableList
                             items={formData.sections}
@@ -688,7 +793,8 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                                     <div
                                         key={section.id}
                                         className={cn(
-                                            "flex items-center p-3 rounded-lg cursor-pointer transition-colors border",
+                                            "flex items-center rounded-lg cursor-pointer transition-colors border",
+                                            sidebarCollapsed ? "p-2 justify-center" : "p-2 md:p-3",
                                             isSelected
                                                 ? "bg-gray-100 text-gray-900 border-gray-200"
                                                 : "text-gray-700 hover:bg-gray-50 border-transparent",
@@ -702,10 +808,22 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                                                 initDeclarationChecks();
                                                 setShowAgreeModal(true);
                                             }
+                                            // Auto-close sidebar on mobile after selection
+                                            if (isMobile) {
+                                                setSidebarCollapsed(true);
+                                            }
                                         }}
+                                        title={sidebarCollapsed ? getSectionTitle(section.id) : ""}
                                     >
-                                        <GripVertical className="w-4 h-4 text-gray-400 mr-2" />
-                                        <Icon className="w-5 h-5 mr-3" />
+                                        {!sidebarCollapsed && (
+                                            <GripVertical className="w-4 h-4 text-gray-400 mr-2 hidden md:block" />
+                                        )}
+                                        <Icon className={cn(
+                                            "text-gray-600",
+                                            sidebarCollapsed ? "w-5 h-5" : "w-5 h-5 mr-3"
+                                        )} />
+                                        {!sidebarCollapsed && (
+                                            <>
                                         {isSelected ? (
                                             <input
                                                 className="flex-1 bg-transparent outline-none text-sm"
@@ -720,7 +838,7 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                                                 }}
                                             />
                                         ) : (
-                                            <span className="flex-1">
+                                                    <span className="flex-1 text-sm md:text-base">
                                                 {getSectionTitle(section.id)}
                                             </span>
                                         )}
@@ -729,15 +847,18 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                                                 <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                                             )}
                                         </div>
+                                            </>
+                                        )}
                                     </div>
                                 );
                             }}
                         />
                     </nav>
 
-                    <div className="mt-6">
+                    {!sidebarCollapsed && (
+                        <div className="mt-4 md:mt-6">
                         <Button
-                            className="w-full bg-gray-800 hover:bg-gray-700 text-white"
+                                className="w-full bg-gray-800 hover:bg-gray-700 text-white text-sm md:text-base"
                             onClick={() => {
                                 const newSectionId = generateId();
                                 const newSection = {
@@ -753,26 +874,60 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                                     selectedSection: newSectionId,
                                 });
                                 toast.success("New section added");
+                                    // Auto-close sidebar on mobile after adding
+                                    if (isMobile) {
+                                        setSidebarCollapsed(true);
+                                    }
                             }}
                         >
                             <Plus className="w-4 h-4 mr-2" />
-                            Add New Form
+                                <span className="hidden sm:inline">Add New Form</span>
+                                <span className="sm:hidden">Add Form</span>
                         </Button>
                     </div>
+                    )}
                 </div>
             </div>
+                </>
             )}
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col">
+            <div className={cn(
+                "flex-1 flex flex-col transition-all duration-300 ease-in-out",
+                // Adjust margin on mobile when sidebar is open
+                isMobile && !sidebarCollapsed && "ml-0",
+                // Adjust margin on desktop when sidebar is collapsed
+                !isMobile && sidebarCollapsed && "ml-0"
+            )}>
                 {/* Top Header (visible on screen in both modes, hidden when printing) */}
                 <div className="no-print bg-gray-100 border-b border-gray-200 px-4 md:px-6 py-3 md:py-4">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                         <div className="flex items-center min-w-0">
+                            {/* Show sidebar toggle on small screens when sidebar is collapsed */}
+                            {sidebarCollapsed && (
+                                <button
+                                    onClick={() => setSidebarCollapsed(false)}
+                                    className="p-2 hover:bg-gray-200 rounded-lg transition-colors mr-2"
+                                    title="Show Sections"
+                                >
+                                    <Menu className="w-5 h-5 text-gray-600" />
+                                </button>
+                            )}
                             <Flame className="w-6 h-6 text-orange-500 mr-3" />
                             <h2 className="text-lg md:text-xl font-semibold text-gray-800 truncate">
                                 {formData.title}
                             </h2>
+                            {isAutoSaving && (
+                                <div className="ml-3 flex items-center text-xs text-blue-600">
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-1"></div>
+                                    Auto-saving...
+                                </div>
+                            )}
+                            {!isAutoSaving && lastSavedTime && (
+                                <div className="ml-3 text-xs text-gray-500">
+                                    Saved {lastSavedTime.toLocaleTimeString()}
+                                </div>
+                            )}
                         </div>
                         <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-end overflow-x-auto">
                             {/* Open declaration modal on submit instead of inline checkboxes */}
@@ -800,6 +955,11 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                             <Button size="sm" className="rounded-full shadow-sm" onClick={() => toast.success("Draft saved") }>
                                 <Save className="w-4 h-4 mr-2" />
                                 <span className="hidden sm:inline">Save</span>
+                                {isAutoSaving && (
+                                    <div className="ml-2 flex items-center">
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                    </div>
+                                )}
                             </Button>
                             <Button size="sm" className="rounded-full shadow-sm bg-blue-600 hover:bg-blue-700 text-white" onClick={() => { initDeclarationChecks(); setShowAgreeModal(true); }}>
                                 <FileCheck className="w-4 h-4 mr-2" />
@@ -815,6 +975,7 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                                 <span className="sm:hidden">Drfts</span>
                             </Button>
                             <Button size="sm" className="rounded-full shadow-sm" onClick={createNewDraft}>
+                                <Plus className="w-4 h-4 mr-2" />
                                 <span className="hidden sm:inline">New Form</span>
                                 <span className="sm:hidden">New</span>
                             </Button>
@@ -852,6 +1013,12 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                                 <span className="hidden sm:inline">Clear Draft</span>
                                 <span className="sm:hidden">Clear</span>
                             </Button>
+                            {/* Debug button - only show in development */}
+                            {process.env.NODE_ENV === 'development' && (
+                                <Button variant="ghost" size="sm" className="rounded-full text-xs" onClick={testAutoSave}>
+                                    Debug
+                                </Button>
+                            )}
                             {showPrintView && (
                                 <Button
                                     size="sm"
@@ -890,8 +1057,8 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                 </div>
             
 
-            {/* Main Content */}
-            {showPrintView ? (
+                {/* Main Content */}
+                {showPrintView ? (
                 <div className="flex-1 overflow-auto bg-gray-50">
                     <div className="ptw-preview-wrap">
                         <PrintView 
@@ -909,9 +1076,9 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                             }}
                         />
                     </div>
-                </div>
-            ) : (
-                <div className="flex-1 flex overflow-hidden">
+                    </div>
+                ) : (
+                <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                     {/* Agreement Modal */}
                     {showAgreeModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -977,34 +1144,57 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
                             <div className="bg-white rounded-md shadow-lg w-full max-w-2xl p-6">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h4 className="text-lg font-semibold">Drafts</h4>
+                                    <div>
+                                        <h4 className="text-lg font-semibold">My Drafts</h4>
+                                        <p className="text-sm text-gray-600">Open a draft to start creating a new form</p>
+                                    </div>
                                     <Button variant="ghost" size="sm" onClick={() => setShowDraftsModal(false)}>Close</Button>
                                 </div>
                                 <div className="max-h-[60vh] overflow-y-auto divide-y">
                                     {drafts.map((draft) => (
-                                        <div key={draft.id} className="py-3 flex items-center justify-between">
-                                            <div>
-                                                <div className="font-medium">{draft.title || "Untitled"}</div>
-                                                <div className="text-xs text-gray-500">
-                                                    Updated {new Date(draft.updatedAt).toLocaleString()}
-                                                    {draft.isAutoSave && <span className="ml-2 text-blue-500">(Auto-saved)</span>}
+                                        <div key={draft.id} className="py-4 flex items-center justify-between hover:bg-gray-50 rounded-lg p-3">
+                                            <div className="flex-1">
+                                                <div className="font-medium text-gray-900">{draft.title || "Untitled Draft"}</div>
+                                                <div className="text-sm text-gray-500 mt-1">
+                                                    Last updated: {new Date(draft.updatedAt).toLocaleDateString()} at {new Date(draft.updatedAt).toLocaleTimeString()}
+                                                </div>
+                                                <div className="text-xs text-gray-400 mt-1">
+                                                    {draft.isAutoSave ? "Auto-saved draft" : "Manual draft"}
                                                 </div>
                                             </div>
-                                            <div className="space-x-2">
-                                                <Button variant="outline" size="sm" onClick={() => loadDraft(draft.id)}>Open</Button>
-                                                <Button variant="ghost" size="sm" onClick={() => deleteDraftById(draft.id)}>Delete</Button>
+                                            <div className="flex items-center space-x-2">
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm" 
+                                                    onClick={() => loadDraft(draft.id)}
+                                                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                                >
+                                                    Open
+                                                </Button>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    onClick={() => deleteDraftById(draft.id)}
+                                                    className="text-red-600 hover:bg-red-50"
+                                                >
+                                                    Delete
+                                                </Button>
                                             </div>
                                         </div>
                                     ))}
                                     {drafts.length === 0 && (
-                                        <div className="text-sm text-gray-500">No drafts yet.</div>
+                                        <div className="text-center py-8">
+                                            <div className="text-gray-400 mb-2">📝</div>
+                                            <div className="text-sm text-gray-500">No drafts yet.</div>
+                                            <div className="text-xs text-gray-400 mt-1">Create your first draft by clicking "New Form"</div>
+                                        </div>
                                     )}
                                 </div>
                             </div>
                         </div>
                     )}
                         {/* Left Panel - Section Details */}
-                        <div className="basis-3/4 min-w-0 p-6 border-r border-gray-200 overflow-y-auto">
+                        <div className="flex-1 lg:basis-3/4 min-w-0 p-4 md:p-6 lg:border-r border-gray-200 overflow-y-auto min-h-0">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-semibold text-gray-800">
                                     {getSectionTitle(formData.selectedSection)}
@@ -1461,14 +1651,14 @@ const FormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPe
                         </div>
 
                         {/* Right Panel - Component Palette */}
-                        <div className="basis-1/4 max-w-[420px] min-w-[360px] p-6 overflow-y-auto">
+                        <div className="w-full lg:basis-1/4 lg:max-w-[420px] lg:min-w-[360px] p-4 md:p-6 overflow-y-auto border-t lg:border-t-0 border-gray-200 max-h-96 lg:max-h-none">
                             <div className="h-full">
                                 <ComponentPalette />
                             </div>
                         </div>
                     </div>
                 )}
-                </div>
+            </div>
             
         </div>
     );

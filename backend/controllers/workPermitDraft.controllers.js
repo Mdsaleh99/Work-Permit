@@ -33,6 +33,8 @@ export const createOrUpdateDraft = asyncHandler(async (req, res) => {
     // For auto-save, find existing auto-save draft or create new one
     let draft;
     if (isAutoSave) {
+        console.log(`🔍 Looking for existing auto-save draft for user ${userId}, company ${companyId}`);
+        
         // Find existing auto-save draft for this user/company
         const existingAutoSaveDraft = await db.workPermitDraft.findFirst({
             where: {
@@ -41,8 +43,11 @@ export const createOrUpdateDraft = asyncHandler(async (req, res) => {
                 isAutoSave: true,
             },
         });
+        
+        console.log(`📋 Existing auto-save draft:`, existingAutoSaveDraft ? `Found (ID: ${existingAutoSaveDraft.id})` : 'None found');
 
         if (existingAutoSaveDraft) {
+            console.log(`🔄 Updating existing auto-save draft ${existingAutoSaveDraft.id}`);
             // Update existing auto-save draft
             draft = await db.workPermitDraft.update({
                 where: { id: existingAutoSaveDraft.id },
@@ -75,6 +80,7 @@ export const createOrUpdateDraft = asyncHandler(async (req, res) => {
                 },
             });
         } else {
+            console.log(`🆕 Creating new auto-save draft`);
             // Create new auto-save draft
             draft = await db.workPermitDraft.create({
                 data: {
@@ -108,6 +114,7 @@ export const createOrUpdateDraft = asyncHandler(async (req, res) => {
             });
         }
     } else {
+        console.log(`📝 Creating new manual draft`);
         // Create new manual draft
         draft = await db.workPermitDraft.create({
             data: {
@@ -144,6 +151,15 @@ export const createOrUpdateDraft = asyncHandler(async (req, res) => {
     if (!draft) {
         throw new ApiError(500, "Failed to create/update draft");
     }
+
+    // Log the final result
+    console.log(`✅ Draft ${isAutoSave ? 'auto-saved' : 'saved'} successfully:`, {
+        id: draft.id,
+        title: draft.title,
+        isAutoSave: draft.isAutoSave,
+        userId: draft.userId,
+        companyId: draft.companyId
+    });
 
     res.status(201).json(
         new ApiResponse(
