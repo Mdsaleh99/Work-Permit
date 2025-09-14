@@ -1,5 +1,5 @@
 import { createLazyFileRoute, useParams } from "@tanstack/react-router";
-import FormBuilder from "@/components/form/FormBuilder";
+import FormBuilderModular from "@/components/form/FormBuilderModular";
 import { useWorkPermitStore } from "@/store/useWorkPermitStore";
 import { useEffect, useState } from "react";
 import { Loader } from "lucide-react";
@@ -74,7 +74,7 @@ function RouteComponent() {
     });
 
     return (
-        <FormBuilder 
+        <FormBuilderModular 
             title={currentWorkPermit.title}
             sectionsTemplate={sectionsTemplate}
             startWithTemplate={true}

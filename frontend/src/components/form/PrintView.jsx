@@ -1,5 +1,7 @@
 import React from "react";
 import { format } from "date-fns";
+import { Button } from "../ui/button";
+import { Printer, ArrowLeft } from "lucide-react";
 
 // COMPONENT JSX (No changes, this logic is stable)
 const PrintView = ({ formData, customSectionNames = {} }) => {
@@ -113,7 +115,39 @@ const PrintView = ({ formData, customSectionNames = {} }) => {
     };
 
     return (
-        <div className="ptw-form-print no-print:w-[210mm] no-print:mx-auto no-print:bg-white no-print:shadow no-print:p-2">
+        <div className="min-h-screen bg-gray-50">
+            {/* Print Controls - Only visible on screen, hidden when printing */}
+            <div className="no-print bg-white border-b border-gray-200 p-4 sticky top-0 z-50">
+                <div className="max-w-4xl mx-auto flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.history.back()}
+                            className="flex items-center space-x-2"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Back to Builder</span>
+                        </Button>
+                        <h1 className="text-lg font-semibold text-gray-900">
+                            Print Preview: {formData.title || "GENERAL WORK PERMIT"}
+                        </h1>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                        <Button
+                            size="sm"
+                            onClick={() => window.print()}
+                            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center space-x-2"
+                        >
+                            <Printer className="w-4 h-4" />
+                            <span>Print</span>
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Print Form */}
+            <div className="ptw-form-print no-print:w-[210mm] no-print:mx-auto no-print:bg-white no-print:shadow no-print:p-2">
             {/* Header, Main Content, and Footer will now stack as simple blocks */ }
             <div className="ptw-header">
                 <div className="ptw-header-left">
@@ -375,6 +409,7 @@ const PrintView = ({ formData, customSectionNames = {} }) => {
                    }
                 }
             `}</style>
+            </div>
         </div>
     );
 };

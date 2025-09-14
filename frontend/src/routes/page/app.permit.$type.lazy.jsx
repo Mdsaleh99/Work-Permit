@@ -1,4 +1,4 @@
-import FormBuilder from '@/components/form/FormBuilder';
+import FormBuilderModular from '@/components/form/FormBuilderModular';
 import { createLazyFileRoute, useParams } from '@tanstack/react-router'
 import { PERMIT_CONFIG } from '@/lib/constants';
 
@@ -12,7 +12,7 @@ function RouteComponent() {
 
   return (
     <div>
-      <FormBuilder
+      <FormBuilderModular
         key={type}
         title={cfg.title}
         sectionsTemplate={cfg.template}

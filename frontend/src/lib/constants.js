@@ -36,6 +36,21 @@ export const FORM_COMPONENTS = [
     description: 'Single choice selection'
   },
   {
+    type: 'ppe-checklist',
+    label: 'PPE Checklist',
+    description: 'Predefined PPE items checklist'
+  },
+  {
+    type: 'hazard-checklist',
+    label: 'Hazard Checklist',
+    description: 'Predefined hazard identification checklist'
+  },
+  {
+    type: 'lmra-checklist',
+    label: 'LMRA Checklist',
+    description: 'Last Minute Risk Assessment checklist'
+  },
+  {
     type: 'signature',
     label: 'Signature',
     description: 'Digital signature field'
@@ -727,4 +742,32 @@ export const PERMIT_CONFIG = {
   hot: { title: 'HOT WORK PERMIT', template: HOT_WORK_SECTION_TEMPLATES },
   cold: { title: 'COLD WORK PERMIT', template: COLD_WORK_SECTION_TEMPLATES },
   loto: { title: 'LOTO PERMIT', template: LOTO_SECTION_TEMPLATES },
+};
+
+// Predefined options for special component types
+export const PREDEFINED_COMPONENT_OPTIONS = {
+  'ppe-checklist': [
+    'Helmet', 'Welder\'s Helmet', 'Welder\'s Apron', 'Work Clothes', 'Dust Mask',
+    'Hear Protectors', 'Emergency Respirator', 'Protective Goggles', 'Safety Belts',
+    'Gas Mask', 'Safety Shoes', 'Anti-Dust Overalls', 'Dielectric Boots',
+    'Dielectric Gloves', 'Rubber Safety Boots', 'Welders Breeches', 'Safety Harness',
+    'Safety Gloves', 'Safety Glasses', 'H2S Mask'
+  ],
+  'hazard-checklist': [
+    'Hand tools inspected', 'Work area barricaded', 'Required PPE worn', 'Worker competent', 'Worker Fit-To-Work',
+    'Slip/Trip and Fall', 'Dust, fumes or mist', 'Risk of Fall', 'Noise', 'Vibration',
+    'Pinch Points', 'Fall of objects', 'Illumination', 'Blind spots', 'Visibility',
+    'Electrical hazards', 'Use of chemical', 'Release of energy', 'Release of pressure', 'Likelihood of fire',
+    'Generation of waste', 'SIMOP', 'LOTO', 'Hit by/Caught in-between', 'Inclement weather'
+  ],
+  'lmra-checklist': [
+    'Is access / egress adequate.',
+    'Is lighting adequate for the activity.',
+    'Do workers understand the task.',
+    'Is the task safe to do in today\'s weather condition.',
+    'Are all tools inspected by the user.',
+    'Is the work area clear of tripping hazards.',
+    'Are the workers aware of emergency procedure.',
+    'Are the emergency escape routes established?'
+  ]
 };
