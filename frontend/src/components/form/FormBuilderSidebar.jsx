@@ -14,23 +14,23 @@ const FormBuilderSidebar = ({
     setSidebarCollapsed,
     formData,
     setFormData,
-    editingComponent,
-    setEditingComponent,
-    onAddComponent,
-    onUpdateComponent,
-    onDeleteComponent,
-    onToggleSectionEnabled,
+    // editingComponent,
+    // setEditingComponent,
+    // onAddComponent,
+    // onUpdateComponent,
+    // onDeleteComponent,
+    // onToggleSectionEnabled,
     onUpdateSectionTitle,
     onReorderSections,
-    onReorderComponents,
+    // onReorderComponents,
     onResetForm,
     onShowDraftsModal,
     onInitDeclarationChecks,
     onShowDeclarationModal,
     drafts,
-    onLoadDraft,
-    onDeleteDraft,
-    onDuplicateDraft,
+    // onLoadDraft,
+    // onDeleteDraft,
+    // onDuplicateDraft,
     isMobile,
 }) => {
     // Removed drag and drop handlers
@@ -40,9 +40,11 @@ const FormBuilderSidebar = ({
             className={cn(
                 "bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex flex-col",
                 sidebarCollapsed ? "w-16" : "w-80",
-                isMobile && !sidebarCollapsed && "fixed left-0 top-0 h-full w-80 z-50 shadow-lg",
+                isMobile &&
+                    !sidebarCollapsed &&
+                    "fixed left-0 top-0 h-full w-80 z-50 shadow-lg",
                 isMobile && sidebarCollapsed && "hidden",
-                !isMobile && "h-full"
+                !isMobile && "h-full",
             )}
         >
             {/* Sidebar Header */}
@@ -50,7 +52,9 @@ const FormBuilderSidebar = ({
                 <div className="flex items-center justify-between">
                     {!sidebarCollapsed && (
                         <>
-                            <h3 className="text-lg font-semibold text-gray-800">Permit Sections</h3>
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                Permit Sections
+                            </h3>
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -83,7 +87,7 @@ const FormBuilderSidebar = ({
                             {/* Add New Form Button */}
                             <Button
                                 size="sm"
-                                className="w-full rounded-full shadow-sm"
+                                className="w-full rounded-full cursor-pointer shadow-sm"
                                 onClick={onResetForm}
                             >
                                 <Plus className="w-4 h-4 mr-2" />
@@ -94,7 +98,7 @@ const FormBuilderSidebar = ({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="w-full rounded-full shadow-sm"
+                                className="w-full cursor-pointer rounded-full shadow-sm"
                                 onClick={onShowDraftsModal}
                             >
                                 <Edit className="w-4 h-4 mr-2" />
@@ -104,35 +108,46 @@ const FormBuilderSidebar = ({
                     </div>
 
                     {/* Scrollable Sections List */}
-                    <div className="flex-1 overflow-y-auto px-4 pb-4">
+                    <div className="flex-1 overflow-y-auto px-4 pb-4 py-2">
                         <div className="space-y-4">
                             <ReorderableList
                                 items={formData.sections}
                                 getId={(section) => section.id}
-                                onReorder={(from, to) => onReorderSections(from, to)}
+                                onReorder={(from, to) =>
+                                    onReorderSections(from, to)
+                                }
                                 renderItem={(section, index) => (
                                     <div
                                         key={section.id}
                                         className={cn(
                                             "flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-all duration-200 mb-4",
-                                            formData.selectedSection === section.id
+                                            formData.selectedSection ===
+                                                section.id
                                                 ? "bg-blue-100 border-blue-300 ring-2 ring-blue-400"
                                                 : "bg-white border-gray-300 hover:border-gray-400 hover:shadow-md",
-                                            !section.enabled && "opacity-60"
+                                            !section.enabled && "opacity-60",
                                         )}
                                         onClick={() => {
                                             if (section.id === "declaration") {
                                                 onInitDeclarationChecks();
                                                 onShowDeclarationModal();
                                             } else {
-                                                setFormData(prev => ({ ...prev, selectedSection: section.id }));
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    selectedSection: section.id,
+                                                }));
                                             }
                                         }}
                                     >
                                         <GripVertical className="w-4 h-4 text-gray-500 cursor-grab flex-shrink-0" />
                                         <Input
                                             value={section.title}
-                                            onChange={(e) => onUpdateSectionTitle(section.id, e.target.value)}
+                                            onChange={(e) =>
+                                                onUpdateSectionTitle(
+                                                    section.id,
+                                                    e.target.value,
+                                                )
+                                            }
                                             className="flex-1 text-sm font-medium text-gray-900 border-none bg-transparent focus:ring-0 focus:border-none p-0"
                                             onClick={(e) => e.stopPropagation()}
                                         />
@@ -167,7 +182,6 @@ const FormBuilderSidebar = ({
                     </Button>
                 </div>
             )}
-
         </div>
     );
 };

@@ -27,6 +27,7 @@ const FormSection = ({
     formData,
     editingComponent,
     setEditingComponent,
+    onAddComponent,
     onUpdateComponent,
     onDeleteComponent,
     onReorderComponents,
@@ -34,7 +35,16 @@ const FormSection = ({
     const selectedSection = formData.sections.find(section => section.id === formData.selectedSection);
 
     // Drag and drop handlers
-    // Removed drag and drop handlers
+    const handleDragOver = (e) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        const componentType = e.dataTransfer.getData("componentType");
+        if (!componentType || !selectedSection) return;
+        onAddComponent && onAddComponent(selectedSection.id, componentType);
+    };
 
     if (!selectedSection) {
         return (
@@ -194,6 +204,31 @@ const FormSection = ({
                                     </div>
                                 </div>
                             )}
+                            {component.type === "logo" && (
+                                <div>
+                                    <Label className="text-sm font-medium text-gray-700">Upload Logo</Label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files && e.target.files[0];
+                                            if (!file) return;
+                                            const reader = new FileReader();
+                                            reader.onload = () => {
+                                                const dataUrl = reader.result;
+                                                onUpdateComponent(sectionId, component.id, { src: dataUrl });
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }}
+                                        className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                                    />
+                                    {component.src && (
+                                        <div className="mt-3">
+                                            <img src={component.src} alt="Logo preview" className="h-12 w-auto object-contain border rounded" />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 )}
@@ -216,7 +251,10 @@ const FormSection = ({
 
                 {/* Components List */}
                 {selectedSection.components.length > 0 ? (
-                    <div className="space-y-4 min-h-32 p-4">
+                    <div className="space-y-4 min-h-32 p-4"
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                    >
                         <ReorderableList
                             items={selectedSection.components}
                             getId={(component) => component.id}
@@ -225,7 +263,10 @@ const FormSection = ({
                         />
                     </div>
                 ) : (
-                    <div className="text-center py-16 rounded-lg border border-gray-200 bg-gray-50">
+                    <div className="text-center py-16 rounded-lg border border-gray-200 bg-gray-50"
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                    >
                         <FileText className="w-20 h-20 mx-auto mb-6 text-gray-300" />
                         <h3 className="text-xl font-semibold text-gray-900 mb-3">
                             No components yet

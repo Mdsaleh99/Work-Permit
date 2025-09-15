@@ -21,8 +21,9 @@ export const workPermitService = {
         return response.data.data;
     },
 
-    deleteWorkPermit: async (workPermitId) => {
-        const response = await axiosInstance.delete(`/work-permit/${workPermitId}`);
-        return response.data.data;
+    duplicateWorkPermit: async (workPermitFormId) => {
+        const response = await axiosInstance.post(`/work-permit/${workPermitFormId}/duplicate`)
+
+        return response.data.data
     }
 }

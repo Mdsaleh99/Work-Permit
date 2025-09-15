@@ -118,49 +118,6 @@ export function SignUpForm({ className, ...props }) {
                         )}
                         <div className="grid gap-4">
                             <div className="grid gap-3">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="w-full cursor-pointer h-10"
-                                >
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        role="img"
-                                        viewBox="0 0 24 24"
-                                        fill="currentColor"
-                                    >
-                                        <title>Microsoft</title>
-                                        <rect
-                                            x="1"
-                                            y="1"
-                                            width="10"
-                                            height="10"
-                                            rx="1"
-                                        />
-                                        <rect
-                                            x="13"
-                                            y="1"
-                                            width="10"
-                                            height="10"
-                                            rx="1"
-                                        />
-                                        <rect
-                                            x="1"
-                                            y="13"
-                                            width="10"
-                                            height="10"
-                                            rx="1"
-                                        />
-                                        <rect
-                                            x="13"
-                                            y="13"
-                                            width="10"
-                                            height="10"
-                                            rx="1"
-                                        />
-                                    </svg>
-                                    Sign up with Microsoft
-                                </Button>
 
                                 <Button
                                     type="button"

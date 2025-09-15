@@ -8,7 +8,7 @@ import { useWorkPermitDraftStore } from "@/store/useWorkPermitDraftStore";
 /**
  * Custom hook for managing form builder state and operations
  */
-export const useFormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPermitId = null }) => {
+export const useFormBuilder = ({ title, sectionsTemplate, startWithTemplate = true, workPermitId = null, isReadOnly = false, permitType = "work" }) => {
     // Store hooks
     const { 
         createWorkPermit, 
@@ -40,15 +40,17 @@ export const useFormBuilder = ({ title, sectionsTemplate, startWithTemplate = tr
     // Form state
     const [formData, setFormData] = useState({
         title: title || "GENERAL WORK PERMIT",
-        sections: startWithTemplate && sectionsTemplate
-            ? sectionsTemplate
-            : PTW_SECTIONS.map((section) => ({
+        sections: startWithTemplate
+            ? (sectionsTemplate || PTW_SECTIONS.map((section) => ({
                 id: section.id,
                 title: section.title,
                 enabled: true,
                 components: [],
-            })),
-        selectedSection: (startWithTemplate && sectionsTemplate && sectionsTemplate[0]?.id) || "work-description",
+            })))
+            : [],
+        selectedSection: startWithTemplate
+            ? ((sectionsTemplate && sectionsTemplate[0]?.id) || "work-description")
+            : null,
     });
 
     // UI state
@@ -77,13 +79,11 @@ export const useFormBuilder = ({ title, sectionsTemplate, startWithTemplate = tr
     // Update formData when sectionsTemplate changes (for edit mode)
     useEffect(() => {
         if (workPermitId && sectionsTemplate && sectionsTemplate.length > 0) {
-            console.log("Updating formData with sectionsTemplate:", sectionsTemplate);
-            setFormData(prevFormData => ({
-                title: title || prevFormData.title,
+            setFormData({
+                title: title || "GENERAL WORK PERMIT",
                 sections: sectionsTemplate,
-                selectedSection: sectionsTemplate[0]?.id || "work-description"
-            }));
-            toast.success("Work permit data loaded successfully");
+                selectedSection: sectionsTemplate[0]?.id || null,
+            });
         }
     }, [workPermitId, sectionsTemplate, title]);
 

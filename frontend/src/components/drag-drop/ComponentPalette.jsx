@@ -33,6 +33,11 @@ const ComponentPalette = () => {
         logo: Image,
     };
 
+    const hiddenTypes = ["ppe-checklist", "hazard-checklist", "lmra-checklist"];
+    const visibleComponents = FORM_COMPONENTS.filter(
+        (c) => !hiddenTypes.includes(c.type)
+    );
+
     return (
         <div className="h-full">
             <div className="h-full flex flex-col">
@@ -46,7 +51,7 @@ const ComponentPalette = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto pt-0">
                     <div className="space-y-3">
-                        {FORM_COMPONENTS.map((component) => {
+                        {visibleComponents.map((component) => {
                             const Icon = componentIcons[component.type] || Type;
 
                             return (

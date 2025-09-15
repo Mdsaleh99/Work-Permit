@@ -14,7 +14,6 @@ const DeclarationModal = ({
     declarationChecks,
     updateDeclarationCheck,
     areAllDeclarationsChecked,
-    getDeclarationComponents,
     onSubmitForm,
     isSubmitting,
 }) => {
@@ -27,8 +26,20 @@ const DeclarationModal = ({
         }
     };
 
+    // Fixed declarations list (only these, no others)
+    const DECLARATIONS = [
+        { id: "site-preparation", label: "Site Preparation completed and work can commence.", required: true },
+        { id: "permit-issuing-authority", label: "Permit Issuing Authority", required: true },
+        { id: "permit-issuing-date", label: "Date", required: true },
+        { id: "safety-understanding", label: "I fully understand the safety precaution to be taken as described above.", required: true },
+        { id: "permit-receiving-authority", label: "Permit Receiving Authority", required: true },
+        { id: "permit-receiving-date", label: "Date", required: true },
+    ];
+
+    const allChecked = DECLARATIONS.every(d => declarationChecks[d.id]);
+
     return (
-        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-white/20 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-red-50">
@@ -53,7 +64,7 @@ const DeclarationModal = ({
 
                 {/* Content */}
                 <div className="p-6 overflow-y-auto max-h-[50vh]">
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         {/* Warning */}
                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                             <div className="flex items-start space-x-3">
@@ -72,46 +83,24 @@ const DeclarationModal = ({
                         </div>
 
                         {/* Declarations */}
-                        <div className="space-y-3">
-                            <h3 className="text-lg font-medium text-gray-900">Declarations</h3>
-                            {(() => {
-                                const declarationComponents = getDeclarationComponents();
-                                return declarationComponents.length > 0 ? (
-                                    declarationComponents.map((component) => (
-                                        <Card key={component.id} className="border border-gray-200">
-                                            <CardContent className="p-4">
-                                                <div className="flex items-start space-x-3">
-                                                    <Checkbox
-                                                        id={component.id}
-                                                        checked={declarationChecks[component.id] || false}
-                                                        onCheckedChange={(isChecked) => 
-                                                            updateDeclarationCheck(component.id, isChecked)
-                                                        }
-                                                        className="mt-1"
-                                                    />
-                                                    <Label 
-                                                        htmlFor={component.id}
-                                                        className="text-sm text-gray-700 leading-relaxed cursor-pointer"
-                                                    >
-                                                        {component.label}
-                                                        {component.required && (
-                                                            <span className="text-red-500 ml-1">*</span>
-                                                        )}
-                                                    </Label>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-8 text-gray-500">
-                                        <Shield className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                                        <p>No declaration components found in this form.</p>
-                                        <p className="text-sm mt-1">
-                                            Add components to the Declaration section to see them here.
-                                        </p>
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Declarations</h3>
+                            <div className="space-y-3">
+                                {DECLARATIONS.map((d) => (
+                                    <div key={d.id} className="flex items-start gap-3 p-4 rounded-lg border border-gray-200 hover:border-gray-300 bg-white">
+                                        <Checkbox
+                                            id={d.id}
+                                            checked={declarationChecks[d.id] || false}
+                                            onCheckedChange={(isChecked) => updateDeclarationCheck(d.id, isChecked)}
+                                            className="h-5 w-5 mt-0.5"
+                                        />
+                                        <Label htmlFor={d.id} className="text-[15px] leading-relaxed text-gray-800 cursor-pointer">
+                                            {d.label}
+                                            {d.required && (<span className="text-red-500 ml-1">*</span>)}
+                                        </Label>
                                     </div>
-                                );
-                            })()}
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -16,7 +16,6 @@ export const useFormOperations = ({
     showAgreeModal,
     setShowAgreeModal,
 }) => {
-    
     // Helper function to reorder arrays
     const reorderArray = (arr, from, to) => {
         const copy = [...arr];
@@ -27,13 +26,17 @@ export const useFormOperations = ({
 
     const getSectionTitle = (sectionId) => {
         const inForm = formData.sections.find((s) => s.id === sectionId);
-        if (inForm && typeof inForm.title === "string" && inForm.title.trim() !== "") {
+        if (
+            inForm &&
+            typeof inForm.title === "string" &&
+            inForm.title.trim() !== ""
+        ) {
             return inForm.title;
         }
         const base = PTW_SECTIONS.find((s) => s.id === sectionId);
         return base ? base.title : sectionId;
     };
-    
+
     const addComponentToSection = (sectionId, componentType) => {
         const getDefaultLabel = (type) => {
             switch (type) {
@@ -73,7 +76,7 @@ export const useFormOperations = ({
             if (PREDEFINED_COMPONENT_OPTIONS[type]) {
                 return PREDEFINED_COMPONENT_OPTIONS[type];
             }
-            
+
             // Fallback to generic options
             switch (type) {
                 case "radio":
@@ -95,19 +98,21 @@ export const useFormOperations = ({
             value: "",
         };
 
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            sections: prev.sections.map(section =>
+            sections: prev.sections.map((section) =>
                 section.id === sectionId
                     ? {
                           ...section,
                           components: [...section.components, newComponent],
                       }
-                    : section
+                    : section,
             ),
         }));
 
-        toast.success(`Added ${getDefaultLabel(componentType)} to ${getSectionTitle(sectionId)}`);
+        toast.success(
+            `Added ${getDefaultLabel(componentType)} to ${getSectionTitle(sectionId)}`,
+        );
     };
 
     const updateComponent = (sectionId, componentId, updates) => {
@@ -119,7 +124,7 @@ export const useFormOperations = ({
                     updates.options = PREDEFINED_COMPONENT_OPTIONS[type];
                     return;
                 }
-                
+
                 // Fallback to generic options
                 switch (type) {
                     case "radio":
@@ -136,100 +141,146 @@ export const useFormOperations = ({
             getDefaultOptions(updates.type);
         }
 
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            sections: prev.sections.map(section =>
+            sections: prev.sections.map((section) =>
                 section.id === sectionId
                     ? {
                           ...section,
-                          components: section.components.map(component =>
+                          components: section.components.map((component) =>
                               component.id === componentId
                                   ? { ...component, ...updates }
-                                  : component
+                                  : component,
                           ),
                       }
-                    : section
+                    : section,
             ),
         }));
     };
 
     const deleteComponent = (sectionId, componentId) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            sections: prev.sections.map(section =>
+            sections: prev.sections.map((section) =>
                 section.id === sectionId
                     ? {
                           ...section,
-                          components: section.components.filter(component => component.id !== componentId),
+                          components: section.components.filter(
+                              (component) => component.id !== componentId,
+                          ),
                       }
-                    : section
+                    : section,
             ),
         }));
     };
 
     const toggleSectionEnabled = (sectionId) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            sections: prev.sections.map(section =>
+            sections: prev.sections.map((section) =>
                 section.id === sectionId
                     ? { ...section, enabled: !section.enabled }
-                    : section
+                    : section,
             ),
         }));
     };
 
     const updateSectionTitle = (sectionId, newTitle) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            sections: prev.sections.map(section =>
+            sections: prev.sections.map((section) =>
                 section.id === sectionId
                     ? { ...section, title: newTitle }
-                    : section
+                    : section,
             ),
         }));
     };
 
     const reorderSections = (from, to) => {
         const newSections = reorderArray(formData.sections, from, to);
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
             sections: newSections,
         }));
     };
 
     const reorderComponents = (sectionId, from, to) => {
-        const section = formData.sections.find(s => s.id === sectionId);
+        const section = formData.sections.find((s) => s.id === sectionId);
         if (!section) return;
-        
+
         const newComponents = reorderArray(section.components, from, to);
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            sections: prev.sections.map(s =>
-                s.id === sectionId
-                    ? { ...s, components: newComponents }
-                    : s
+            sections: prev.sections.map((s) =>
+                s.id === sectionId ? { ...s, components: newComponents } : s,
             ),
         }));
     };
 
+    // Default declarations to use if the Declaration section has no components
+    const DEFAULT_DECLARATIONS = [
+        {
+            id: "decl-terms-1",
+            label: "Site Preparation completed and work can commence.",
+            required: true,
+        },
+        {
+            id: "decl-terms-2",
+            label: "Permit Issuing Authority confirms all controls are in place.",
+            required: true,
+        },
+        {
+            id: "decl-terms-3",
+            label: "I fully understand the safety precautions to be taken as described.",
+            required: true,
+        },
+        {
+            id: "decl-terms-4",
+            label: "All workers have been briefed and are competent for the task.",
+            required: true,
+        },
+        {
+            id: "decl-terms-5",
+            label: "Work area has been inspected and made safe.",
+            required: true,
+        },
+        {
+            id: "decl-terms-6",
+            label: "I agree to comply with all conditions of this permit.",
+            required: true,
+        },
+    ];
+
     const initDeclarationChecks = () => {
         const checks = {};
-        const declarationSection = formData.sections.find(section => section.id === "declaration");
-        if (declarationSection) {
-            declarationSection.components.forEach(component => {
-                checks[component.id] = false;
-            });
-        }
+        const declarationSection = formData.sections.find(
+            (section) => section.id === "declaration",
+        );
+        const components =
+            declarationSection &&
+            declarationSection.components &&
+            declarationSection.components.length > 0
+                ? declarationSection.components
+                : DEFAULT_DECLARATIONS;
+        components.forEach((component) => {
+            checks[component.id] = false;
+        });
         setDeclarationChecks(checks);
     };
 
     const getDeclarationComponents = () => {
-        const declarationSection = formData.sections.find(section => section.id === "declaration");
-        return declarationSection ? declarationSection.components : [];
+        const declarationSection = formData.sections.find(
+            (section) => section.id === "declaration",
+        );
+        const components = declarationSection
+            ? declarationSection.components
+            : [];
+        if (components && components.length > 0) return components;
+        return DEFAULT_DECLARATIONS;
     };
 
     const updateDeclarationCheck = (componentId, checked) => {
-        setDeclarationChecks(prev => ({
+        setDeclarationChecks((prev) => ({
             ...prev,
             [componentId]: checked,
         }));
@@ -237,7 +288,10 @@ export const useFormOperations = ({
 
     const areAllDeclarationsChecked = () => {
         const declarationKeys = Object.keys(declarationChecks);
-        return declarationKeys.length > 0 && declarationKeys.every(key => declarationChecks[key]);
+        return (
+            declarationKeys.length > 0 &&
+            declarationKeys.every((key) => declarationChecks[key])
+        );
     };
 
     const resetForm = () => {

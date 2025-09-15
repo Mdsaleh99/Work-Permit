@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { createLazyFileRoute, Link, Outlet, useLocation } from '@tanstack/react-router'
 import { Flame, Wrench, ClipboardCheck, Shield } from 'lucide-react';
+import { WorkPermitList } from '@/components/form/WorkPermitList';
 
 export const Route = createLazyFileRoute('/page/app/permit')({
   component: RouteComponent,
@@ -38,7 +39,10 @@ function RouteComponent() {
                   </CardHeader>
                   <CardContent className="pt-0">
                     <Button className="w-full" asChild>
-                      <Link to="/page/app/permit/$type" params={{ type: p.id }}>Open</Link>
+                      {/* <Link to="/page/app/permit/$type" params={{ type: p.id }}>Open</Link> */}
+                      <Link to={"/page/app/form-builder"}>
+                        Open
+                      </Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -49,6 +53,9 @@ function RouteComponent() {
       ) : (
         <Outlet />
       )}
+      <div>
+        <WorkPermitList />
+      </div>
     </div>
   );
 }

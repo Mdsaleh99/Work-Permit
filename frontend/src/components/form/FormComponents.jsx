@@ -834,6 +834,23 @@ export const LogoComponent = ({
     onDelete,
     onToggleEdit,
 }) => {
+    const fileInputRef = useRef(null);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result;
+            onUpdate && onUpdate({ ...component, src: dataUrl, alt: component.alt || "Company Logo" });
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const clearLogo = () => {
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        onUpdate && onUpdate({ ...component, src: "" });
+    };
     if (isEditing) {
         return (
             <div className="relative group">
@@ -853,25 +870,32 @@ export const LogoComponent = ({
                         </Button>
                     </div>
                 </div>
-                <Input
-                    value={component.src}
-                    onChange={(e) =>
-                        onUpdate({ ...component, src: e.target.value })
-                    }
-                    placeholder="Enter logo URL..."
-                />
+                <div className="space-y-2">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                    />
+                    {component.src && (
+                        <div className="flex items-center gap-3">
+                            <img src={component.src} alt={component.alt || "Logo"} className="h-10 w-auto object-contain border rounded" />
+                            <Button size="sm" variant="outline" onClick={clearLogo}>Remove</Button>
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }
 
     return (
         <div className="mb-4 flex justify-end">
-            <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white font-bold">
-                    e
-                </div>
-                <span className="font-semibold">expertise</span>
-            </div>
+            {component.src ? (
+                <img src={component.src} alt={component.alt || "Company Logo"} className="h-10 w-auto object-contain" />
+            ) : (
+                <div className="text-sm text-gray-500">No logo uploaded</div>
+            )}
         </div>
     );
 };

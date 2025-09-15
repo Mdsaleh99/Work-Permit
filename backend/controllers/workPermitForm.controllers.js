@@ -375,37 +375,105 @@ export const updateWorkPermitForm = asyncHandler(async (req, res) => {
     );
 });
 
-export const deleteWorkPermitForm = asyncHandler(async (req, res) => {
-    const { workPermitFormId } = req.params;
-    const userId = req.user.id;
+
+export const duplicateWorkPermitForm = asyncHandler(async (req, res) => {
+    const { workPermitFormId } = req.params
+    const userId = req.user.id
 
     if (!workPermitFormId) {
-        throw new ApiError(401, "work permit id is required");
+        throw new ApiError(400, "work permit id is required");
     }
 
-    if (!userId) {
-        throw new ApiError(401, "user id is required");
-    }
-
-    // Check if form exists and user has permission
-    const existingForm = await db.workPermitForm.findUnique({
+    // Get original work permit
+    const originalWorkPermitForm = await db.workPermitForm.findUnique({
         where: { id: workPermitFormId },
+        include: {
+            sections: {
+                include: {
+                    components: true,
+                },
+            },
+        },
     });
 
-    if (!existingForm) {
-        throw new ApiError(404, "Work permit form not found");
+    if (!originalWorkPermitForm) {
+        throw new ApiError(404, "work permit form not found");
     }
 
-    if (existingForm.userId !== userId) {
-        throw new ApiError(403, "Unauthorized to delete this form");
+    // console.log("orignal userid", originalWorkPermitForm.userId); 
+    // console.log("userid", userId); 
+    if (originalWorkPermitForm.userId !== userId) {
+        throw new ApiError(403, "Unauthorized to duplicate this work permit");
     }
+    
 
-    // Delete the form (sections and components will be cascade deleted)
-    await db.workPermitForm.delete({
-        where: { id: workPermitFormId },
+    // Create duplicated work permit (create a new WorkPermitForm, not a Draft)
+    const duplicatedWorkPermitForm = await db.workPermitForm.create({
+        data: {
+            title: `${originalWorkPermitForm.title} (Copy)`,
+            userId,
+            companyId: originalWorkPermitForm.companyId,
+            sections: {
+                create: originalWorkPermitForm.sections.map((section) => ({
+                    title: section.title,
+                    enabled: section.enabled,
+                    components: {
+                        create: section.components.map((component) => ({
+                            label: component.label,
+                            type: component.type,
+                            required: component.required,
+                            enabled: component.enabled,
+                            options: component.options,
+                        })),
+                    },
+                })),
+            },
+        },
+        include: {
+            sections: {
+                include: {
+                    components: true,
+                },
+            },
+        },
     });
 
-    return res.status(200).json(
-        new ApiResponse(200, {}, "Work permit form deleted successfully")
+    res.status(201).json(
+        new ApiResponse(201, duplicatedWorkPermitForm, "work permit duplicated successfully")
     );
-});
+})
+
+// export const deleteWorkPermitForm = asyncHandler(async (req, res) => {
+//     const { workPermitFormId } = req.params;
+//     const userId = req.user.id;
+
+//     if (!workPermitFormId) {
+//         throw new ApiError(401, "work permit id is required");
+//     }
+
+//     if (!userId) {
+//         throw new ApiError(401, "user id is required");
+//     }
+
+//     // Check if form exists and user has permission
+//     const existingForm = await db.workPermitForm.findUnique({
+//         where: { id: workPermitFormId },
+//     });
+
+//     if (!existingForm) {
+//         throw new ApiError(404, "Work permit form not found");
+//     }
+
+//     if (existingForm.userId !== userId) {
+//         throw new ApiError(403, "Unauthorized to delete this form");
+//     }
+
+//     // Delete the form (sections and components will be cascade deleted)
+//     await db.workPermitForm.delete({
+//         where: { id: workPermitFormId },
+//     });
+
+//     return res.status(200).json(
+//         new ApiResponse(200, {}, "Work permit form deleted successfully")
+//     );
+// });

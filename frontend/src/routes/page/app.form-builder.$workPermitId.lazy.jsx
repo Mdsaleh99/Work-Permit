@@ -51,20 +51,30 @@ function RouteComponent() {
         );
     }
 
-    // Transform the work permit data to match FormBuilder's expected format
-    const sectionsTemplate = currentWorkPermit.sections?.map(section => ({
+    // Transform the work permit data to match FormBuilder's expected format (robust to different shapes)
+    const rawSections = Array.isArray(currentWorkPermit.sections)
+        ? currentWorkPermit.sections
+        : Array.isArray(currentWorkPermit.form?.sections)
+            ? currentWorkPermit.form.sections
+            : Array.isArray(currentWorkPermit.data?.sections)
+                ? currentWorkPermit.data.sections
+                : (typeof currentWorkPermit.sections === "string"
+                    ? (() => { try { return JSON.parse(currentWorkPermit.sections); } catch { return []; } })()
+                    : []);
+
+    const sectionsTemplate = rawSections.map(section => ({
         id: section.id,
         title: section.title,
         enabled: section.enabled,
-        components: section.components?.map(component => ({
+        components: (section.components || []).map(component => ({
             id: component.id,
             label: component.label,
             type: component.type,
             required: component.required,
             enabled: component.enabled,
             options: component.options || []
-        })) || []
-    })) || [];
+        }))
+    }));
 
     console.log("Route component data:", { 
         workPermitId, 
@@ -75,9 +85,10 @@ function RouteComponent() {
 
     return (
         <FormBuilderModular 
-            title={currentWorkPermit.title}
+            key={workPermitId}
+            title={currentWorkPermit.title || "Work Permit"}
             sectionsTemplate={sectionsTemplate}
-            startWithTemplate={true}
+            startWithTemplate={false}
             workPermitId={workPermitId}
         />
     );

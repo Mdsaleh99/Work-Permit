@@ -28,9 +28,11 @@ const FormBuilderModular = ({
     title, 
     sectionsTemplate, 
     startWithTemplate = true, 
-    workPermitId = null 
+    workPermitId = null,
+    isReadOnly = false,
+    permitType = "work"
 }) => {
-    console.log("FormBuilder props:", { title, sectionsTemplate, startWithTemplate, workPermitId });
+    console.log("FormBuilder props:", { title, sectionsTemplate, startWithTemplate, workPermitId, isReadOnly, permitType });
     
     const navigate = useNavigate();
 
@@ -39,7 +41,9 @@ const FormBuilderModular = ({
         title, 
         sectionsTemplate, 
         startWithTemplate, 
-        workPermitId 
+        workPermitId,
+        isReadOnly,
+        permitType
     });
 
     // Destructure state for easier access
@@ -97,6 +101,7 @@ const FormBuilderModular = ({
         setFormData,
         companyData,
         createOrUpdateDraft,
+        getAllDrafts,
         getDraftById,
         deleteDraft,
         duplicateDraft,
@@ -121,6 +126,13 @@ const FormBuilderModular = ({
         setShowAgreeModal,
     });
 
+    // Propagate workPermitId to formData for header disable logic
+    useEffect(() => {
+        if (workPermitId && !formData.workPermitId) {
+            setFormData(prev => ({ ...prev, workPermitId }));
+        }
+    }, [workPermitId]);
+
     // Load drafts on mount
     useEffect(() => {
         getAllDrafts();
@@ -129,16 +141,19 @@ const FormBuilderModular = ({
     // Restore latest draft on component mount (only for new forms, not edit mode)
     useEffect(() => {
         if (!workPermitId && companyData?.id) {
-            // Small delay to ensure company data is fully loaded
             const timer = setTimeout(() => {
                 draftOperations.restoreLatestDraft();
-            }, 500);
+            }, 300);
             return () => clearTimeout(timer);
         }
     }, [companyData?.id, workPermitId, draftOperations.restoreLatestDraft]);
 
     // Handle form submission
     const handleSubmitForm = async () => {
+        if (workPermitId) {
+            toast.error("Submit is disabled when opening an existing form");
+            return;
+        }
         if (!companyData?.id) {
             toast.error("Company information is required");
             return;
@@ -161,7 +176,7 @@ const FormBuilderModular = ({
             };
 
             if (workPermitId) {
-                await updateWorkPermit(workPermitId, workPermitData);
+                await updateWorkPermit(workPermitData, companyData.id, workPermitId);
                 toast.success("Work permit updated successfully");
             } else {
                 await createWorkPermit(workPermitData, companyData.id);
@@ -249,7 +264,7 @@ const FormBuilderModular = ({
     if (showPrintView) {
         return (
             <div className="min-h-screen bg-white">
-                <PrintView formData={formData} />
+                <PrintView formData={formData} onToggleView={() => setShowPrintView(false)} />
             </div>
         );
     }
@@ -283,6 +298,7 @@ const FormBuilderModular = ({
                 setShowComponentsPanel={setShowComponentsPanel}
                 isAutoSaving={isAutoSaving}
                 lastSavedTime={lastSavedTime}
+                isReadOnly={isReadOnly}
                 onSave={handleSave}
                 onSubmit={handleSubmit}
                 onResetForm={handleResetForm}
@@ -328,6 +344,7 @@ const FormBuilderModular = ({
                             formData={formData}
                             editingComponent={editingComponent}
                             setEditingComponent={setEditingComponent}
+                            onAddComponent={formOperations.addComponentToSection}
                             onUpdateComponent={formOperations.updateComponent}
                             onDeleteComponent={formOperations.deleteComponent}
                             onReorderComponents={formOperations.reorderComponents}

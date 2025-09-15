@@ -14,7 +14,7 @@ export const useCompanyStore = create((set) => ({
         try {
             const company = await companyService.createCompany(data);
             set({ companyData: company });
-            console.log("companyData: ", company);
+            // console.log("companyData: ", company);
         } catch (error) {
             set({ companyError: error });
             throw error;
@@ -27,6 +27,7 @@ export const useCompanyStore = create((set) => ({
         try {
             const getCompany = await companyService.getCompanyByUser();
             set({ companyData: getCompany, companyError: null });
+            // returning data because we need to use the company data in the component, if we don't return the data then the data will not be available in the component
             return getCompany; // Return the company data
         } catch (error) {
             set({ companyError: error, companyData: null });

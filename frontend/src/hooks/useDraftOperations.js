@@ -11,6 +11,7 @@ export const useDraftOperations = ({
     setFormData,
     companyData,
     createOrUpdateDraft,
+    getAllDrafts,
     getDraftById,
     deleteDraft,
     duplicateDraft,
@@ -93,7 +94,33 @@ export const useDraftOperations = ({
         // Set flag to prevent auto-save conflicts
         setIsCreatingNewForm(true);
         
-        // Clear current draft ID to prevent auto-save from overwriting
+        // 1) Save the current form as a manual draft (so it appears in Drafts)
+        try {
+            const hasComponents = formData?.sections?.some(section => section.components.length > 0);
+            if (formData?.title && hasComponents) {
+                const previousDraftData = {
+                    title: formData.title,
+                    sections: formData.sections.map(section => ({
+                        title: section.title,
+                        enabled: section.enabled !== false,
+                        components: section.components.map(component => ({
+                            label: component.label,
+                            type: component.type,
+                            required: component.required || false,
+                            enabled: component.enabled !== false,
+                            options: component.options || []
+                        }))
+                    }))
+                };
+
+                await createOrUpdateDraft(previousDraftData, companyData.id, false);
+                toast.success("Current form saved to Drafts");
+            }
+        } catch (e) {
+            console.error("Failed to save current form to drafts before creating new:", e);
+        }
+
+        // Clear current draft ID to prevent auto-save from overwriting the new template draft
         setCurrentDraftId(null);
 
         // Start with template that includes all sections and components
@@ -124,6 +151,8 @@ export const useDraftOperations = ({
             console.log("Creating new draft with data:", draftData);
             const savedDraft = await createOrUpdateDraft(draftData, companyData.id, true);
             setCurrentDraftId(savedDraft.id);
+            // Refresh drafts list so the previous manual draft appears immediately
+            try { await getAllDrafts?.(); } catch {}
             toast.success("New form created with template");
         } catch (error) {
             console.error("Error creating new draft:", error);
@@ -210,6 +239,12 @@ export const useDraftOperations = ({
                 return;
             }
 
+            // Prevent repeated restores/toasts within a session per company
+            const restoreGuardKey = `ptw_restored_latest_${companyData.id}`;
+            if (sessionStorage.getItem(restoreGuardKey)) {
+                return;
+            }
+
             // Get all drafts for the company
             const allDrafts = await getAllDrafts(companyData.id);
             if (!allDrafts || allDrafts.length === 0) {
@@ -221,10 +256,10 @@ export const useDraftOperations = ({
             const latestDraft = allDrafts.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
             
             if (latestDraft) {
-                console.log("Restoring latest draft:", latestDraft.title);
                 await loadDraft(latestDraft.id);
                 setCurrentDraftId(latestDraft.id);
-                toast.success(`Restored draft: ${latestDraft.title}`);
+                // Mark restored for this session
+                sessionStorage.setItem(restoreGuardKey, "1");
             }
         } catch (error) {
             console.error("Error restoring latest draft:", error);

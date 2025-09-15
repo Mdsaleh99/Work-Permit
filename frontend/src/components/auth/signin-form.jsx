@@ -169,49 +169,6 @@ export function SignInForm({ className, ...props }) {
                                     )}
                                 </Button>
                                 <div className="flex flex-col gap-4">
-                                    <Button
-                                        variant="outline"
-                                        className="w-full cursor-pointer h-10"
-                                        type="button"
-                                    >
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            role="img"
-                                            viewBox="0 0 24 24"
-                                            fill="currentColor"
-                                        >
-                                            <title>Microsoft</title>
-                                            <rect
-                                                x="1"
-                                                y="1"
-                                                width="10"
-                                                height="10"
-                                                rx="1"
-                                            />
-                                            <rect
-                                                x="13"
-                                                y="1"
-                                                width="10"
-                                                height="10"
-                                                rx="1"
-                                            />
-                                            <rect
-                                                x="1"
-                                                y="13"
-                                                width="10"
-                                                height="10"
-                                                rx="1"
-                                            />
-                                            <rect
-                                                x="13"
-                                                y="13"
-                                                width="10"
-                                                height="10"
-                                                rx="1"
-                                            />
-                                        </svg>
-                                        Login with Microsoft
-                                    </Button>
 
                                     <Button
                                         variant="outline"

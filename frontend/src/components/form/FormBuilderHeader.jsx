@@ -10,9 +10,9 @@ import {
     Plus,
     Edit,
     Trash2,
-    Settings
+    Settings,
+    Image as ImageIcon
 } from "lucide-react";
-import { cn } from "../../lib/utils";
 
 /**
  * Header component for the form builder
@@ -28,15 +28,29 @@ const FormBuilderHeader = ({
     setShowComponentsPanel,
     isAutoSaving,
     lastSavedTime,
+    isReadOnly = false,
     onSave,
     onSubmit,
-    onResetForm,
-    onShowDraftsModal,
-    onClearDraft,
-    onTestAutoSave,
-    drafts,
+    // onResetForm,
+    // onShowDraftsModal,
+    // onClearDraft,
+    // onTestAutoSave,
+    // drafts,
     isMobile,
 }) => {
+    const fileInputRef = React.useRef(null);
+
+    const handleLogoUpload = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result;
+            setFormData(prev => ({ ...prev, logoSrc: dataUrl }));
+        };
+        reader.readAsDataURL(file);
+    };
+
     return (
         <div className="bg-white border-b border-gray-200 shadow-sm">
             <div className="px-6 py-4">
@@ -47,12 +61,12 @@ const FormBuilderHeader = ({
                         {isMobile && sidebarCollapsed && (
                             <button
                                 onClick={() => setSidebarCollapsed(false)}
-                                className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+                                className="p-2 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
                             >
                                 <Menu className="w-5 h-5 text-gray-600" />
                             </button>
                         )}
-                        
+
                         <div className="flex items-center space-x-3">
                             <div className="p-2 bg-orange-100 rounded-lg">
                                 <Flame className="w-6 h-6 text-orange-500" />
@@ -71,7 +85,8 @@ const FormBuilderHeader = ({
                                     )}
                                     {!isAutoSaving && lastSavedTime && (
                                         <div className="text-xs text-gray-500">
-                                            Saved {lastSavedTime.toLocaleTimeString()}
+                                            Saved{" "}
+                                            {lastSavedTime.toLocaleTimeString()}
                                         </div>
                                     )}
                                 </div>
@@ -82,61 +97,73 @@ const FormBuilderHeader = ({
                     {/* Right side - Action buttons */}
                     <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-end overflow-x-auto">
                         {/* Form controls */}
+                        {/* Reset Form removed */}
+
                         <Button
-                            variant="outline"
                             size="sm"
-                            className="rounded-lg shadow-sm border-gray-300 hover:border-gray-400"
-                            onClick={onResetForm}
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Reset Form</span>
-                        </Button>
-                        
-                        <Button 
-                            size="sm" 
-                            className="rounded-lg shadow-sm bg-gray-600 hover:bg-gray-700 text-white" 
+                            className="rounded-lg shadow-sm bg-gray-600 hover:bg-gray-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={onSave}
+                            disabled={isReadOnly}
                         >
                             <Save className="w-4 h-4 mr-2" />
                             <span className="hidden sm:inline">Save</span>
-                            {isAutoSaving && (
+                            {isAutoSaving && !isReadOnly && (
                                 <div className="ml-2 flex items-center">
                                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                                 </div>
                             )}
                         </Button>
-                        
-                        <Button 
-                            size="sm" 
-                            className="rounded-lg shadow-sm bg-blue-600 hover:bg-blue-700 text-white font-medium" 
+
+                        {/* Upload Logo (for print header) */}
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            className="hidden"
+                        />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-lg cursor-pointer shadow-sm border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() =>
+                                fileInputRef.current &&
+                                fileInputRef.current.click()
+                            }
+                            disabled={isReadOnly}
+                        >
+                            <ImageIcon className="w-4 h-4 mr-2" />
+                            <span className="hidden sm:inline">Logo</span>
+                        </Button>
+
+                        <Button
+                            size="sm"
+                            className="rounded-lg cursor-pointer shadow-sm bg-blue-600 hover:bg-blue-700 text-white font-medium disabled:opacity-60 disabled:cursor-not-allowed"
                             onClick={onSubmit}
+                            disabled={Boolean(formData?.workPermitId) || isReadOnly}
                         >
                             <FileCheck className="w-4 h-4 mr-2" />
                             <span className="hidden sm:inline">Submit</span>
                         </Button>
 
-                        {/* Draft controls */}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-lg shadow-sm border-gray-300 hover:border-gray-400"
-                            onClick={onShowDraftsModal}
-                        >
-                            <Edit className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Drafts</span>
-                            <span className="sm:hidden">({drafts?.length || 0})</span>
-                        </Button>
+                        {/* Drafts button removed */}
 
                         {/* Print view toggle */}
                         <Button
                             variant="outline"
                             size="sm"
-                            className="rounded-lg shadow-sm border-gray-300 hover:border-gray-400"
+                            className="rounded-lg cursor-pointer shadow-sm border-gray-300 hover:border-gray-400"
                             onClick={() => setShowPrintView(!showPrintView)}
                         >
                             <Printer className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">{showPrintView ? "Builder" : "Print View"}</span>
-                            <span className="sm:hidden">{showPrintView ? "Build" : "Print"}</span>
+                            <span className="hidden sm:inline">
+                                {showPrintView
+                                    ? "Switch to Builder"
+                                    : "Switch to Print View"}
+                            </span>
+                            <span className="sm:hidden">
+                                {showPrintView ? "Builder" : "Print"}
+                            </span>
                         </Button>
 
                         {/* Components toggle - only show on mobile */}
@@ -144,37 +171,22 @@ const FormBuilderHeader = ({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="rounded-lg shadow-sm border-gray-300 hover:border-gray-400"
-                                onClick={() => setShowComponentsPanel(!showComponentsPanel)}
+                                className="rounded-lg shadow-sm cursor-pointer border-gray-300 hover:border-gray-400"
+                                onClick={() =>
+                                    setShowComponentsPanel(!showComponentsPanel)
+                                }
                             >
                                 <Settings className="w-4 h-4 mr-2" />
-                                <span className="hidden sm:inline">Components</span>
+                                <span className="hidden sm:inline">
+                                    Components
+                                </span>
                                 <span className="sm:hidden">Components</span>
                             </Button>
                         )}
 
-                        {/* Clear draft */}
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="rounded-lg text-gray-600 hover:text-gray-800 hover:bg-gray-100" 
-                            onClick={onClearDraft}
-                        >
-                            <span className="hidden sm:inline">Clear Draft</span>
-                            <span className="sm:hidden">Clear</span>
-                        </Button>
+                        {/* Clear Draft removed */}
 
-                        {/* Debug button - only show in development */}
-                        {process.env.NODE_ENV === 'development' && (
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="rounded-lg text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100" 
-                                onClick={onTestAutoSave}
-                            >
-                                Debug
-                            </Button>
-                        )}
+                        {/* Debug button removed */}
 
                         {/* Print button - only show in print view */}
                         {showPrintView && (
@@ -196,7 +208,12 @@ const FormBuilderHeader = ({
                 <div className="px-6 pb-4">
                     <Input
                         value={formData.title}
-                        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                        onChange={(e) =>
+                            setFormData((prev) => ({
+                                ...prev,
+                                title: e.target.value,
+                            }))
+                        }
                         placeholder="Enter form title..."
                         className="text-lg font-semibold border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />

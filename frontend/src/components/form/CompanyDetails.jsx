@@ -32,10 +32,6 @@ function CompanyDetails() {
         }
     };
 
-    // ! const handleEditCompany = (companyId) => {
-    // !    navigate({ to: `/page/app/edit-company/${companyId}` });
-    //! };
-
     if (loading) {
         return (
             <div className="max-w-6xl mx-auto p-6 mt-20">

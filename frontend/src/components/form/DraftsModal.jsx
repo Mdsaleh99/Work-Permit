@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { X, Edit, Trash2, Copy, Calendar, Clock } from "lucide-react";
@@ -31,7 +32,7 @@ const DraftsModal = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-white/20 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -59,77 +60,54 @@ const DraftsModal = ({
                             <span className="ml-2 text-gray-600">Loading drafts...</span>
                         </div>
                     ) : drafts && drafts.length > 0 ? (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {drafts.map((draft) => (
-                                <Card key={draft.id} className="hover:shadow-md transition-shadow">
-                                    <CardHeader className="pb-3">
-                                        <div className="flex items-start justify-between">
-                                            <CardTitle className="text-lg font-semibold text-gray-900 truncate">
-                                                {draft.title}
-                                            </CardTitle>
-                                            <div className="flex items-center space-x-1 ml-2">
-                                                {draft.isAutoSave && (
-                                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                                        Auto-save
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="pt-0">
-                                        <div className="space-y-3">
-                                            {/* Draft info */}
-                                            <div className="text-sm text-gray-600">
-                                                <div className="flex items-center space-x-2">
-                                                    <Calendar className="w-4 h-4" />
-                                                    <span>Created: {formatDate(draft.createdAt)}</span>
-                                                </div>
-                                                <div className="flex items-center space-x-2 mt-1">
-                                                    <Clock className="w-4 h-4" />
-                                                    <span>Updated: {formatTime(draft.updatedAt)}</span>
-                                                </div>
-                                                <div className="mt-2">
-                                                    <span className="text-xs text-gray-500">
-                                                        {draft.sections?.length || 0} sections
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* Action buttons */}
-                                            <div className="flex items-center space-x-2 pt-2">
+                        <Table className="text-sm">
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Title</TableHead>
+                                    <TableHead>Created</TableHead>
+                                    <TableHead>Updated</TableHead>
+                                    <TableHead>Sections</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {drafts.map((draft) => (
+                                    <TableRow key={draft.id}>
+                                        <TableCell className="font-medium text-gray-900">{draft.title}</TableCell>
+                                        <TableCell>{formatDate(draft.createdAt)}</TableCell>
+                                        <TableCell>{formatTime(draft.updatedAt)}</TableCell>
+                                        <TableCell>{draft.sections?.length || 0}</TableCell>
+                                        <TableCell>
+                                            {draft.isAutoSave ? (
+                                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Auto-save</span>
+                                            ) : (
+                                                <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">Manual</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end space-x-2">
                                                 <Button
                                                     size="sm"
-                                                    onClick={() => {
-                                                        onLoadDraft(draft.id);
-                                                        setShowDraftsModal(false);
-                                                    }}
-                                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                                                    onClick={() => { onLoadDraft(draft.id); setShowDraftsModal(false); }}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white"
                                                 >
                                                     <Edit className="w-4 h-4 mr-1" />
                                                     Open
                                                 </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => onDuplicateDraft(draft.id)}
-                                                    className="px-3"
-                                                >
+                                                <Button variant="outline" size="sm" onClick={() => onDuplicateDraft(draft.id)} className="px-3">
                                                     <Copy className="w-4 h-4" />
                                                 </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => onDeleteDraft(draft.id)}
-                                                    className="px-3 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                >
+                                                <Button variant="outline" size="sm" onClick={() => onDeleteDraft(draft.id)} className="px-3 text-red-600 hover:text-red-700 hover:bg-red-50">
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                            <TableCaption>Over drafts list</TableCaption>
+                        </Table>
                     ) : (
                         <div className="text-center py-12">
                             <div className="text-gray-400 mb-4">

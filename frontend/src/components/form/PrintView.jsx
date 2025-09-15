@@ -1,10 +1,12 @@
 import React from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { Button } from "../ui/button";
 import { Printer, ArrowLeft } from "lucide-react";
 
 // COMPONENT JSX (No changes, this logic is stable)
-const PrintView = ({ formData, customSectionNames = {} }) => {
+const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app/form-builder", onToggleView }) => {
+    const navigate = useNavigate();
     if (!formData) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -123,15 +125,15 @@ const PrintView = ({ formData, customSectionNames = {} }) => {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => window.history.back()}
+                            onClick={() => onToggleView ? onToggleView() : navigate({ to: builderPath })}
                             className="flex items-center space-x-2"
                         >
                             <ArrowLeft className="w-4 h-4" />
                             <span>Back to Builder</span>
                         </Button>
-                        <h1 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-lg font-semibold text-gray-900">
                             Print Preview: {formData.title || "GENERAL WORK PERMIT"}
-                        </h1>
+                        </h3>
                     </div>
                     <div className="flex items-center space-x-3">
                         <Button
@@ -162,7 +164,11 @@ const PrintView = ({ formData, customSectionNames = {} }) => {
                 </div>
                 <div className="ptw-header-right">
                     <div className="ptw-logo">
-                        <span className="ptw-logo-text">expertise</span>
+                        {formData.logoSrc ? (
+                            <img src={formData.logoSrc} alt="Company Logo" className="ptw-logo-img" />
+                        ) : (
+                            <span className="ptw-logo-text">expertise</span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -247,6 +253,7 @@ const PrintView = ({ formData, customSectionNames = {} }) => {
                 .ptw-title { font-size: 18px; font-weight: bold; text-transform: uppercase; }
                 .ptw-header-right { flex: 1; text-align: right; }
                 .ptw-logo-text { font-size: 12px; font-weight: bold; color: #0066cc; }
+                .ptw-logo-img { height: 24px; width: auto; object-fit: contain; }
 
                 /* --- Core Row Layout --- */
                 .ptw-main-content {
