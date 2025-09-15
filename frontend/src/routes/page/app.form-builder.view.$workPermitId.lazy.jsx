@@ -1,28 +1,22 @@
 import { createLazyFileRoute, useParams } from "@tanstack/react-router";
-import WorkPermitEditor from "@/components/form/WorkPermitEditor";
+import WorkPermitViewer from "@/components/form/WorkPermitViewer";
 import { workPermitService } from "@/services/workPermit.service";
 import { useEffect, useState } from "react";
 import { Loader } from "lucide-react";
-import { useWorkPermitStore } from "@/store/useWorkPermitStore";
 
-export const Route = createLazyFileRoute("/page/app/form-builder/$workPermitId")({
+export const Route = createLazyFileRoute("/page/app/form-builder/view/$workPermitId")({
     component: RouteComponent,
 });
 
 function RouteComponent() {
-    const { workPermitId } = useParams({ from: "/page/app/form-builder/$workPermitId" });
+    const { workPermitId } = useParams({ from: "/page/app/form-builder/view/$workPermitId" });
     const [isLoading, setIsLoading] = useState(true);
     const [workPermit, setWorkPermit] = useState(null);
-    const { currentWorkPermit } = useWorkPermitStore();
 
-    
-    
     useEffect(() => {
         const loadWorkPermit = async () => {
             try {
                 const data = await workPermitService.getWorkPermitById(workPermitId);
-                console.log("data", data);
-                
                 setWorkPermit(data);
             } catch (error) {
                 console.error("Error loading work permit:", error);
@@ -31,11 +25,7 @@ function RouteComponent() {
             }
         };
 
-        if (workPermitId) {
-            loadWorkPermit();
-        } else {
-            setIsLoading(false);
-        }
+        if (workPermitId) loadWorkPermit(); else setIsLoading(false);
     }, [workPermitId]);
 
     if (isLoading) {
@@ -58,14 +48,13 @@ function RouteComponent() {
         );
     }
 
-    // Transform the work permit data to match FormBuilder's expected format (robust to different shapes)
     const rawSections = Array.isArray(workPermit.sections)
         ? workPermit.sections
         : Array.isArray(workPermit.form?.sections)
             ? workPermit.form.sections
             : Array.isArray(workPermit.data?.sections)
                 ? workPermit.data.sections
-                : (typeof workPermit.sections === "array"
+                : (typeof workPermit.sections === "string"
                     ? (() => { try { return JSON.parse(currentWorkPermit.sections); } catch { return []; } })()
                     : []);
 
@@ -83,19 +72,13 @@ function RouteComponent() {
         }))
     }));
 
-    console.log("Route component data:", { 
-        workPermitId, 
-        currentWorkPermit, 
-        sectionsTemplate,
-        title: currentWorkPermit.title 
-    });
-
     return (
-        <WorkPermitEditor
+        <WorkPermitViewer
             key={workPermitId}
             title={workPermit.title || "Work Permit"}
             sectionsTemplate={sectionsTemplate}
-            workPermitId={workPermitId}
+            onEdit={() => window.location.assign(`/page/app/form-builder/${workPermitId}`)}
         />
     );
 }
+

@@ -191,26 +191,16 @@ function WorkPermitList() {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            onClick={() =>
-                                                handleViewWorkPermit(
-                                                    workPermit.id,
-                                                )
-                                            }
+                                            onClick={() => navigate({ to: `/page/app/form-builder/view/${workPermit.id}` })}
                                         >
-                                            <Eye className="mr-1 h-3 w-3" />{" "}
-                                            Open
+                                            <Eye className="mr-1 h-3 w-3" /> View
                                         </Button>
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            onClick={() =>
-                                                handleEditWorkPermit(
-                                                    workPermit.id,
-                                                )
-                                            }
+                                            onClick={() => navigate({ to: `/page/app/form-builder/${workPermit.id}` })}
                                         >
-                                            <Edit className="mr-1 h-3 w-3" />{" "}
-                                            Edit
+                                            <Edit className="mr-1 h-3 w-3" /> Edit
                                         </Button>
                                         <Button
                                             variant="outline"
