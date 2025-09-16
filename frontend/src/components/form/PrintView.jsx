@@ -35,34 +35,52 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
     };
 
     const renderComponent = (component, sectionId) => {
+        const answers = formData?.answers || null;
+        const answerVal = answers ? answers[component.id] : undefined;
         // This entire function is stable and correct. No changes.
         switch (component.type) {
             case 'text':
                 return (
                     <div className={`ptw-component-inner ${['work-description', 'tools-equipment', 'certificate'].includes(sectionId) ? 'ptw-field-horizontal' : ''}`}>
                         <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-input-line"></div>
+                        {answers ? (
+                            <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(answerVal || '')}</span></div>
+                        ) : (
+                            <div className="ptw-input-line"></div>
+                        )}
                     </div>
                 );
             case 'textarea':
                 return (
                     <div className="ptw-component-inner">
                         <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-textarea"></div>
+                        {answers ? (
+                            <div className="ptw-textarea"><span style={{visibility:'visible'}}>{String(answerVal || '')}</span></div>
+                        ) : (
+                            <div className="ptw-textarea"></div>
+                        )}
                     </div>
                 );
             case 'date':
                 return (
                     <div className={`ptw-component-inner ${['work-description', 'declaration', 'opening-ptw', 'closure'].includes(sectionId) ? 'ptw-field-horizontal' : ''}`}>
                         <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-input-line"></div>
+                        {answers ? (
+                            <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(answerVal || '')}</span></div>
+                        ) : (
+                            <div className="ptw-input-line"></div>
+                        )}
                     </div>
                 );
             case 'time':
                  return (
                     <div className={`ptw-component-inner ${['work-description', 'opening-ptw', 'closure'].includes(sectionId) ? 'ptw-field-horizontal' : ''}`}>
                         <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-input-line"></div>
+                        {answers ? (
+                            <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(answerVal || '')}</span></div>
+                        ) : (
+                            <div className="ptw-input-line"></div>
+                        )}
                     </div>
                 );
             case 'checkbox':
@@ -72,7 +90,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                         <div className="ptw-checkbox-grid">
                             {component.options && component.options.map((option, index) => (
                                 <div key={index} className="ptw-checkbox-item">
-                                    <div className="ptw-checkbox">☐</div>
+                                    <div className="ptw-checkbox">{answers && Array.isArray(answerVal) && answerVal.includes(option) ? '☑' : '☐'}</div>
                                     <span className="ptw-checkbox-label">{option}</span>
                                 </div>
                             ))}
@@ -86,7 +104,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                         <div className="ptw-radio-group">
                             {component.options && component.options.map((option, index) => (
                                 <div key={index} className="ptw-radio-item">
-                                    <div className="ptw-radio">□</div>
+                                    <div className="ptw-radio">{answers && answerVal === option ? '■' : '□'}</div>
                                     <span className="ptw-radio-label">{option}</span>
                                 </div>
                             ))}

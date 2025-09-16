@@ -443,6 +443,48 @@ export const duplicateWorkPermitForm = asyncHandler(async (req, res) => {
     );
 })
 
+export const createWorkPermitSubmission = asyncHandler(async (req, res) => {
+    const { workPermitFormId } = req.params;
+    const { answers } = req.body;
+    const userId = req.user.id;
+
+    if (!workPermitFormId) throw new ApiError(400, "workPermitFormId is required");
+    if (!answers) throw new ApiError(400, "answers are required");
+
+    const form = await db.workPermitForm.findUnique({ where: { id: workPermitFormId } });
+    if (!form) throw new ApiError(404, "Form not found");
+
+    // Optional: verify user is a member of the form's company
+    const membership = await db.companyMember.findFirst({ where: { companyId: form.companyId, userId } });
+    if (!membership && req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN") {
+        throw new ApiError(403, "Not allowed to submit for this company");
+    }
+
+    const submission = await db.workPermitSubmission.create({
+        data: {
+            workPermitFormId: form.id,
+            companyId: form.companyId,
+            submittedById: userId,
+            answers: answers,
+        },
+    });
+
+    return res.status(201).json(new ApiResponse(201, submission, "submission created"));
+});
+
+export const listWorkPermitSubmissions = asyncHandler(async (req, res) => {
+    const { workPermitFormId } = req.params;
+    if (!workPermitFormId) throw new ApiError(400, "workPermitFormId is required");
+
+    const submissions = await db.workPermitSubmission.findMany({
+        where: { workPermitFormId },
+        orderBy: { createdAt: "desc" },
+        include: { submittedBy: { select: { id: true, name: true, email: true } } },
+    });
+
+    return res.status(200).json(new ApiResponse(200, submissions, "submissions fetched"));
+});
+
 // export const deleteWorkPermitForm = asyncHandler(async (req, res) => {
 //     const { workPermitFormId } = req.params;
 //     const userId = req.user.id;

@@ -8,27 +8,57 @@ const globalForPrisma = globalThis // In Node.js, globalThis refers to global. w
 // console.log("this: ", this);
 
 /** @type {import('../generated/prisma/index.js').PrismaClient} */
-export const db = globalForPrisma.prisma || new PrismaClient().$extends({
-    name: "userMethods",
-    query: {
-        user: {
-            async create({ args, query }) {
-                if (args.data.password) {
-                    args.data.password = await bcrypt.hash(args.data.password, 10)
-                }
+export const db =
+    globalForPrisma.prisma ||
+    new PrismaClient().$extends({
+        name: "userMethods",
+        query: {
+            user: {
+                async create({ args, query }) {
+                    if (args.data.password) {
+                        args.data.password = await bcrypt.hash(
+                            args.data.password,
+                            10
+                        );
+                    }
 
-                return query(args)
+                    return query(args);
+                },
+                async update({ args, query }) {
+                    if (args.data.password) {
+                        args.data.password = await bcrypt.hash(
+                            args.data.password,
+                            10
+                        );
+                    }
+
+                    return query(args);
+                },
             },
-            async update({ args, query }) {
-                if (args.data.password) {
-                    args.data.password = await bcrypt.hash(args.data.password, 10)
-                }
+            companyMember: {
+                async create({ args, query }) {
+                    if (args.data.password) {
+                        args.data.password = await bcrypt.hash(
+                            args.data.password,
+                            10
+                        );
+                    }
 
-                return query(args)
-            }
-        }
-    }
-})
+                    return query(args);
+                },
+                async update({ args, query }) {
+                    if (args.data.password) {
+                        args.data.password = await bcrypt.hash(
+                            args.data.password,
+                            10
+                        );
+                    }
+
+                    return query(args);
+                },
+            },
+        },
+    });
 
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db

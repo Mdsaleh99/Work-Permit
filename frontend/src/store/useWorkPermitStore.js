@@ -87,27 +87,6 @@ export const useWorkPermitStore = create((set) => ({
         }
     },
 
-    deleteWorkPermit: async (workPermitId) => {
-        set({ isDeleting: true, workPermitError: null });
-        try {
-            await workPermitService.deleteWorkPermit(workPermitId);
-            set((state) => ({
-                workPermits: state.workPermits.filter(
-                    (wp) => wp.id !== workPermitId,
-                ),
-                currentWorkPermit:
-                    state.currentWorkPermit?.id === workPermitId
-                        ? null
-                        : state.currentWorkPermit,
-            }));
-        } catch (error) {
-            set({ workPermitError: error });
-            throw error;
-        } finally {
-            set({ isDeleting: false });
-        }
-    },
-
     duplicateWorkPermit: async (workPermitFormId) => {
         set({ isCreating: true, duplicateWorkPermitError: null });
         try {

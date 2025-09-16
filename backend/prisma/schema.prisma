@@ -19,6 +19,10 @@ enum UserRole {
   SUPER_ADMIN
 }
 
+enum CompanyMemberRole {
+  COMPANY_MEMBER
+}
+
 enum LoginType {
   GOOGLE
   MICROSOFT
@@ -60,6 +64,7 @@ model User {
   company        Company?
   workPermitForm WorkPermitForm[]
   workPermitDraft WorkPermitDraft[]
+  workPermitSubmission WorkPermitSubmission[]
 }
 
 model Company {
@@ -71,12 +76,35 @@ model Company {
   mobileNo       String           @unique
   workPermitForm WorkPermitForm[]
   workPermitDraft WorkPermitDraft[]
+  members        CompanyMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id])
+  workPermitSubmission WorkPermitSubmission[]
 }
+
+// Company members who can fill forms
+model CompanyMember {
+  id         String   @id @default(uuid())
+  companyId  String
+  // userId String
+  name String
+  email String @unique
+  password String 
+  refreshToken     String?
+  role       CompanyMemberRole   @default(COMPANY_MEMBER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  // user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
 
 model WorkPermitForm {
   id        String              @id @default(uuid())
@@ -85,6 +113,7 @@ model WorkPermitForm {
   companyId String
   formUrl   String?
   sections  WorkPermitSection[]
+  submissions WorkPermitSubmission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -126,6 +155,27 @@ model WorkPermitSectionComponent {
   workPermitSection WorkPermitSection @relation(fields: [workPermitSectionId], references: [id], onDelete: Cascade)
 
   @@index([workPermitSectionId])
+}
+
+
+// A submission filled by a member against a WorkPermitForm
+model WorkPermitSubmission {
+  id               String          @id @default(uuid())
+  workPermitFormId String
+  companyId        String
+  submittedById    String
+  answers          Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workPermitForm WorkPermitForm @relation(fields: [workPermitFormId], references: [id], onDelete: Cascade)
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  submittedBy    User           @relation(fields: [submittedById], references: [id])
+
+  @@index([workPermitFormId])
+  @@index([companyId])
+  @@index([submittedById])
 }
 
 // Draft Models for Work Permit Forms

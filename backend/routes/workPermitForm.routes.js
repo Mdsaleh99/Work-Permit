@@ -6,6 +6,8 @@ import {
     getAllWorkPermitForm,
     getWorkPermitFormById,
     updateWorkPermitForm,
+    createWorkPermitSubmission,
+    listWorkPermitSubmissions,
 } from "../controllers/workPermitForm.controllers.js";
 
 const router = express.Router();
@@ -20,5 +22,10 @@ router
 router
     .route("/:companyId/:workPermitFormId")
     .patch(verifyJWT, updateWorkPermitForm);
+
+router
+    .route("/:workPermitFormId/submissions")
+    .get(verifyJWT, listWorkPermitSubmissions)
+    .post(verifyJWT, createWorkPermitSubmission);
 
 export default router;

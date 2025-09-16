@@ -6,6 +6,10 @@ export const useCompanyStore = create((set) => ({
     isCreateCompany: false,
     isGetCompany: false,
     companyError: null,
+    companyMemberData: null,
+    isCreateCompanyMember: false,
+    isGetCompanyMembers: false,
+    companyMembers: [],
 
     clearCompanyError: () => set({ companyError: null }),
 
@@ -36,4 +40,18 @@ export const useCompanyStore = create((set) => ({
             set({ isGetCompany: false });
         }
     },
+
+    createCompanyMember: async (userData, companyId) => {
+        set({ isCreateCompanyMember: true, companyError: null });
+        try {
+            const member = await companyService.createCompanyMember(userData, companyId)
+            set({ companyMemberData: member });
+        } catch (error) {
+            set({ companyError: error });
+            throw error;
+        } finally {
+            set({ isCreateCompanyMember: false });
+        }
+        
+    }
 }));

@@ -1,6 +1,8 @@
 import React from "react";
 import PrintView from "./PrintView";
 import { Button } from "../ui/button";
+import { useEffect, useState } from "react";
+import wpService from "@/services/workPermit.service";
 import { Edit } from "lucide-react";
 
 /**
@@ -10,11 +12,28 @@ import { Edit } from "lucide-react";
  * - sectionsTemplate: array of { id, title, enabled, components[] }
  * - onEdit: () => void
  */
-const WorkPermitViewer = ({ title, sectionsTemplate, onEdit }) => {
+const WorkPermitViewer = ({ title, sectionsTemplate, onEdit, workPermitId }) => {
+    const [latestAnswers, setLatestAnswers] = useState(null);
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                if (workPermitId) {
+                    const res = await wpService.listSubmissions(workPermitId);
+                    const list = res?.data || res || [];
+                    if (mounted && Array.isArray(list) && list.length > 0) {
+                        setLatestAnswers(list[0].answers || null);
+                    }
+                }
+            } catch {}
+        })();
+        return () => { mounted = false; };
+    }, [workPermitId]);
     const formData = React.useMemo(() => ({
         title: title || "GENERAL WORK PERMIT",
         sections: sectionsTemplate || [],
-    }), [title, sectionsTemplate]);
+        answers: latestAnswers || null,
+    }), [title, sectionsTemplate, latestAnswers]);
 
     return (
         <div className="min-h-screen bg-gray-50">

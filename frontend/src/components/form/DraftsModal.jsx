@@ -5,7 +5,6 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { X, Edit, Trash2, Copy, Calendar, Clock } from "lucide-react";
-import { cn } from "../../lib/utils";
 
 /**
  * Modal component for managing drafts
@@ -16,7 +15,7 @@ const DraftsModal = ({
     drafts,
     onLoadDraft,
     onDeleteDraft,
-    onDuplicateDraft,
+    // onDuplicateDraft,
     isLoading,
 }) => {
     if (!showDraftsModal) return null;
@@ -95,9 +94,9 @@ const DraftsModal = ({
                                                     <Edit className="w-4 h-4 mr-1" />
                                                     Open
                                                 </Button>
-                                                <Button variant="outline" size="sm" onClick={() => onDuplicateDraft(draft.id)} className="px-3">
+                                                {/* <Button variant="outline" size="sm" onClick={() => onDuplicateDraft(draft.id)} className="px-3">
                                                     <Copy className="w-4 h-4" />
-                                                </Button>
+                                                </Button> */}
                                                 <Button variant="outline" size="sm" onClick={() => onDeleteDraft(draft.id)} className="px-3 text-red-600 hover:text-red-700 hover:bg-red-50">
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>

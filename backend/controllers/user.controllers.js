@@ -148,6 +148,8 @@ const signIn = asyncHandler(async (req, res) => {
         throw new ApiError(404, "user not found with this given email");
     }
 
+    
+
     // if (!user.isEmailVerified) {
     //     throw new ApiError(400, "Please verify Email before login");
     // }

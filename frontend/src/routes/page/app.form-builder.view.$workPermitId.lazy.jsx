@@ -77,6 +77,7 @@ function RouteComponent() {
             key={workPermitId}
             title={workPermit.title || "Work Permit"}
             sectionsTemplate={sectionsTemplate}
+            workPermitId={workPermitId}
             onEdit={() => window.location.assign(`/page/app/form-builder/${workPermitId}`)}
         />
     );

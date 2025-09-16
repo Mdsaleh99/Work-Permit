@@ -1,4 +1,4 @@
-import { axiosInstance } from "@/api/axios"
+import { axiosInstance } from "@/api/axios";
 
 export const workPermitService = {
     createWorkPermit: async (workPermitData, companyId) => {
@@ -25,5 +25,15 @@ export const workPermitService = {
         const response = await axiosInstance.post(`/work-permit/${workPermitFormId}/duplicate`)
 
         return response.data.data
-    }
-}
+    },
+
+    // submissions
+    createSubmission: async (workPermitFormId, answers) => {
+        const res = await axiosInstance.post(`/work-permit-form/${workPermitFormId}/submissions`, { answers });
+        return res.data;
+    },
+    listSubmissions: async (workPermitFormId) => {
+        const res = await axiosInstance.get(`/work-permit-form/${workPermitFormId}/submissions`);
+        return res.data;
+    },
+};

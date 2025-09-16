@@ -13,4 +13,10 @@ export const UserLoginType = {
 
 export const AvailableUserLoginType = Object.values(UserLoginType);
 
+export const CompanyMemberRolesEnum = {
+    COMPANY_MEMBER: "COMPANY_MEMBER",
+};
+
+export const AvailableCompanyMemberRolesEnum = Object.values(CompanyMemberRolesEnum);
+
 export const USER_TEMPORARY_TOKEN_EXPIRY = 20 * 60 * 1000;
