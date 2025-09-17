@@ -13,6 +13,7 @@ import {
     Check,
     KeyRound,
     UserPen,
+    Users2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -217,6 +218,15 @@ export default function UserDashboard() {
                                 <UserPen className="w-4 h-4 mr-2" />
                                 Company Details
                             </Button>
+                            </Link>
+                            <Link to={"/page/app/company-members"}>
+                                <Button
+                                    variant="outline"
+                                    className="w-full mb-2 justify-start cursor-pointer"
+                                >
+                                    <Users2 className="w-4 h-4 mr-2" />
+                                    Company Members
+                                </Button>
                             </Link>
                             <Link to={"/page/app/change-password"}>
                                 <Button

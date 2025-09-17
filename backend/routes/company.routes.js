@@ -7,6 +7,7 @@ import {
     createCompanyMember,
     getAllCompanyMembers,
     deleteCompanyMember,
+    updateCompanyMemberRole,
 } from "../controllers/company.controllers.js";
 import { createCompanyMemberValidator, createCompanyValidator } from "../validators/index.js";
 
@@ -19,6 +20,7 @@ router.route("/get-company").get(verifyJWT, getCompanyByUser);
 // router.route("/:compId").delete(verifyJWT, deleteCompany);
 router.route("/:companyId/create-member").post(createCompanyMemberValidator(), verifyJWT, createCompanyMember);
 router.route("/:companyId/get-members").get(verifyJWT, getAllCompanyMembers);
+router.route("/:companyId/:memberId/role").put(verifyJWT, updateCompanyMemberRole);
 router.route("/:companyId/:memberId").delete(verifyJWT, deleteCompanyMember);
 
 export default router;

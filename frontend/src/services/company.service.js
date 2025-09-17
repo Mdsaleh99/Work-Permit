@@ -8,7 +8,7 @@ export const companyService = {
     },
     getCompanyByUser: async () => {
         const response = await axiosInstance.get("/company/get-company")
-        console.log(response.data);
+        // console.log(response.data);
         
         return response.data.data
     },
@@ -21,5 +21,16 @@ export const companyService = {
     getAllCompanyMembers: async (companyId) => {
         const response = await axiosInstance.get(`/company/${companyId}/get-members`);
         return response.data.data;
+    },
+
+    updateCompanyMemberRole: async (companyId, memberId, role) => {
+        const response = await axiosInstance.put(`/company/${companyId}/${memberId}/role`, { role })
+        
+        return response.data.data
+    },
+
+    deleteCompanyMember: async (companyId, memberId) => {
+        const response = await axiosInstance.delete(`/company/${companyId}/${memberId}`)
+        return response.data.data
     }
 };

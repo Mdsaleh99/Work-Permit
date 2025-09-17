@@ -21,6 +21,7 @@ enum UserRole {
 
 enum CompanyMemberRole {
   COMPANY_MEMBER
+  MANAGER
 }
 
 enum LoginType {
@@ -89,7 +90,7 @@ model Company {
 model CompanyMember {
   id         String   @id @default(uuid())
   companyId  String
-  // userId String
+  
   name String
   email String @unique
   password String 
@@ -100,7 +101,7 @@ model CompanyMember {
   updatedAt DateTime @updatedAt
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  // user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
 
   @@index([companyId])
 }

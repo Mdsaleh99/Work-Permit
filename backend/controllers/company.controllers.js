@@ -118,6 +118,16 @@ export const createCompanyMember = asyncHandler(async (req, res) => {
         throw new ApiError(400, "companyId is required");
     }
 
+    const existingMemberEmail = await db.companyMember.findUnique({
+        where: {
+            email
+        }
+    })
+
+    if (existingMemberEmail) {
+        throw new ApiError(400, "member already exists with this email")
+    }
+
     const company = await db.company.findUnique({
         where: {
             id: companyId
@@ -243,14 +253,26 @@ export const updateCompanyMemberRole = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Member not found");
     }
 
-    await db.companyMember.update({
+    const updatedMemberRole = await db.companyMember.update({
         where: { id: memberId },
-        data: { role }
+        data: {
+            role
+        },
+        omit: {
+            password: true,
+            refreshToken: true
+        }
     });
 
     return res
         .status(200)
-        .json(new ApiResponse(200, {}, "Member role updated successfully"));
+        .json(
+            new ApiResponse(
+                200,
+                updatedMemberRole,
+                "Member role updated successfully"
+            )
+        );
 })
 
 

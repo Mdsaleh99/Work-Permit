@@ -42,6 +42,9 @@ const PageAppFleetManagementLazyRouteImport = createFileRoute(
   '/page/app/fleet-management',
 )()
 const PageAppDashboardLazyRouteImport = createFileRoute('/page/app/dashboard')()
+const PageAppCompanyMembersLazyRouteImport = createFileRoute(
+  '/page/app/company-members',
+)()
 const PageAppCompanyDetailsLazyRouteImport = createFileRoute(
   '/page/app/company-details',
 )()
@@ -159,6 +162,14 @@ const PageAppDashboardLazyRoute = PageAppDashboardLazyRouteImport.update({
 } as any).lazy(() =>
   import('./routes/page/app.dashboard.lazy').then((d) => d.Route),
 )
+const PageAppCompanyMembersLazyRoute =
+  PageAppCompanyMembersLazyRouteImport.update({
+    id: '/company-members',
+    path: '/company-members',
+    getParentRoute: () => PageAppRoute,
+  } as any).lazy(() =>
+    import('./routes/page/app.company-members.lazy').then((d) => d.Route),
+  )
 const PageAppCompanyDetailsLazyRoute =
   PageAppCompanyDetailsLazyRouteImport.update({
     id: '/company-details',
@@ -240,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/change-password': typeof PageAppChangePasswordLazyRoute
   '/page/app/company-details': typeof PageAppCompanyDetailsLazyRoute
+  '/page/app/company-members': typeof PageAppCompanyMembersLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
   '/page/app/form-builder': typeof PageAppFormBuilderLazyRouteWithChildren
@@ -266,6 +278,7 @@ export interface FileRoutesByTo {
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/change-password': typeof PageAppChangePasswordLazyRoute
   '/page/app/company-details': typeof PageAppCompanyDetailsLazyRoute
+  '/page/app/company-members': typeof PageAppCompanyMembersLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
   '/page/app/form-builder': typeof PageAppFormBuilderLazyRouteWithChildren
@@ -293,6 +306,7 @@ export interface FileRoutesById {
   '/page/app/audit': typeof PageAppAuditLazyRoute
   '/page/app/change-password': typeof PageAppChangePasswordLazyRoute
   '/page/app/company-details': typeof PageAppCompanyDetailsLazyRoute
+  '/page/app/company-members': typeof PageAppCompanyMembersLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
   '/page/app/form-builder': typeof PageAppFormBuilderLazyRouteWithChildren
@@ -321,6 +335,7 @@ export interface FileRouteTypes {
     | '/page/app/audit'
     | '/page/app/change-password'
     | '/page/app/company-details'
+    | '/page/app/company-members'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
     | '/page/app/form-builder'
@@ -347,6 +362,7 @@ export interface FileRouteTypes {
     | '/page/app/audit'
     | '/page/app/change-password'
     | '/page/app/company-details'
+    | '/page/app/company-members'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
     | '/page/app/form-builder'
@@ -373,6 +389,7 @@ export interface FileRouteTypes {
     | '/page/app/audit'
     | '/page/app/change-password'
     | '/page/app/company-details'
+    | '/page/app/company-members'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
     | '/page/app/form-builder'
@@ -513,6 +530,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PageAppDashboardLazyRouteImport
       parentRoute: typeof PageAppRoute
     }
+    '/page/app/company-members': {
+      id: '/page/app/company-members'
+      path: '/company-members'
+      fullPath: '/page/app/company-members'
+      preLoaderRoute: typeof PageAppCompanyMembersLazyRouteImport
+      parentRoute: typeof PageAppRoute
+    }
     '/page/app/company-details': {
       id: '/page/app/company-details'
       path: '/company-details'
@@ -594,6 +618,7 @@ interface PageAppRouteChildren {
   PageAppAuditLazyRoute: typeof PageAppAuditLazyRoute
   PageAppChangePasswordLazyRoute: typeof PageAppChangePasswordLazyRoute
   PageAppCompanyDetailsLazyRoute: typeof PageAppCompanyDetailsLazyRoute
+  PageAppCompanyMembersLazyRoute: typeof PageAppCompanyMembersLazyRoute
   PageAppDashboardLazyRoute: typeof PageAppDashboardLazyRoute
   PageAppFleetManagementLazyRoute: typeof PageAppFleetManagementLazyRoute
   PageAppFormBuilderLazyRoute: typeof PageAppFormBuilderLazyRouteWithChildren
@@ -608,6 +633,7 @@ const PageAppRouteChildren: PageAppRouteChildren = {
   PageAppAuditLazyRoute: PageAppAuditLazyRoute,
   PageAppChangePasswordLazyRoute: PageAppChangePasswordLazyRoute,
   PageAppCompanyDetailsLazyRoute: PageAppCompanyDetailsLazyRoute,
+  PageAppCompanyMembersLazyRoute: PageAppCompanyMembersLazyRoute,
   PageAppDashboardLazyRoute: PageAppDashboardLazyRoute,
   PageAppFleetManagementLazyRoute: PageAppFleetManagementLazyRoute,
   PageAppFormBuilderLazyRoute: PageAppFormBuilderLazyRouteWithChildren,
