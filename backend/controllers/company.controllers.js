@@ -2,6 +2,11 @@ import { db } from "../db/db.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import bcrypt from "bcryptjs";
+import {
+    generateAccessToken,
+    generateRefreshToken,
+} from "../utils/generateToken.js";
 
 export const createCompany = asyncHandler(async (req, res) => {
     const { compName, description, email, mobileNo } = req.body;
@@ -120,18 +125,18 @@ export const createCompanyMember = asyncHandler(async (req, res) => {
 
     const existingMemberEmail = await db.companyMember.findUnique({
         where: {
-            email
-        }
-    })
+            email,
+        },
+    });
 
     if (existingMemberEmail) {
-        throw new ApiError(400, "member already exists with this email")
+        throw new ApiError(400, "member already exists with this email");
     }
 
     const company = await db.company.findUnique({
         where: {
-            id: companyId
-        }
+            id: companyId,
+        },
     });
 
     if (!company) {
@@ -149,11 +154,11 @@ export const createCompanyMember = asyncHandler(async (req, res) => {
             name,
             email,
             password,
-        }
+        },
     });
 
     if (!member) {
-        throw new ApiError(400, "Failed to add member")
+        throw new ApiError(400, "Failed to add member");
     }
 
     const createdMember = await db.companyMember.findUnique({
@@ -163,8 +168,8 @@ export const createCompanyMember = asyncHandler(async (req, res) => {
         omit: {
             password: true,
             refreshToken: true,
-        }
-    })
+        },
+    });
 
     return res
         .status(201)
@@ -177,11 +182,11 @@ export const getAllCompanyMembers = asyncHandler(async (req, res) => {
 
     const members = await db.companyMember.findMany({
         where: {
-            companyId
+            companyId,
         },
         omit: {
             password: true,
-            refreshToken: true, 
+            refreshToken: true,
         },
         orderBy: { createdAt: "desc" },
     });
@@ -196,13 +201,13 @@ export const getAllCompanyMembers = asyncHandler(async (req, res) => {
 });
 
 export const deleteCompanyMember = asyncHandler(async (req, res) => {
-    const { companyId, memberId } = req.params
+    const { companyId, memberId } = req.params;
     if (!companyId || !memberId) {
         throw new ApiError(400, "companyId and memberId are required");
     }
 
     const company = await db.company.findUnique({
-        where: { id: companyId }
+        where: { id: companyId },
     });
 
     if (!company) {
@@ -210,20 +215,20 @@ export const deleteCompanyMember = asyncHandler(async (req, res) => {
     }
 
     const member = await db.companyMember.findUnique({
-        where: { id: memberId }
+        where: { id: memberId },
     });
     if (!member) {
         throw new ApiError(404, "Member not found");
     }
 
     await db.companyMember.delete({
-        where: { id: memberId }
+        where: { id: memberId },
     });
 
     return res
         .status(200)
         .json(new ApiResponse(200, {}, "Member deleted successfully"));
-})
+});
 
 export const updateCompanyMemberRole = asyncHandler(async (req, res) => {
     const { companyId, memberId } = req.params;
@@ -238,7 +243,7 @@ export const updateCompanyMemberRole = asyncHandler(async (req, res) => {
     }
 
     const company = await db.company.findUnique({
-        where: { id: companyId }
+        where: { id: companyId },
     });
 
     if (!company) {
@@ -246,9 +251,9 @@ export const updateCompanyMemberRole = asyncHandler(async (req, res) => {
     }
 
     const member = await db.companyMember.findUnique({
-        where: { id: memberId }
+        where: { id: memberId },
     });
-    
+
     if (!member) {
         throw new ApiError(404, "Member not found");
     }
@@ -256,12 +261,12 @@ export const updateCompanyMemberRole = asyncHandler(async (req, res) => {
     const updatedMemberRole = await db.companyMember.update({
         where: { id: memberId },
         data: {
-            role
+            role,
         },
         omit: {
             password: true,
-            refreshToken: true
-        }
+            refreshToken: true,
+        },
     });
 
     return res
@@ -273,7 +278,112 @@ export const updateCompanyMemberRole = asyncHandler(async (req, res) => {
                 "Member role updated successfully"
             )
         );
+});
+
+export const companyMemberSignIn = asyncHandler(async (req, res) => {
+    const { companyId } = req.params;
+    const { email, password } = req.body;
+
+    if (!companyId) {
+        throw new ApiError(400, "company id required");
+    }
+
+    const member = await db.companyMember.findUnique({
+        where: {
+            email,
+        },
+    });
+
+    if (!member) {
+        throw new ApiError(404, "you are not a member of this company");
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(password, member.password);
+    if (!isPasswordCorrect) {
+        throw new ApiError(400, "email or password is incorrect");
+    }
+
+    const accessToken = generateAccessToken(member);
+    const refreshToken = generateRefreshToken(member);
+    const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production", // false in dev
+        sameSite: "lax", // better for SPAs than "strict"
+    };
+
+    await db.companyMember.update({
+        where: {
+            id: member.id,
+        },
+        data: {
+            refreshToken,
+        },
+    });
+
+    res.status(200)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    email,
+                    name: member.name,
+                    role: member.role,
+                },
+                "member Logged in successfully"
+            )
+        );
+});
+
+
+export const companyMemberSignOut = asyncHandler(async (req, res) => {
+    const { id } = req.member;
+
+    const member = await db.companyMember.update({
+        where: {
+            id,
+        },
+        data: {
+            refreshToken: null,
+        },
+    });
+
+    if (!member) {
+        throw new ApiError(401, "User Not authorized");
+    }
+
+    res.status(200)
+        .clearCookie("accessToken")
+        .clearCookie("refreshToken")
+        .json(new ApiResponse(200, null, "Logged out successfully"));
 })
+
+
+export const getCurrentCompanyMember = asyncHandler(async (req, res) => {
+    const { id } = req.member;
+    if (!id) {
+        throw new ApiError(400, "id is required");
+    }
+
+    const member = await db.companyMember.findUnique({
+        where: {
+            id,
+        },
+        omit: {
+            password: true,
+            refreshToken: true,
+        },
+    });
+
+    if (!member) {
+        throw new ApiError(404, "user not found");
+    }
+
+    res.status(200).json(
+        new ApiResponse(200, member, "fetched current member successfully")
+    );
+});
 
 
 // export const deleteCompany = asyncHandler(async (req, res) => {

@@ -32,11 +32,43 @@ export const verifyJWT = async (req, res, next) => {
         req.user = user
         next()
     } catch (error) {
-        if (error?.name === "TokenExpiredError") {
-            // 419 Authentication Timeout (commonly used for expired sessions)
-            throw new ApiError(419, "Access token expired");
+        throw new ApiError(419, "Access token expired");
+        // if (error?.name === "TokenExpiredError") {
+        //     // 419 Authentication Timeout (commonly used for expired sessions)
+        //     throw new ApiError(419, "Access token expired");
+        // }
+        // throw new ApiError(401, "Invalid access token");
+    }
+}
+
+export const companyMemberVerifyJWT = async (req, res, next) => {
+    const token = req.cookies.accessToken
+    if (!token) {
+        throw new ApiError(401, "Unauthorized request");
+    }
+
+    try {
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        const member = await db.companyMember.findUnique({
+            where: {
+                id: decodedToken.id
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true
+            }
+        })
+
+        if (!member) {
+            throw new ApiError(401, "Invalid access token");
         }
-        throw new ApiError(401, "Invalid access token");
+
+        req.member = member;
+        next();
+    } catch (error) {
+        throw new ApiError(419, "Access token expired");
     }
 }
 

@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyJWT } from "../middlewares/auth.middlewares.js";
+import { companyMemberVerifyJWT, verifyJWT } from "../middlewares/auth.middlewares.js";
 import {
     createCompany,
     // deleteCompany,
@@ -8,8 +8,11 @@ import {
     getAllCompanyMembers,
     deleteCompanyMember,
     updateCompanyMemberRole,
+    companyMemberSignIn,
+    companyMemberSignOut,
+    getCurrentCompanyMember,
 } from "../controllers/company.controllers.js";
-import { createCompanyMemberValidator, createCompanyValidator } from "../validators/index.js";
+import { companyMemberSignInValidator, createCompanyMemberValidator, createCompanyValidator } from "../validators/index.js";
 
 const router = express.Router();
 
@@ -22,5 +25,8 @@ router.route("/:companyId/create-member").post(createCompanyMemberValidator(), v
 router.route("/:companyId/get-members").get(verifyJWT, getAllCompanyMembers);
 router.route("/:companyId/:memberId/role").put(verifyJWT, updateCompanyMemberRole);
 router.route("/:companyId/:memberId").delete(verifyJWT, deleteCompanyMember);
+router.route("/member-signin/:companyId").post(companyMemberSignInValidator(), companyMemberSignIn);
+router.route("/member-signout").post(companyMemberVerifyJWT, companyMemberSignOut);
+router.route("/member").get(companyMemberVerifyJWT, getCurrentCompanyMember);
 
 export default router;

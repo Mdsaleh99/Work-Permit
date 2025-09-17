@@ -32,5 +32,23 @@ export const companyService = {
     deleteCompanyMember: async (companyId, memberId) => {
         const response = await axiosInstance.delete(`/company/${companyId}/${memberId}`)
         return response.data.data
+    },
+
+    companyMemberSignIn: async (userData, companyId) => {
+        const response = await axiosInstance.post(`/company/member-signin/${companyId}`, userData)
+
+        return response.data.data
+    },
+
+    companyMemberSignOut: async () => {
+        const response = await axiosInstance.post(`/company/member-signout`);
+
+        return response.data.data
+    },
+
+    getCurrentCompanyMember: async () => {
+        const response = await axiosInstance.get(`/company/member`)
+
+        return response.data.data
     }
 };

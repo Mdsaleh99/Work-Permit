@@ -4,6 +4,14 @@ export const StorageKeys = {
     ADMIN: "admin",
 };
 
+export const CompanyMemberRoles = {
+    COMPANY_MEMBER: "COMPANY_MEMBER",
+    MANAGER: "MANAGER",
+};
+
+export const AvailableCompanyMemberRoles = Object.values(CompanyMemberRoles)
+
+
 export const FORM_COMPONENTS = [
   {
     type: 'text',

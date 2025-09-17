@@ -7,6 +7,7 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import ScrollToTop from "@/components/scrollToTop";
 import NotFound from "@/components/not-found";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useCompanyStore } from "@/store/useCompanyStore";
 
 export const Route = createRootRoute({
     component: RootComponent,
@@ -17,13 +18,14 @@ export const Route = createRootRoute({
 
 function RootComponent() {
     const { isAuthCheck, checkAuth, authUser, resendEmailVerification } = useAuthStore();
+    const { getCurrentCompanyMember } = useCompanyStore();
+    const ranMemberInit = React.useRef(false)
     const [isResending, setIsResending] = React.useState(false)
     const [resendMsg, setResendMsg] = React.useState("")
     const [needLogin, setNeedLogin] = React.useState(false)
     
     React.useEffect(() => {
         // call once without subscribing to avoid re-runs
-        
         checkAuth();
     }, [checkAuth])
 

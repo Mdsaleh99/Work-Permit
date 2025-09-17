@@ -3,8 +3,11 @@ import { create } from "zustand";
 
 export const useCompanyStore = create((set) => ({
     companyData: null,
+    currentCompanyMember: null,
     isCreateCompany: false,
     isGetCompany: false,
+    isCompanyMemberSigningIn: false,
+    isCompanyMemberSigningOut: false,
     companyError: null,
     companyMemberData: null,
     isCreateCompanyMember: false,
@@ -38,6 +41,45 @@ export const useCompanyStore = create((set) => ({
             throw error;
         } finally {
             set({ isGetCompany: false });
+        }
+    },
+
+    companyMemberSignIn: async (userData, companyId) => {
+        set({ isCompanyMemberSigningIn: true, companyError: null })
+        try {
+            const member = await companyService.companyMemberSignIn(userData, companyId)
+            set({ currentCompanyMember: member })
+            return member
+        } catch (error) {
+            set({ companyError: error })
+            throw error
+        } finally {
+            set({ isCompanyMemberSigningIn: false })
+        }
+    },
+
+    companyMemberSignOut: async () => {
+        set({ isCompanyMemberSigningOut: true, companyError: null })
+        try {
+            await companyService.companyMemberSignOut()
+            set({ currentCompanyMember: null })
+        } catch (error) {
+            set({ companyError: error })
+            throw error
+        } finally {
+            set({ isCompanyMemberSigningOut: false })
+        }
+    },
+
+    getCurrentCompanyMember: async () => {
+        set({ companyError: null })
+        try {
+            const member = await companyService.getCurrentCompanyMember()
+            set({ currentCompanyMember: member })
+            return member
+        } catch (error) {
+            set({ companyError: error })
+            throw error
         }
     },
 

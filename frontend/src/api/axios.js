@@ -17,24 +17,35 @@ axiosInstance.interceptors.request.use(
 );
 
 
+// Single-flight refresh lock to prevent parallel refresh calls
+let refreshingPromise = null;
+
 axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
-        const originalRequest = error.config;
+        const originalRequest = error.config || {};
+        const status = error.response?.status;
 
-        if (error.response?.status === 419 && !originalRequest._retry) {
+        if ((status === 419 || status === 401) && !originalRequest._retry) {
             originalRequest._retry = true;
             try {
-                // refresh tokens (cookies will be updated automatically)
-                await axios.post(
-                    `${API_URL}/auth/refresh-token`,
-                    {},
-                    { withCredentials: true },
-                );
-                // retry original request with fresh cookie
-                return axiosInstance(originalRequest); // retry request
+                if (!refreshingPromise) {
+                    // Refresh tokens (cookies will be updated automatically)
+                    refreshingPromise = axios.post(
+                        `${API_URL}/auth/refresh-token`,
+                        {},
+                        { withCredentials: true },
+                    );
+                }
+                await refreshingPromise;
+                refreshingPromise = null;
+                // Retry original request with fresh cookies
+                return axiosInstance(originalRequest);
             } catch (err) {
-                window.location.href = "/auth/signin";
+                refreshingPromise = null;
+                if (window.location.pathname !== "/auth/signin") {
+                    window.location.href = "/auth/signin";
+                }
                 return Promise.reject(err);
             }
         }

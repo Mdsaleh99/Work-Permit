@@ -80,7 +80,15 @@ export const createWorkPermitForm = asyncHandler(async (req, res) => {
 
 
 export const getAllWorkPermitForm = asyncHandler(async (req, res) => {
-    const workPermitForm = await db.workPermitForm.findMany({
+    const userId = req.user.id
+    if (!userId) {
+        throw new ApiError(400, "user id is required")
+    }
+
+    const workPermit = await db.workPermitForm.findMany({
+        where: {
+            userId
+        },
         orderBy: {
             createdAt: "desc"
         },
@@ -93,11 +101,11 @@ export const getAllWorkPermitForm = asyncHandler(async (req, res) => {
         }
     })
 
-    if (!workPermitForm || workPermitForm.length === 0) {
-        throw new ApiError(404, "No work permit form found")
+    if (!workPermit || workPermit.length === 0) {
+        throw new ApiError(404, "No work permit found")
     }
 
-    res.status(200).json(new ApiResponse(200, workPermitForm, "All work permit form fetched successfully"))
+    res.status(200).json(new ApiResponse(200, workPermit, "All work permit form fetched successfully"))
 })
 
 

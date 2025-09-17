@@ -417,4 +417,14 @@ const MyComponent = () => {
 }
 ```
 
-That's it! Zustand is really that simple. The key is understanding that `set` updates the shared box, but returning data from actions gives you immediate access to fresh data.
+### Further reading
+
+- [Zustand Docs](`https://docs.pmnd.rs/zustand/getting-started/introduction`)
+- [React State Updates](`https://react.dev/learn/queueing-a-series-of-state-updates`)
+- [Thinking in React](`https://react.dev/learn/thinking-in-react`)
+- [Render and Commit](`https://react.dev/learn/render-and-commit`)
+- [Queuing State Updates](`https://react.dev/learn/queueing-a-series-of-state-updates`)
+- [Middleware](`https://docs.pmnd.rs/zustand/integrations/persisting-store-data`)
+- [Patterns and recipes](`https://docs.pmnd.rs/zustand/guides/typescript`)
+
+

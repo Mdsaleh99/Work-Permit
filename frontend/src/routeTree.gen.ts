@@ -21,6 +21,9 @@ import { Route as AuthVerifyEmailSuccessVerificationTokenRouteImport } from './r
 import { Route as AuthResetPasswordResetTokenRouteImport } from './routes/auth/reset-password.$resetToken'
 
 const CompanyIndexLazyRouteImport = createFileRoute('/company/')()
+const CompanyMemberSigninLazyRouteImport = createFileRoute(
+  '/company-member/signin',
+)()
 const AuthSsoCallbackLazyRouteImport = createFileRoute('/auth/sso-callback')()
 const AuthCreateCompanyLazyRouteImport = createFileRoute(
   '/auth/create-company',
@@ -72,6 +75,13 @@ const CompanyIndexLazyRoute = CompanyIndexLazyRouteImport.update({
   path: '/company/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/company/index.lazy').then((d) => d.Route))
+const CompanyMemberSigninLazyRoute = CompanyMemberSigninLazyRouteImport.update({
+  id: '/company-member/signin',
+  path: '/company-member/signin',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/company-member/signin.lazy').then((d) => d.Route),
+)
 const AuthSsoCallbackLazyRoute = AuthSsoCallbackLazyRouteImport.update({
   id: '/auth/sso-callback',
   path: '/auth/sso-callback',
@@ -245,6 +255,7 @@ export interface FileRoutesByFullPath {
   '/page/app': typeof PageAppRouteWithChildren
   '/auth/create-company': typeof AuthCreateCompanyLazyRoute
   '/auth/sso-callback': typeof AuthSsoCallbackLazyRoute
+  '/company-member/signin': typeof CompanyMemberSigninLazyRoute
   '/company': typeof CompanyIndexLazyRoute
   '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
@@ -272,6 +283,7 @@ export interface FileRoutesByTo {
   '/page/app': typeof PageAppRouteWithChildren
   '/auth/create-company': typeof AuthCreateCompanyLazyRoute
   '/auth/sso-callback': typeof AuthSsoCallbackLazyRoute
+  '/company-member/signin': typeof CompanyMemberSigninLazyRoute
   '/company': typeof CompanyIndexLazyRoute
   '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
@@ -300,6 +312,7 @@ export interface FileRoutesById {
   '/page/app': typeof PageAppRouteWithChildren
   '/auth/create-company': typeof AuthCreateCompanyLazyRoute
   '/auth/sso-callback': typeof AuthSsoCallbackLazyRoute
+  '/company-member/signin': typeof CompanyMemberSigninLazyRoute
   '/company/': typeof CompanyIndexLazyRoute
   '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
@@ -329,6 +342,7 @@ export interface FileRouteTypes {
     | '/page/app'
     | '/auth/create-company'
     | '/auth/sso-callback'
+    | '/company-member/signin'
     | '/company'
     | '/auth/reset-password/$resetToken'
     | '/auth/verify-email-success/$verificationToken'
@@ -356,6 +370,7 @@ export interface FileRouteTypes {
     | '/page/app'
     | '/auth/create-company'
     | '/auth/sso-callback'
+    | '/company-member/signin'
     | '/company'
     | '/auth/reset-password/$resetToken'
     | '/auth/verify-email-success/$verificationToken'
@@ -383,6 +398,7 @@ export interface FileRouteTypes {
     | '/page/app'
     | '/auth/create-company'
     | '/auth/sso-callback'
+    | '/company-member/signin'
     | '/company/'
     | '/auth/reset-password/$resetToken'
     | '/auth/verify-email-success/$verificationToken'
@@ -411,6 +427,7 @@ export interface RootRouteChildren {
   PageAppRoute: typeof PageAppRouteWithChildren
   AuthCreateCompanyLazyRoute: typeof AuthCreateCompanyLazyRoute
   AuthSsoCallbackLazyRoute: typeof AuthSsoCallbackLazyRoute
+  CompanyMemberSigninLazyRoute: typeof CompanyMemberSigninLazyRoute
   CompanyIndexLazyRoute: typeof CompanyIndexLazyRoute
   AuthResetPasswordResetTokenRoute: typeof AuthResetPasswordResetTokenRoute
   AuthVerifyEmailSuccessVerificationTokenRoute: typeof AuthVerifyEmailSuccessVerificationTokenRoute
@@ -430,6 +447,13 @@ declare module '@tanstack/react-router' {
       path: '/company'
       fullPath: '/company'
       preLoaderRoute: typeof CompanyIndexLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/company-member/signin': {
+      id: '/company-member/signin'
+      path: '/company-member/signin'
+      fullPath: '/company-member/signin'
+      preLoaderRoute: typeof CompanyMemberSigninLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/sso-callback': {
@@ -656,6 +680,7 @@ const rootRouteChildren: RootRouteChildren = {
   PageAppRoute: PageAppRouteWithChildren,
   AuthCreateCompanyLazyRoute: AuthCreateCompanyLazyRoute,
   AuthSsoCallbackLazyRoute: AuthSsoCallbackLazyRoute,
+  CompanyMemberSigninLazyRoute: CompanyMemberSigninLazyRoute,
   CompanyIndexLazyRoute: CompanyIndexLazyRoute,
   AuthResetPasswordResetTokenRoute: AuthResetPasswordResetTokenRoute,
   AuthVerifyEmailSuccessVerificationTokenRoute:
