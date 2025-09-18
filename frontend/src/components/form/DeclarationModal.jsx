@@ -17,6 +17,9 @@ const DeclarationModal = ({
     onSubmitForm,
     isSubmitting,
 }) => {
+    // Debug logging
+    // console.log('DeclarationModal render:', { showAgreeModal, declarationChecks });
+    
     if (!showAgreeModal) return null;
 
     const handleSubmit = () => {
@@ -39,7 +42,7 @@ const DeclarationModal = ({
     const allChecked = DECLARATIONS.every(d => declarationChecks[d.id]);
 
     return (
-        <div className="fixed inset-0 bg-white/20 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-red-50">
@@ -108,11 +111,9 @@ const DeclarationModal = ({
                 {/* Footer */}
                 <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
                     <div className="text-sm text-gray-600">
-                        {Object.keys(declarationChecks).length > 0 && (
-                            <span>
-                                {Object.values(declarationChecks).filter(Boolean).length} of {Object.keys(declarationChecks).length} declarations checked
-                            </span>
-                        )}
+                        <span>
+                            {DECLARATIONS.filter(d => declarationChecks[d.id]).length} of {DECLARATIONS.length} declarations checked
+                        </span>
                     </div>
                     <div className="flex items-center space-x-3">
                         <Button

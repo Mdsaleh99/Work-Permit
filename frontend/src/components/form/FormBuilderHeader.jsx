@@ -28,7 +28,6 @@ const FormBuilderHeader = ({
     setShowComponentsPanel,
     isAutoSaving,
     lastSavedTime,
-    isReadOnly = false,
     onSave,
     onSubmit,
     // onResetForm,
@@ -37,6 +36,7 @@ const FormBuilderHeader = ({
     // onTestAutoSave,
     // drafts,
     isMobile,
+    isEditingMode,
 }) => {
     const fileInputRef = React.useRef(null);
 
@@ -99,52 +99,54 @@ const FormBuilderHeader = ({
                         {/* Form controls */}
                         {/* Reset Form removed */}
 
-                        <Button
-                            size="sm"
-                            className="rounded-lg shadow-sm bg-gray-600 hover:bg-gray-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            onClick={onSave}
-                            disabled={isReadOnly}
-                        >
-                            <Save className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Save</span>
-                            {isAutoSaving && !isReadOnly && (
-                                <div className="ml-2 flex items-center">
-                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                                </div>
-                            )}
-                        </Button>
+                        <>
+                                <Button
+                                    size="sm"
+                                    className="rounded-lg shadow-sm bg-gray-600 hover:bg-gray-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onClick={onSave}
+                                    disabled={Boolean(isEditingMode)}
+                                >
+                                    <Save className="w-4 h-4 mr-2" />
+                                    <span className="hidden sm:inline">Save</span>
+                                    {isAutoSaving && (
+                                        <div className="ml-2 flex items-center">
+                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                        </div>
+                                    )}
+                                </Button>
 
-                        {/* Upload Logo (for print header) */}
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleLogoUpload}
-                            className="hidden"
-                        />
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-lg cursor-pointer shadow-sm border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                            onClick={() =>
-                                fileInputRef.current &&
-                                fileInputRef.current.click()
-                            }
-                            disabled={isReadOnly}
-                        >
-                            <ImageIcon className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Logo</span>
-                        </Button>
+                                {/* Upload Logo (for print header) */}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleLogoUpload}
+                                    className="hidden"
+                                />
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="rounded-lg cursor-pointer shadow-sm border-gray-300 hover:border-gray-400"
+                                    onClick={() =>
+                                        fileInputRef.current &&
+                                        fileInputRef.current.click()
+                                    }
+                                >
+                                    <ImageIcon className="w-4 h-4 mr-2" />
+                                    <span className="hidden sm:inline">Logo</span>
+                                </Button>
 
-                        <Button
-                            size="sm"
-                            className="rounded-lg cursor-pointer shadow-sm bg-blue-600 hover:bg-blue-700 text-white font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                            onClick={onSubmit}
-                            disabled={Boolean(formData?.workPermitId) || isReadOnly}
-                        >
-                            <FileCheck className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Submit</span>
-                        </Button>
+                                {/* Auto-save toggle removed; autosave runs automatically in edit */}
+
+                                <Button
+                                    size="sm"
+                                    className="rounded-lg cursor-pointer shadow-sm bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                                    onClick={onSubmit}
+                                >
+                                    <FileCheck className="w-4 h-4 mr-2" />
+                                    <span className="hidden sm:inline">{isEditingMode ? 'Edit' : 'Submit'}</span>
+                                </Button>
+                        </>
 
                         {/* Drafts button removed */}
 

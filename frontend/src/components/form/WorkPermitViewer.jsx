@@ -2,7 +2,7 @@ import React from "react";
 import PrintView from "./PrintView";
 import { Button } from "../ui/button";
 import { useEffect, useState } from "react";
-import wpService from "@/services/workPermit.service";
+import { workPermitService } from "@/services/workPermit.service";
 import { Edit } from "lucide-react";
 
 /**
@@ -19,7 +19,7 @@ const WorkPermitViewer = ({ title, sectionsTemplate, onEdit, workPermitId }) => 
         (async () => {
             try {
                 if (workPermitId) {
-                    const res = await wpService.listSubmissions(workPermitId);
+                    const res = await workPermitService.listSubmissions(workPermitId);
                     const list = res?.data || res || [];
                     if (mounted && Array.isArray(list) && list.length > 0) {
                         setLatestAnswers(list[0].answers || null);

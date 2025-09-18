@@ -29,12 +29,12 @@ const FormBuilderModular = ({
     sectionsTemplate, 
     startWithTemplate = true, 
     workPermitId = null,
-    isReadOnly = false,
     permitType = "work"
 }) => {
-    console.log("FormBuilder props:", { title, sectionsTemplate, startWithTemplate, workPermitId, isReadOnly, permitType });
+    // console.log("FormBuilder props:", { title, sectionsTemplate, startWithTemplate, workPermitId, isReadOnly, permitType });
     
     const navigate = useNavigate();
+    const isEditingMode = Boolean(workPermitId);
 
     // Main form builder hook
     const formBuilderState = useFormBuilder({ 
@@ -42,7 +42,6 @@ const FormBuilderModular = ({
         sectionsTemplate, 
         startWithTemplate, 
         workPermitId,
-        isReadOnly,
         permitType
     });
 
@@ -150,10 +149,6 @@ const FormBuilderModular = ({
 
     // Handle form submission
     const handleSubmitForm = async () => {
-        if (workPermitId) {
-            toast.error("Submit is disabled when opening an existing form");
-            return;
-        }
         if (!companyData?.id) {
             toast.error("Company information is required");
             return;
@@ -216,6 +211,8 @@ const FormBuilderModular = ({
         draftOperations.testAutoSave();
     };
 
+    // Auto-save logic is handled centrally (same for create/edit). No edit-specific autosave here.
+
     // Handle load draft
     const handleLoadDraft = (draftId) => {
         draftOperations.loadDraft(draftId);
@@ -247,6 +244,11 @@ const FormBuilderModular = ({
 
     // Handle submit button click
     const handleSubmit = () => {
+        if (isEditingMode) {
+            // In edit mode, skip declaration modal and submit directly
+            handleSubmitForm();
+            return;
+        }
         formOperations.initDeclarationChecks();
         setShowAgreeModal(true);
     };
@@ -298,7 +300,6 @@ const FormBuilderModular = ({
                 setShowComponentsPanel={setShowComponentsPanel}
                 isAutoSaving={isAutoSaving}
                 lastSavedTime={lastSavedTime}
-                isReadOnly={isReadOnly}
                 onSave={handleSave}
                 onSubmit={handleSubmit}
                 onResetForm={handleResetForm}
@@ -307,6 +308,7 @@ const FormBuilderModular = ({
                 onTestAutoSave={handleTestAutoSave}
                 drafts={drafts}
                 isMobile={isMobile}
+                isEditingMode={isEditingMode}
             />
 
             {/* Main content */}
@@ -326,8 +328,8 @@ const FormBuilderModular = ({
                     onUpdateSectionTitle={formOperations.updateSectionTitle}
                     onReorderSections={formOperations.reorderSections}
                     onReorderComponents={formOperations.reorderComponents}
-                    onResetForm={draftOperations.createNewDraft}
-                    onShowDraftsModal={handleShowDraftsModal}
+                    onResetForm={isEditingMode ? undefined : draftOperations.createNewDraft}
+                    onShowDraftsModal={isEditingMode ? undefined : handleShowDraftsModal}
                     onInitDeclarationChecks={formOperations.initDeclarationChecks}
                     onShowDeclarationModal={() => setShowAgreeModal(true)}
                     onLoadDraft={handleLoadDraft}
@@ -335,6 +337,7 @@ const FormBuilderModular = ({
                     onDuplicateDraft={handleDuplicateDraft}
                     drafts={drafts}
                     isMobile={isMobile}
+                    isEditingMode={isEditingMode}
                 />
 
                 {/* Center - Main form area */}
@@ -353,35 +356,37 @@ const FormBuilderModular = ({
                 </div>
 
                 {/* Right Sidebar - Component Palette */}
-                <div className={cn(
-                    "bg-white border-l border-gray-200 flex flex-col",
-                    isMobile 
-                        ? (showComponentsPanel ? "fixed right-0 top-0 h-full w-80 z-50 shadow-lg" : "hidden")
-                        : "w-80 flex-shrink-0"
-                )}>
-                    <div className="p-4 flex-shrink-0">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-800 mb-2">Components</h3>
-                                <p className="text-sm text-gray-600">
-                                    Drag components to the form or click to add them to the selected section.
-                                </p>
+                (
+                    <div className={cn(
+                        "bg-white border-l border-gray-200 flex flex-col",
+                        isMobile 
+                            ? (showComponentsPanel ? "fixed right-0 top-0 h-full w-80 z-50 shadow-lg" : "hidden")
+                            : "w-80 flex-shrink-0"
+                    )}>
+                        <div className="p-4 flex-shrink-0">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    {/* <h3 className="text-lg font-semibold text-gray-800 mb-2">Components</h3>
+                                    <p className="text-sm text-gray-600">
+                                        Drag components to the form or click to add them to the selected section.
+                                    </p> */}
+                                </div>
+                                {isMobile && (
+                                    <button
+                                        onClick={() => setShowComponentsPanel(false)}
+                                        className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+                                    >
+                                        <X className="w-5 h-5 text-gray-600" />
+                                    </button>
+                                )}
                             </div>
-                            {isMobile && (
-                                <button
-                                    onClick={() => setShowComponentsPanel(false)}
-                                    className="p-2 rounded-md hover:bg-gray-100 transition-colors"
-                                >
-                                    <X className="w-5 h-5 text-gray-600" />
-                                </button>
-                            )}
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto px-4 pb-4">
+                            <ComponentPalette />
                         </div>
                     </div>
-                    
-                    <div className="flex-1 overflow-y-auto px-4 pb-4">
-                        <ComponentPalette />
-                    </div>
-                </div>
+                )
             </div>
 
             {/* Modals */}

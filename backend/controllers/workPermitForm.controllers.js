@@ -69,6 +69,9 @@ export const createWorkPermitForm = asyncHandler(async (req, res) => {
         throw new ApiError(401, "work permit form creation failed");
     }
 
+    console.log("Work Permit Form", workPermitForm.sections.map((c) => c.components));
+    
+
     res.status(201).json(
         new ApiResponse(
             201,

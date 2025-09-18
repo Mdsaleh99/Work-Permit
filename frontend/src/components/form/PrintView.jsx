@@ -15,8 +15,9 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
         );
     }
     
-    const getSectionDisplayName = (sectionId) => {
-        if (customSectionNames[sectionId]) {
+    const getSectionDisplayName = (section) => {
+        const sectionId = section?.id;
+        if (sectionId && customSectionNames[sectionId]) {
             return customSectionNames[sectionId].toUpperCase();
         }
         const defaultDisplayNames = {
@@ -31,17 +32,82 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
             'opening-ptw': 'OPENING/PTW',
             'closure': 'CLOSURE'
         };
-        return defaultDisplayNames[sectionId] || sectionId.toUpperCase();
+        if (sectionId && defaultDisplayNames[sectionId]) return defaultDisplayNames[sectionId];
+        // Fallback to section title from data (prettier than UUID)
+        if (section?.title) return String(section.title).toUpperCase();
+        return String(sectionId || '').toUpperCase();
     };
 
-    const renderComponent = (component, sectionId) => {
+    const getSectionKey = (section) => {
+        const known = new Set([
+            'work-description',
+            'tools-equipment',
+            'ppe-checklist',
+            'hazard-identification',
+            'certificate',
+            'safe-system-work',
+            'ssow',
+            'last-minute-risk',
+            'declaration',
+            'opening-ptw',
+            'closure',
+        ]);
+        if (section?.id && known.has(section.id)) return section.id;
+        const title = (section?.title || '').toLowerCase().trim();
+        const mapByTitle = {
+            'work description': 'work-description',
+            'tools & equipment': 'tools-equipment',
+            'tools and equipment': 'tools-equipment',
+            'ppe checklist': 'ppe-checklist',
+            'personal protective equipment': 'ppe-checklist',
+            'hazard identification': 'hazard-identification',
+            'certificate': 'certificate',
+            'safe system of work': 'ssow',
+            'last minute risk assessment': 'last-minute-risk',
+            'declaration': 'declaration',
+            'opening ptw': 'opening-ptw',
+            'opening-ptw': 'opening-ptw',
+            'closure': 'closure',
+        };
+        if (title && mapByTitle[title]) return mapByTitle[title];
+        // Heuristic normalize
+        const normalized = title
+            .replace(/&/g, 'and')
+            .replace(/[^a-z\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .trim();
+        if (normalized.includes('work-description')) return 'work-description';
+        if (normalized.includes('tools') && normalized.includes('equipment')) return 'tools-equipment';
+        if (normalized.includes('ppe') || normalized.includes('personal-protective')) return 'ppe-checklist';
+        if (normalized.includes('hazard')) return 'hazard-identification';
+        if (normalized.includes('safe-system') || normalized === 'ssow') return 'ssow';
+        if (normalized.includes('last-minute') || normalized.includes('risk-assessment')) return 'last-minute-risk';
+        if (normalized.includes('opening') && normalized.includes('ptw')) return 'opening-ptw';
+        return normalized || (section?.id || '');
+    };
+
+    const normalizeAnswer = (val, options) => {
+        if (val == null) return val;
+        if (!options || options.length === 0) return val;
+        // If backend stores indices, convert to labels
+        if (Array.isArray(val)) {
+            return val.map(v => typeof v === 'number' ? options[v] ?? v : v);
+        }
+        if (typeof val === 'number') {
+            return options[val] ?? val;
+        }
+        return val;
+    };
+
+    const renderComponent = (component, sectionKey) => {
         const answers = formData?.answers || null;
-        const answerVal = answers ? answers[component.id] : undefined;
+        const rawAnswer = answers ? answers[component.id] : undefined;
+        const answerVal = normalizeAnswer(rawAnswer, component.options);
         // This entire function is stable and correct. No changes.
         switch (component.type) {
             case 'text':
                 return (
-                    <div className={`ptw-component-inner ${['work-description', 'tools-equipment', 'certificate'].includes(sectionId) ? 'ptw-field-horizontal' : ''}`}>
+                    <div className={`ptw-component-inner ${['work-description', 'certificate'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
                         <div className="ptw-label">{component.label}:</div>
                         {answers ? (
                             <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(answerVal || '')}</span></div>
@@ -63,7 +129,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                 );
             case 'date':
                 return (
-                    <div className={`ptw-component-inner ${['work-description', 'declaration', 'opening-ptw', 'closure'].includes(sectionId) ? 'ptw-field-horizontal' : ''}`}>
+                    <div className={`ptw-component-inner ${['work-description', 'declaration', 'opening-ptw', 'closure'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
                         <div className="ptw-label">{component.label}:</div>
                         {answers ? (
                             <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(answerVal || '')}</span></div>
@@ -74,7 +140,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                 );
             case 'time':
                  return (
-                    <div className={`ptw-component-inner ${['work-description', 'opening-ptw', 'closure'].includes(sectionId) ? 'ptw-field-horizontal' : ''}`}>
+                    <div className={`ptw-component-inner ${['work-description', 'opening-ptw', 'closure'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
                         <div className="ptw-label">{component.label}:</div>
                         {answers ? (
                             <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(answerVal || '')}</span></div>
@@ -195,11 +261,13 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                 {formData.sections && formData.sections.length > 0 ? (
                     formData.sections
                         .filter(section => section.enabled !== false)
-                        .map((section) => (
-                            <div key={section.id} className="ptw-section-row" data-section={section.id}>
+                        .map((section) => {
+                            const sectionKey = getSectionKey(section);
+                            return (
+                            <div key={section.id} className="ptw-section-row" data-section={sectionKey}>
                                 <div className="ptw-sidebar-label-wrapper">
                                     <div className="ptw-sidebar-label">
-                                        {getSectionDisplayName(section.id)}
+                                        {getSectionDisplayName(section)}
                                     </div>
                                 </div>
                                 <div className="ptw-content-wrapper">
@@ -209,16 +277,23 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                                                 .filter(component => component.enabled !== false)
                                                 .map((component) => (
                                                     <div key={component.id} className="ptw-component">
-                                                        {renderComponent(component, section.id)}
+                                                        {renderComponent(component, sectionKey)}
                                                     </div>
                                                 ))}
                                         </div>
                                     ) : (
                                         <div className="ptw-label text-gray-500">No components configured.</div>
                                     )}
+                                    {sectionKey === 'tools-equipment' && (
+                                        <div className="ptw-multi-lines-12">
+                                            {Array.from({ length: 18 }).map((_, idx) => (
+                                                <div key={idx} className="ptw-input-line ptw-list-line"></div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        ))
+                        );})
                 ) : (
                     <div className="ptw-section-row">
                          <div className="ptw-sidebar-label-wrapper">
@@ -286,7 +361,8 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                     border-bottom: 1px solid #999;
                     width: 100%;
                     box-sizing: border-box;
-                    page-break-inside: avoid !important; /* This rule will now work */
+                    /* Allow natural page breaks to avoid squashing content onto one page */
+                    page-break-inside: auto;
                 }
                 .ptw-section-row:last-child { border-bottom: none; }
 
@@ -321,6 +397,8 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                     background: #fff;
                     box-sizing: border-box;
                     width: calc(100% - 25mm);
+                    /* Allow breaking inside long content */
+                    page-break-inside: auto;
                 }
                 
                 .ptw-component-wrapper {
@@ -335,11 +413,16 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                 .ptw-input-line { border-bottom: 1px solid #000; height: 12px; margin-bottom: 5px; }
                 .ptw-textarea { border: 1px solid #000; height: 30px; margin-bottom: 5px; }
                 .ptw-signature-line { border-bottom: 1px solid #000; height: 20px; margin-bottom: 5px; }
-                .ptw-checkbox-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+                .ptw-checkbox-grid { 
+                    display: grid; 
+                    grid-template-columns: repeat(4, minmax(0, 1fr)); 
+                    gap: 4px 10px; 
+                    width: 100%;
+                }
                 .ptw-checkbox-item, .ptw-radio-item { display: flex; align-items: center; font-size: 9px; }
                 .ptw-checkbox, .ptw-radio { margin-right: 4px; font-size: 11px; }
                 .ptw-checkbox-label, .ptw-radio-label { font-size: 9px; }
-                .ptw-radio-group { display: flex; gap: 12px; }
+                .ptw-radio-group { display: flex; gap: 12px; flex-wrap: wrap; }
                 .ptw-section-subtitle { font-weight: bold; font-size: 9px; }
 
                 .ptw-footer { 
@@ -349,6 +432,20 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                     page-break-inside: avoid; /* Don't split the footer */
                 }
                 .ptw-footer-content { display: flex; justify-content: space-between; font-size: 8px; }
+
+                /* 12 dashed lines block for Tools & Equipment */
+                .ptw-multi-lines-12 {
+                    margin-top: 6px;
+                    display: grid;
+                    grid-template-columns: repeat(6, 1fr);
+                    gap: 8px 12px;
+                    align-items: end;
+                }
+                .ptw-list-line {
+                    height: 12px;
+                    border-bottom: 1px dashed #000; /* small dashed */
+                    width: 100%;
+                }
 
                 /* ================================================================
                 === DYNAMIC GRID & LAYOUT OVERRIDES (Same as before) ==========
@@ -377,6 +474,9 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                 .ptw-section-row[data-section="tools-equipment"] .ptw-component-wrapper {
                     display: grid; grid-template-columns: repeat(6, 1fr); gap: 0 10px;
                 }
+                .ptw-section-row[data-section="tools-equipment"] .ptw-label {
+                    white-space: nowrap; /* keep heading in one line */
+                }
 
                 /* --- PPE (YOUR REQUEST: 4 COLS) --- */
                 .ptw-section-row[data-section="ppe-checklist"] .ptw-checkbox-grid {
@@ -394,7 +494,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                  .ptw-section-row[data-section="certificate"] .ptw-component { display: flex; flex-direction: column; }
 
                 .ptw-section-row[data-section="last-minute-risk"] .ptw-component-wrapper {
-                    display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px 15px;
+                    display: grid; grid-template-columns: 1fr; gap: 6px 10px;
                 }
 
                 .ptw-section-row[data-section="declaration"] .ptw-component-wrapper {
@@ -416,6 +516,10 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                 
                 /* --- Print Media Query (Updated for multi-page) --- */
                 @media print {
+                   @page {
+                       size: A4;
+                       margin: 10mm;
+                   }
                    html, body {
                        margin: 0;
                        padding: 0;
@@ -431,6 +535,13 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                    }
                    .no-print {
                        display: none !important;
+                   }
+                   /* Ensure checklists and large text areas can split across pages */
+                   .ptw-checkbox-grid,
+                   .ptw-radio-group,
+                   .ptw-textarea,
+                   .ptw-component-wrapper {
+                       page-break-inside: auto;
                    }
                 }
             `}</style>

@@ -32,6 +32,7 @@ const FormBuilderSidebar = ({
     // onDeleteDraft,
     // onDuplicateDraft,
     isMobile,
+    isEditingMode,
 }) => {
     // Removed drag and drop handlers
 
@@ -89,6 +90,7 @@ const FormBuilderSidebar = ({
                                 size="sm"
                                 className="w-full rounded-full cursor-pointer shadow-sm"
                                 onClick={onResetForm}
+                                disabled={Boolean(isEditingMode)}
                             >
                                 <Plus className="w-4 h-4 mr-2" />
                                 Add New Form
@@ -100,6 +102,7 @@ const FormBuilderSidebar = ({
                                 size="sm"
                                 className="w-full cursor-pointer rounded-full shadow-sm"
                                 onClick={onShowDraftsModal}
+                                disabled={Boolean(isEditingMode)}
                             >
                                 <Edit className="w-4 h-4 mr-2" />
                                 My Drafts ({drafts?.length || 0})

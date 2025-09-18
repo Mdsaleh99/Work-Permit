@@ -3,7 +3,6 @@ import WorkPermitEditor from "@/components/form/WorkPermitEditor";
 import { workPermitService } from "@/services/workPermit.service";
 import { useEffect, useState } from "react";
 import { Loader } from "lucide-react";
-import { useWorkPermitStore } from "@/store/useWorkPermitStore";
 
 export const Route = createLazyFileRoute("/page/app/form-builder/$workPermitId")({
     component: RouteComponent,
@@ -13,7 +12,6 @@ function RouteComponent() {
     const { workPermitId } = useParams({ from: "/page/app/form-builder/$workPermitId" });
     const [isLoading, setIsLoading] = useState(true);
     const [workPermit, setWorkPermit] = useState(null);
-    const { currentWorkPermit } = useWorkPermitStore();
 
     
     
@@ -65,8 +63,8 @@ function RouteComponent() {
             ? workPermit.form.sections
             : Array.isArray(workPermit.data?.sections)
                 ? workPermit.data.sections
-                : (typeof workPermit.sections === "array"
-                    ? (() => { try { return JSON.parse(currentWorkPermit.sections); } catch { return []; } })()
+                : (typeof workPermit.sections === "string"
+                    ? (() => { try { return JSON.parse(workPermit.sections); } catch { return []; } })()
                     : []);
 
     const sectionsTemplate = rawSections.map(section => ({
@@ -83,12 +81,7 @@ function RouteComponent() {
         }))
     }));
 
-    console.log("Route component data:", { 
-        workPermitId, 
-        currentWorkPermit, 
-        sectionsTemplate,
-        title: currentWorkPermit.title 
-    });
+    // console.log("Route component data:", { workPermitId, sectionsTemplate, title: workPermit?.title });
 
     return (
         <WorkPermitEditor

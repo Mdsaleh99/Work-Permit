@@ -1,8 +1,9 @@
 import { createLazyFileRoute, useParams } from "@tanstack/react-router";
-import WorkPermitViewer from "@/components/form/WorkPermitViewer";
+import FormBuilderView from "@/components/form/FormBuilderView";
 import { workPermitService } from "@/services/workPermit.service";
 import { useEffect, useState } from "react";
 import { Loader } from "lucide-react";
+import { useWorkPermitStore } from "@/store/useWorkPermitStore";
 
 export const Route = createLazyFileRoute("/page/app/form-builder/view/$workPermitId")({
     component: RouteComponent,
@@ -10,13 +11,16 @@ export const Route = createLazyFileRoute("/page/app/form-builder/view/$workPermi
 
 function RouteComponent() {
     const { workPermitId } = useParams({ from: "/page/app/form-builder/view/$workPermitId" });
+    console.log("work permit: ", workPermitId);
+    
     const [isLoading, setIsLoading] = useState(true);
     const [workPermit, setWorkPermit] = useState(null);
+    const { getWorkPermitById } = useWorkPermitStore();
 
     useEffect(() => {
         const loadWorkPermit = async () => {
             try {
-                const data = await workPermitService.getWorkPermitById(workPermitId);
+                const data = await getWorkPermitById(workPermitId);
                 setWorkPermit(data);
             } catch (error) {
                 console.error("Error loading work permit:", error);
@@ -55,7 +59,7 @@ function RouteComponent() {
             : Array.isArray(workPermit.data?.sections)
                 ? workPermit.data.sections
                 : (typeof workPermit.sections === "string"
-                    ? (() => { try { return JSON.parse(currentWorkPermit.sections); } catch { return []; } })()
+                    ? (() => { try { return JSON.parse(workPermit.sections); } catch { return []; } })()
                     : []);
 
     const sectionsTemplate = rawSections.map(section => ({
@@ -73,12 +77,11 @@ function RouteComponent() {
     }));
 
     return (
-        <WorkPermitViewer
+        <FormBuilderView
             key={workPermitId}
             title={workPermit.title || "Work Permit"}
             sectionsTemplate={sectionsTemplate}
-            workPermitId={workPermitId}
-            onEdit={() => window.location.assign(`/page/app/form-builder/${workPermitId}`)}
+            workPermit={workPermit}
         />
     );
 }

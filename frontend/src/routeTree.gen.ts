@@ -55,6 +55,9 @@ const PageAppChangePasswordLazyRouteImport = createFileRoute(
   '/page/app/change-password',
 )()
 const PageAppAuditLazyRouteImport = createFileRoute('/page/app/audit')()
+const PageAppFormBuilderIndexLazyRouteImport = createFileRoute(
+  '/page/app/form-builder/',
+)()
 const PageAppFormFillWorkPermitIdLazyRouteImport = createFileRoute(
   '/page/app/form-fill/$workPermitId',
 )()
@@ -215,6 +218,14 @@ const AuthResetPasswordResetTokenRoute =
     path: '/auth/reset-password/$resetToken',
     getParentRoute: () => rootRouteImport,
   } as any)
+const PageAppFormBuilderIndexLazyRoute =
+  PageAppFormBuilderIndexLazyRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PageAppFormBuilderLazyRoute,
+  } as any).lazy(() =>
+    import('./routes/page/app.form-builder.index.lazy').then((d) => d.Route),
+  )
 const PageAppFormFillWorkPermitIdLazyRoute =
   PageAppFormFillWorkPermitIdLazyRouteImport.update({
     id: '/form-fill/$workPermitId',
@@ -272,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
   '/page/app/form-builder/$workPermitId': typeof PageAppFormBuilderWorkPermitIdLazyRoute
   '/page/app/form-fill/$workPermitId': typeof PageAppFormFillWorkPermitIdLazyRoute
+  '/page/app/form-builder/': typeof PageAppFormBuilderIndexLazyRoute
   '/page/app/form-builder/view/$workPermitId': typeof PageAppFormBuilderViewWorkPermitIdLazyRoute
 }
 export interface FileRoutesByTo {
@@ -293,13 +305,13 @@ export interface FileRoutesByTo {
   '/page/app/company-members': typeof PageAppCompanyMembersLazyRoute
   '/page/app/dashboard': typeof PageAppDashboardLazyRoute
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
-  '/page/app/form-builder': typeof PageAppFormBuilderLazyRouteWithChildren
   '/page/app/observation': typeof PageAppObservationLazyRoute
   '/page/app/permit': typeof PageAppPermitLazyRoute
   '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
   '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
   '/page/app/form-builder/$workPermitId': typeof PageAppFormBuilderWorkPermitIdLazyRoute
   '/page/app/form-fill/$workPermitId': typeof PageAppFormFillWorkPermitIdLazyRoute
+  '/page/app/form-builder': typeof PageAppFormBuilderIndexLazyRoute
   '/page/app/form-builder/view/$workPermitId': typeof PageAppFormBuilderViewWorkPermitIdLazyRoute
 }
 export interface FileRoutesById {
@@ -329,6 +341,7 @@ export interface FileRoutesById {
   '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
   '/page/app/form-builder/$workPermitId': typeof PageAppFormBuilderWorkPermitIdLazyRoute
   '/page/app/form-fill/$workPermitId': typeof PageAppFormFillWorkPermitIdLazyRoute
+  '/page/app/form-builder/': typeof PageAppFormBuilderIndexLazyRoute
   '/page/app/form-builder/view/$workPermitId': typeof PageAppFormBuilderViewWorkPermitIdLazyRoute
 }
 export interface FileRouteTypes {
@@ -359,6 +372,7 @@ export interface FileRouteTypes {
     | '/page/app/work-permits'
     | '/page/app/form-builder/$workPermitId'
     | '/page/app/form-fill/$workPermitId'
+    | '/page/app/form-builder/'
     | '/page/app/form-builder/view/$workPermitId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -380,13 +394,13 @@ export interface FileRouteTypes {
     | '/page/app/company-members'
     | '/page/app/dashboard'
     | '/page/app/fleet-management'
-    | '/page/app/form-builder'
     | '/page/app/observation'
     | '/page/app/permit'
     | '/page/app/user-dashboard'
     | '/page/app/work-permits'
     | '/page/app/form-builder/$workPermitId'
     | '/page/app/form-fill/$workPermitId'
+    | '/page/app/form-builder'
     | '/page/app/form-builder/view/$workPermitId'
   id:
     | '__root__'
@@ -415,6 +429,7 @@ export interface FileRouteTypes {
     | '/page/app/work-permits'
     | '/page/app/form-builder/$workPermitId'
     | '/page/app/form-fill/$workPermitId'
+    | '/page/app/form-builder/'
     | '/page/app/form-builder/view/$workPermitId'
   fileRoutesById: FileRoutesById
 }
@@ -596,6 +611,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthResetPasswordResetTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/page/app/form-builder/': {
+      id: '/page/app/form-builder/'
+      path: '/'
+      fullPath: '/page/app/form-builder/'
+      preLoaderRoute: typeof PageAppFormBuilderIndexLazyRouteImport
+      parentRoute: typeof PageAppFormBuilderLazyRoute
+    }
     '/page/app/form-fill/$workPermitId': {
       id: '/page/app/form-fill/$workPermitId'
       path: '/form-fill/$workPermitId'
@@ -622,6 +644,7 @@ declare module '@tanstack/react-router' {
 
 interface PageAppFormBuilderLazyRouteChildren {
   PageAppFormBuilderWorkPermitIdLazyRoute: typeof PageAppFormBuilderWorkPermitIdLazyRoute
+  PageAppFormBuilderIndexLazyRoute: typeof PageAppFormBuilderIndexLazyRoute
   PageAppFormBuilderViewWorkPermitIdLazyRoute: typeof PageAppFormBuilderViewWorkPermitIdLazyRoute
 }
 
@@ -629,6 +652,7 @@ const PageAppFormBuilderLazyRouteChildren: PageAppFormBuilderLazyRouteChildren =
   {
     PageAppFormBuilderWorkPermitIdLazyRoute:
       PageAppFormBuilderWorkPermitIdLazyRoute,
+    PageAppFormBuilderIndexLazyRoute: PageAppFormBuilderIndexLazyRoute,
     PageAppFormBuilderViewWorkPermitIdLazyRoute:
       PageAppFormBuilderViewWorkPermitIdLazyRoute,
   }
