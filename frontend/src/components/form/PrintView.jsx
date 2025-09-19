@@ -103,50 +103,36 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
         const answers = formData?.answers || null;
         const rawAnswer = answers ? answers[component.id] : undefined;
         const answerVal = normalizeAnswer(rawAnswer, component.options);
+        const componentVal = (component && (component.value ?? component.text)) || "";
+        const displayVal = answers ? answerVal : componentVal;
         // This entire function is stable and correct. No changes.
         switch (component.type) {
             case 'text':
                 return (
                     <div className={`ptw-component-inner ${['work-description', 'certificate'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
                         <div className="ptw-label">{component.label}:</div>
-                        {answers ? (
-                            <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(answerVal || '')}</span></div>
-                        ) : (
-                            <div className="ptw-input-line"></div>
-                        )}
+                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(displayVal || '')}</span></div>
                     </div>
                 );
             case 'textarea':
                 return (
                     <div className="ptw-component-inner">
                         <div className="ptw-label">{component.label}:</div>
-                        {answers ? (
-                            <div className="ptw-textarea"><span style={{visibility:'visible'}}>{String(answerVal || '')}</span></div>
-                        ) : (
-                            <div className="ptw-textarea"></div>
-                        )}
+                        <div className="ptw-textarea"><span style={{visibility:'visible'}}>{String(displayVal || '')}</span></div>
                     </div>
                 );
             case 'date':
                 return (
                     <div className={`ptw-component-inner ${['work-description', 'declaration', 'opening-ptw', 'closure'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
                         <div className="ptw-label">{component.label}:</div>
-                        {answers ? (
-                            <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(answerVal || '')}</span></div>
-                        ) : (
-                            <div className="ptw-input-line"></div>
-                        )}
+                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(displayVal || '')}</span></div>
                     </div>
                 );
             case 'time':
                  return (
                     <div className={`ptw-component-inner ${['work-description', 'opening-ptw', 'closure'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
                         <div className="ptw-label">{component.label}:</div>
-                        {answers ? (
-                            <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(answerVal || '')}</span></div>
-                        ) : (
-                            <div className="ptw-input-line"></div>
-                        )}
+                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(displayVal || '')}</span></div>
                     </div>
                 );
             case 'checkbox':
@@ -194,7 +180,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                 return (
                     <div className="ptw-component-inner">
                         <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-input-line"></div>
+                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(displayVal || '')}</span></div>
                     </div>
                 );
         }
@@ -260,7 +246,6 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
             <div className="ptw-main-content">
                 {formData.sections && formData.sections.length > 0 ? (
                     formData.sections
-                        .filter(section => section.enabled !== false)
                         .map((section) => {
                             const sectionKey = getSectionKey(section);
                             return (
@@ -274,7 +259,6 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                                     {section.components && section.components.length > 0 ? (
                                         <div className="ptw-component-wrapper">
                                             {section.components
-                                                .filter(component => component.enabled !== false)
                                                 .map((component) => (
                                                     <div key={component.id} className="ptw-component">
                                                         {renderComponent(component, sectionKey)}

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ function WorkPermitList() {
     
     const { companyData, getCompanyByUser } = useCompanyStore();
     const navigate = useNavigate();
+    const [search, setSearch] = useState("");
 
     useEffect(() => {
         fetchWorkPermits();
@@ -97,6 +98,14 @@ function WorkPermitList() {
     // console.log(workPermits);
     console.log(companyData);
     
+    const filteredPermits = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        if (!q) return workPermits;
+        return workPermits.filter(wp =>
+            (wp.title || "").toLowerCase().includes(q) ||
+            (wp.workPermitNo || "").toString().toLowerCase().includes(q)
+        );
+    }, [workPermits, search]);
 
     if (isFetching) {
         return (
@@ -112,7 +121,7 @@ function WorkPermitList() {
     return (
         <div className="max-w-6xl mx-auto p-6 mt-20">
             <div className="flex justify-between items-center mb-6">
-                <div>
+                <div className="flex-1">
                     <h1 className="text-3xl font-bold text-gray-900">
                         Work Permit Forms
                     </h1>
@@ -120,6 +129,14 @@ function WorkPermitList() {
                         Manage your work permit forms for{" "}
                         {companyData?.compName || "your company"}
                     </p>
+                </div>
+                <div className="w-64">
+                    <input
+                        type="text"
+                        placeholder="Search by title or permit no..."
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
                 </div>
                 {/* <Button onClick={handleCreateNew} className="bg-blue-600 hover:bg-blue-700">
                     <Plus className="mr-2 h-4 w-4" />
@@ -157,6 +174,7 @@ function WorkPermitList() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>ID</TableHead>
+                            <TableHead>Permit No</TableHead>
                             <TableHead>Title</TableHead>
                             <TableHead>Company</TableHead>
                             <TableHead>Created</TableHead>
@@ -167,10 +185,13 @@ function WorkPermitList() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {workPermits.map((workPermit) => (
+                        {filteredPermits.map((workPermit) => (
                             <TableRow key={workPermit.id}>
                                 <TableCell className="text-gray-600">
                                     {workPermit.id}
+                                </TableCell>
+                                <TableCell className="text-gray-600">
+                                    {workPermit.workPermitNo || "-"}
                                 </TableCell>
                                 <TableCell className="font-medium">
                                     {workPermit.title}

@@ -23,7 +23,7 @@ app.use(cookieParser())
 app.use(cors({
     origin: process.env.FRONTEND_URL,
     allowedHeaders: ['Content-Type', 'Authorization'],
-    methods: ["GET", "POST", "DELETE", "PUT"],
+    methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
     credentials: true
 }))
 // required for passport

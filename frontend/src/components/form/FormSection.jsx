@@ -76,6 +76,7 @@ const FormSection = ({
     const renderComponent = (component, sectionId) => {
         const IconComponent = getComponentIcon(component.type);
         const isEditing = editingComponent === component.id;
+        const isWorkPermitNo = /work\s*permit\s*no/i.test(component.label);
 
         return (
             <Card
@@ -108,7 +109,8 @@ const FormSection = ({
                                 onClick={() => setEditingComponent(isEditing ? null : component.id)}
                                 className={cn(
                                     "p-2 transition-colors",
-                                    isEditing ? "bg-blue-100 text-blue-700" : "hover:bg-gray-100"
+                                    isEditing ? "bg-blue-100 text-blue-700" : "hover:bg-gray-100",
+                                    /work\s*permit\s*no/i.test(component.label) && "pointer-events-none opacity-50"
                                 )}
                             >
                                 <Edit className="w-4 h-4" />
@@ -117,7 +119,10 @@ const FormSection = ({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onDeleteComponent(sectionId, component.id)}
-                                className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+                                className={cn(
+                                    "p-2 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors",
+                                    /work\s*permit\s*no/i.test(component.label) && "pointer-events-none opacity-50"
+                                )}
                             >
                                 <Trash2 className="w-4 h-4" />
                             </Button>
@@ -153,8 +158,11 @@ const FormSection = ({
                                 <label className="flex items-center space-x-2 cursor-pointer">
                                     <input
                                         type="checkbox"
-                                        checked={component.enabled}
-                                        onChange={(e) => onUpdateComponent(sectionId, component.id, { enabled: e.target.checked })}
+                                        checked={isWorkPermitNo ? false : component.enabled}
+                                        onChange={(e) => {
+                                            if (isWorkPermitNo) return; // keep disabled
+                                            onUpdateComponent(sectionId, component.id, { enabled: e.target.checked })
+                                        }}
                                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
                                     <span className="text-sm text-gray-700">Enabled</span>

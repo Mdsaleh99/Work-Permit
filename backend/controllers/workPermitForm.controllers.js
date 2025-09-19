@@ -4,7 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 export const createWorkPermitForm = asyncHandler(async (req, res) => {
-    const { title, sections = [] } = req.body;
+    const { title, sections = [], workPermitNo } = req.body;
     const userId = req.user.id;
     const { companyId } = req.params;
 
@@ -38,6 +38,7 @@ export const createWorkPermitForm = asyncHandler(async (req, res) => {
     const workPermitForm = await db.workPermitForm.create({
         data: {
             title,
+            ...(workPermitNo ? { workPermitNo } : {}),
             userId,
             companyId: company.id,
             sections: {
@@ -141,7 +142,7 @@ export const getWorkPermitFormById = asyncHandler(async (req, res) => {
 
 export const updateWorkPermitForm = asyncHandler(async (req, res) => {
     const { workPermitFormId, companyId } = req.params;
-    const { title, sections = [] } = req.body;
+    const { title, sections = [], workPermitNo } = req.body;
     const userId = req.user.id;
 
     if (!workPermitFormId) {
@@ -194,6 +195,7 @@ export const updateWorkPermitForm = asyncHandler(async (req, res) => {
             where: { id: workPermitFormId },
             data: {
                 ...(title && { title }),
+                ...(typeof workPermitNo !== 'undefined' ? { workPermitNo } : {}),
                 updatedAt: new Date(), // Ensure updatedAt is set
             },
         });

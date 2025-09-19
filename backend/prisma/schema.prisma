@@ -110,6 +110,7 @@ model CompanyMember {
 model WorkPermitForm {
   id        String              @id @default(uuid())
   title     String
+  workPermitNo String? @unique @db.VarChar(12)
   userId    String
   companyId String
   formUrl   String?

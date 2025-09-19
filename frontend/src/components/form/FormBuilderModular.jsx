@@ -155,8 +155,17 @@ const FormBuilderModular = ({
         }
 
         try {
+            // Extract generated permit number if present
+            const permitNo = (() => {
+                const sec = formData.sections.find(s => (s.components || []).some(c => /work\s*permit\s*no/i.test(c.label)));
+                if (!sec) return null;
+                const comp = (sec.components || []).find(c => /work\s*permit\s*no/i.test(c.label));
+                return comp?.value || null;
+            })();
+
             const workPermitData = {
                 title: formData.title,
+                workPermitNo: permitNo || undefined,
                 sections: formData.sections.map(section => ({
                     title: section.title,
                     enabled: section.enabled !== false,
