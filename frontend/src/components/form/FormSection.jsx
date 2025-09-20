@@ -15,7 +15,9 @@ import {
     AlertTriangle,
     CheckCircle,
     Clock,
-    UserCheck
+    UserCheck,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import ReorderableList from "../drag-drop/ReorderableList";
@@ -31,8 +33,26 @@ const FormSection = ({
     onUpdateComponent,
     onDeleteComponent,
     onReorderComponents,
+    onNavigateSection,
 }) => {
     const selectedSection = formData.sections.find(section => section.id === formData.selectedSection);
+    const currentSectionIndex = formData.sections.findIndex(section => section.id === formData.selectedSection);
+    const totalSections = formData.sections.length;
+
+    // Navigation handlers
+    const handlePreviousSection = () => {
+        if (currentSectionIndex > 0) {
+            const previousSection = formData.sections[currentSectionIndex - 1];
+            onNavigateSection && onNavigateSection(previousSection.id);
+        }
+    };
+
+    const handleNextSection = () => {
+        if (currentSectionIndex < totalSections - 1) {
+            const nextSection = formData.sections[currentSectionIndex + 1];
+            onNavigateSection && onNavigateSection(nextSection.id);
+        }
+    };
 
     // Drag and drop handlers
     const handleDragOver = (e) => {
@@ -287,6 +307,35 @@ const FormSection = ({
                         </div>
                     </div>
                 )}
+
+                {/* Navigation Buttons */}
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                        <Button
+                            variant="outline"
+                            onClick={handlePreviousSection}
+                            disabled={currentSectionIndex === 0}
+                            className="flex items-center space-x-2"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            <span>Previous Section</span>
+                        </Button>
+                        
+                        <div className="text-sm text-gray-500">
+                            Section {currentSectionIndex + 1} of {totalSections}
+                        </div>
+                        
+                        <Button
+                            variant="outline"
+                            onClick={handleNextSection}
+                            disabled={currentSectionIndex === totalSections - 1}
+                            className="flex items-center space-x-2"
+                        >
+                            <span>Next Section</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </Button>
+                    </div>
+                </div>
             </div>
         </div>
     );

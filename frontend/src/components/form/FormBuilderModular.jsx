@@ -251,6 +251,11 @@ const FormBuilderModular = ({
         }
     };
 
+    // Handle section navigation
+    const handleNavigateSection = (sectionId) => {
+        setFormData(prev => ({ ...prev, selectedSection: sectionId }));
+    };
+
     // Handle submit button click
     const handleSubmit = () => {
         if (isEditingMode) {
@@ -360,6 +365,7 @@ const FormBuilderModular = ({
                             onUpdateComponent={formOperations.updateComponent}
                             onDeleteComponent={formOperations.deleteComponent}
                             onReorderComponents={formOperations.reorderComponents}
+                            onNavigateSection={handleNavigateSection}
                         />
                     </div>
                 </div>
