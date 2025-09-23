@@ -4,12 +4,23 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Card, CardContent } from "../ui/card";
 import { cn } from "../../lib/utils";
-import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, ClipboardList, Wrench, Shield, ShieldCheck, AlertTriangle, ListChecks } from "lucide-react";
 import PrintView from "./PrintView";
 
 // Simple member filler that renders input controls for each component type
 // Props: { title, sectionsTemplate, onSubmit, isSubmitting }
 const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting }) => {
+    // Map section titles to icons
+    const getSectionIcon = (sectionTitle, className = "w-4 h-4") => {
+        const t = (sectionTitle || "").toLowerCase();
+        if (t.includes("work description")) return <ClipboardList className={className} />;
+        if (t.includes("tools") || t.includes("equipment")) return <Wrench className={className} />;
+        if (t.includes("ppe")) return <Shield className={className} />;
+        if (t.includes("hazard")) return <AlertTriangle className={className} />;
+        if (t.includes("safe system")) return <ShieldCheck className={className} />;
+        if (t.includes("last minute") || t.includes("risk assessment")) return <ListChecks className={className} />;
+        return <FileText className={className} />;
+    };
     const initialAnswers = useMemo(() => {
         const map = {};
         (sectionsTemplate || []).forEach(section => {
@@ -262,13 +273,17 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting }) => {
                                             ? "bg-blue-100 text-blue-600" 
                                             : "bg-gray-100 text-gray-600"
                                     )}>
-                                        <span className="text-xs font-semibold">{index + 1}</span>
+                                        {sidebarCollapsed 
+                                            ? getSectionIcon(section.title)
+                                            : <span className="text-xs font-semibold">{index + 1}</span>
+                                        }
                                     </div>
                                 </div>
                                 {!sidebarCollapsed && (
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900 truncate">
-                                            {section.title}
+                                        <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-2">
+                                            {getSectionIcon(section.title, "w-4 h-4 text-gray-600")}
+                                            <span className="truncate">{section.title}</span>
                                         </p>
                                         <p className="text-xs text-gray-500 mt-0.5">
                                             {section.components?.length || 0} fields
@@ -352,12 +367,13 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting }) => {
                                                         ? "bg-blue-500 text-white shadow-md" 
                                                         : "bg-gray-200 text-gray-700"
                                                 )}>
-                                                    <span className="text-sm">{index + 1}</span>
+                                                    {getSectionIcon(section.title, "w-5 h-5")}
                                                 </div>
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-base font-medium text-gray-900 truncate">
-                                                    {section.title}
+                                                <p className="text-base font-medium text-gray-900 truncate flex items-center gap-2">
+                                                    {getSectionIcon(section.title, "w-4 h-4 text-gray-600")}
+                                                    <span className="truncate">{section.title}</span>
                                                 </p>
                                                 <p className="text-sm text-gray-500 mt-1">
                                                     {section.components?.length || 0} fields

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "@tanstack/react-router";
 import { useCompanyStore } from "@/store/useCompanyStore";
-import { Loader, Building2, Mail, Phone, FileText, Edit, Trash2, Plus } from "lucide-react";
+import { Loader, Building2, Mail, Phone, FileText, Edit, Trash2, Plus, Hash } from "lucide-react";
 import { toast } from "sonner";
 
 function CompanyDetails() {
@@ -86,6 +86,10 @@ function CompanyDetails() {
                     </CardHeader>
                     <CardContent className="pt-0">
                         <div className="space-y-3">
+                            <div className="flex items-center space-x-3">
+                                <Hash className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm text-gray-600 break-all">{company.companyId || company.id}</span>
+                            </div>
                             <div className="flex items-center space-x-3">
                                 <Mail className="h-4 w-4 text-gray-400" />
                                 <span className="text-sm text-gray-600">{company.email}</span>

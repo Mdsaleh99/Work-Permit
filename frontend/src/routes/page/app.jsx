@@ -9,16 +9,12 @@ export const Route = createFileRoute("/page/app")({
     beforeLoad: async () => {
         const { authUser, checkAuth } = useAuthStore.getState();
 
-        // If no user yet, trigger checkAuth
         if (!authUser) {
-            await checkAuth(); // wait for cookie-based auth
+            await checkAuth();
         }
 
-        // After check, if still no user -> redirect
         if (!useAuthStore.getState().authUser) {
-            throw redirect({
-                to: "/auth/signin",
-            });
+            throw redirect({ to: "/auth/signin" });
         }
     },
     component: RouteComponent,

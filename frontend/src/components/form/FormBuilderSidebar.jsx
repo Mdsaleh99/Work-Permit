@@ -2,7 +2,7 @@ import React from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
-import { Plus, GripVertical, Edit, Trash2, Menu, X } from "lucide-react";
+import { Plus, GripVertical, Edit, Trash2, Menu, X, FileText, ClipboardList, Wrench, Shield, ShieldCheck, AlertTriangle, ListChecks } from "lucide-react";
 import ReorderableList from "../drag-drop/ReorderableList";
 import { cn } from "../../lib/utils";
 
@@ -35,6 +35,18 @@ const FormBuilderSidebar = ({
     isEditingMode,
 }) => {
     // Removed drag and drop handlers
+
+    // Map common section titles to icons
+    const getSectionIcon = (title, className = "w-4 h-4 text-gray-600") => {
+        const t = (title || "").toLowerCase();
+        if (t.includes("work description")) return <ClipboardList className={className} />;
+        if (t.includes("tools") || t.includes("equipment")) return <Wrench className={className} />;
+        if (t.includes("ppe")) return <Shield className={className} />;
+        if (t.includes("hazard")) return <AlertTriangle className={className} />;
+        if (t.includes("safe system")) return <ShieldCheck className={className} />;
+        if (t.includes("last minute") || t.includes("risk assessment")) return <ListChecks className={className} />;
+        return <FileText className={className} />;
+    };
 
     return (
         <div
@@ -143,6 +155,7 @@ const FormBuilderSidebar = ({
                                         }}
                                     >
                                         <GripVertical className="w-4 h-4 text-gray-500 cursor-grab flex-shrink-0" />
+                                        {getSectionIcon(section.title)}
                                         <Input
                                             value={section.title}
                                             onChange={(e) =>
@@ -162,27 +175,69 @@ const FormBuilderSidebar = ({
                 </>
             )}
 
-            {/* Collapsed Sidebar - Show only icons */}
+            {/* Collapsed Sidebar - Show icons for actions and sections */}
             {sidebarCollapsed && (
-                <div className="p-2 space-y-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onResetForm}
-                        className="w-full p-2"
-                        title="Add New Form"
-                    >
-                        <Plus className="w-4 h-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onShowDraftsModal}
-                        className="w-full p-2"
-                        title="My Drafts"
-                    >
-                        <Edit className="w-4 h-4" />
-                    </Button>
+                <div className="h-full flex flex-col p-2">
+                    {/* Action icons */}
+                    <div className="space-y-2">
+                        {onResetForm && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={onResetForm}
+                                className="w-full p-2"
+                                title="Add New Form"
+                                disabled={Boolean(isEditingMode)}
+                            >
+                                <Plus className="w-4 h-4" />
+                            </Button>
+                        )}
+                        {onShowDraftsModal && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={onShowDraftsModal}
+                                className="w-full p-2"
+                                title="My Drafts"
+                                disabled={Boolean(isEditingMode)}
+                            >
+                                <Edit className="w-4 h-4" />
+                            </Button>
+                        )}
+                    </div>
+
+                    {/* Section icons list */}
+                    <div className="mt-2 flex-1 overflow-y-auto">
+                        <div className="flex flex-col items-center space-y-2">
+                            {Array.isArray(formData?.sections) && formData.sections.map((section) => (
+                                <button
+                                    key={section.id}
+                                    type="button"
+                                    className={cn(
+                                        "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                                        formData.selectedSection === section.id
+                                            ? "bg-blue-100 text-blue-600"
+                                            : "text-gray-600 hover:bg-gray-100",
+                                        section.enabled === false && "opacity-60"
+                                    )}
+                                    onClick={() => {
+                                        if (section.id === "declaration") {
+                                            onInitDeclarationChecks?.();
+                                            onShowDeclarationModal?.();
+                                        } else {
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                selectedSection: section.id,
+                                            }));
+                                        }
+                                    }}
+                                    title={section.title}
+                                >
+                                    {getSectionIcon(section.title, "w-5 h-5")}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

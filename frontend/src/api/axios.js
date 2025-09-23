@@ -43,7 +43,11 @@ axiosInstance.interceptors.response.use(
                 return axiosInstance(originalRequest);
             } catch (err) {
                 refreshingPromise = null;
-                if (window.location.pathname !== "/auth/signin") {
+                const path = window.location.pathname || "";
+                const isOnAuthSignin = path === "/auth/signin";
+                const isOnCompanyMemberAuth = path.startsWith("/company-member");
+                // Do not redirect away from company member auth pages
+                if (!isOnAuthSignin && !isOnCompanyMemberAuth) {
                     window.location.href = "/auth/signin";
                 }
                 return Promise.reject(err);

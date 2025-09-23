@@ -47,8 +47,15 @@ export const companyService = {
     },
 
     getCurrentCompanyMember: async () => {
-        const response = await axiosInstance.get(`/company/member`)
-
-        return response.data.data
+        try {
+            const response = await axiosInstance.get(`/company/member`)
+            return response.data.data
+        } catch (error) {
+            const status = error?.status || error?.response?.status
+            if (status === 401 || status === 419) {
+                return null
+            }
+            throw error
+        }
     }
 };

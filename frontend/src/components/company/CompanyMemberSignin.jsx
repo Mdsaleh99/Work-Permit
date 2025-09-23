@@ -21,17 +21,23 @@ import { useCompanyStore } from "@/store/useCompanyStore";
 import { CompanyMemberRoles } from "@/lib/constants";
 
 const SignInSchema = z.object({
+    companyId: z.string().min(1, { message: "Company ID is required for member signin" }),
     email: z.email({ error: "incorrect email or password" }),
-    password: z.string({error: "password is required"}),
+    password: z.string({ error: "password is required" }),
 });
 
 export function CompanyMemberSignin({ className, ...props }) {
+    const search = useSearch({ from: "/company-member/signin" });
+    const defaultCompanyId = search?.companyId || "";
+
     const {
         register,
         handleSubmit,
         formState: { errors },
         setError,
-    } = useForm({ resolver: zodResolver(SignInSchema) });
+        setValue,
+        watch,
+    } = useForm({ resolver: zodResolver(SignInSchema), defaultValues: { companyId: defaultCompanyId } });
     
     const {
         getCompanyByUser,
@@ -42,7 +48,6 @@ export function CompanyMemberSignin({ className, ...props }) {
         isCompanyMemberSigningIn,
     } = useCompanyStore();
     const navigate = useNavigate();
-    const search = useSearch({ from: "/company-member/signin" });
 
     React.useEffect(() => {
         // Clear any stale errors when landing on the page or when query changes
@@ -52,17 +57,12 @@ export function CompanyMemberSignin({ className, ...props }) {
 
     const onSubmit = async (data) => {
         try {
-            // Get company ID from URL params or search params
-            const companyId = search?.companyId;
-            if (!companyId) {
-                setError("root", {
-                    type: "manual",
-                    message: "Company ID is required for member signin"
-                });
-                return;
-            }
+            // Use company ID from form (prefilled from URL if present)
+            const companyId = data.companyId?.trim();
+            if (!companyId) return; // zod covers validation
 
-            const member = await companyMemberSignIn(data, companyId);
+            const { email, password } = data;
+            const member = await companyMemberSignIn({ email, password }, companyId);
             
             // Navigate based on member role
             const role = member?.role;
@@ -138,6 +138,26 @@ export function CompanyMemberSignin({ className, ...props }) {
                             )}
                             
                             <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="companyId" className="text-sm font-medium">
+                                        Company ID
+                                    </Label>
+                                    <div className="relative">
+                                        <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            id="companyId"
+                                            type="text"
+                                            {...register("companyId")}
+                                            placeholder="Enter your company ID"
+                                            className={`pl-10 ${errors.companyId ? "border-red-500 focus:border-red-500" : ""}`}
+                                        />
+                                    </div>
+                                    {errors.companyId && (
+                                        <p className="text-red-500 text-sm">
+                                            {errors.companyId.message}
+                                        </p>
+                                    )}
+                                </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="email" className="text-sm font-medium">
                                         Email Address

@@ -1,4 +1,5 @@
 import React from "react";
+import { FileText, ClipboardList, Wrench, Shield, ShieldCheck, AlertTriangle, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,16 @@ import { Label } from "@/components/ui/label";
  * - sectionsTemplate: array of sections with components (from backend)
  */
 export default function FormBuilderView({ title, sectionsTemplate, workPermit }) {
+    const getSectionIcon = (title, className = "w-4 h-4 mr-2 text-gray-600") => {
+        const t = (title || "").toLowerCase();
+        if (t.includes("work description")) return <ClipboardList className={className} />;
+        if (t.includes("tools") || t.includes("equipment")) return <Wrench className={className} />;
+        if (t.includes("ppe")) return <Shield className={className} />;
+        if (t.includes("hazard")) return <AlertTriangle className={className} />;
+        if (t.includes("safe system")) return <ShieldCheck className={className} />;
+        if (t.includes("last minute") || t.includes("risk assessment")) return <ListChecks className={className} />;
+        return <FileText className={className} />;
+    };
     const [formData, setFormData] = React.useState(() => ({
         title: title || "GENERAL WORK PERMIT",
         sections: Array.isArray(sectionsTemplate) ? sectionsTemplate : [],
@@ -80,7 +91,10 @@ export default function FormBuilderView({ title, sectionsTemplate, workPermit })
                                     )}
                                     onClick={() => setFormData((prev) => ({ ...prev, selectedSection: section.id }))}
                                 >
-                                    {section.title}
+                                    <span className="inline-flex items-center">
+                                        {getSectionIcon(section.title)}
+                                        <span className="truncate">{section.title}</span>
+                                    </span>
                                 </button>
                             ))}
                         </div>

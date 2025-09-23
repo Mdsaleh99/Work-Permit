@@ -78,6 +78,12 @@ export const useCompanyStore = create((set) => ({
             set({ currentCompanyMember: member })
             return member
         } catch (error) {
+            // If not authenticated as member, clear state but don't throw to avoid redirect loops
+            const status = error?.status || error?.response?.status
+            if (status === 401 || status === 419) {
+                set({ currentCompanyMember: null })
+                return null
+            }
             set({ companyError: error })
             throw error
         }

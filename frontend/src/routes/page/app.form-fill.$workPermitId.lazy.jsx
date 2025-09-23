@@ -1,11 +1,29 @@
 import React, { useEffect, useState } from "react";
-import { createLazyFileRoute, useParams } from "@tanstack/react-router";
+import { createLazyFileRoute, useParams, redirect } from "@tanstack/react-router";
 import { Loader } from "lucide-react";
 import FormFiller from "@/components/form/FormFiller";
 import { workPermitService } from "@/services/workPermit.service";
 import { workPermitService as coreService } from "@/services/workPermit.service";
+import { useCompanyStore } from "@/store/useCompanyStore";
 
 export const Route = createLazyFileRoute("/page/app/form-fill/$workPermitId")({
+    beforeLoad: async ({ params }) => {
+        const { currentCompanyMember, getCurrentCompanyMember } = useCompanyStore.getState();
+        if (!currentCompanyMember) {
+            await getCurrentCompanyMember().catch(() => {});
+        }
+        const member = useCompanyStore.getState().currentCompanyMember;
+        if (!member) {
+            throw redirect({ to: "/company-member/signin" });
+        }
+        // Optional: access control - only allow if member is assigned to this form
+        const assigned = Array.isArray(member.allowedWorkPermitIds)
+            ? member.allowedWorkPermitIds.includes(params.workPermitId)
+            : true; // default allow until backend provides this field
+        if (!assigned) {
+            throw redirect({ to: "/page/app/dashboard" });
+        }
+    },
     component: FormFillPage,
 });
 
