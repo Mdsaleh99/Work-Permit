@@ -69,7 +69,7 @@ export function CompanyMemberSignin({ className, ...props }) {
             if (role === CompanyMemberRoles.MANAGER) {
                 navigate({ to: "/page/app/dashboard" });
             } else if (role === CompanyMemberRoles.COMPANY_MEMBER) {
-                navigate({ to: "/page/app/user-dashboard" });
+                navigate({ to: "/page/app/form-fill/$workPermitId" });
             } else {
                 // Fallback
                 navigate({ to: "/page/app/dashboard" });

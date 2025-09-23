@@ -1,25 +1,31 @@
-import React, { useEffect, useState } from "react";
-import { createLazyFileRoute, useParams } from "@tanstack/react-router";
-import { Loader } from "lucide-react";
-import FormFiller from "@/components/form/FormFiller";
-import { workPermitService } from "@/services/workPermit.service";
-import { workPermitService as coreService } from "@/services/workPermit.service";
-import { ensureCompanyMemberWithPermit } from "../../lib/ensureCompanyMember.js";
+import FormFiller from '@/components/form/FormFiller';
+import { useWorkPermitStore } from '@/store/useWorkPermitStore';
+import { useParams, createLazyFileRoute } from '@tanstack/react-router'
+import MemberDashboardLayout from '@/components/company/MemberDashboardLayout'
+import { ensureCompanyMemberWithPermit } from '../../../lib/ensureCompanyMember.js'
+import { Loader } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-export const Route = createLazyFileRoute("/page/app/form-fill/$workPermitId")({
-    beforeLoad: ensureCompanyMemberWithPermit,
-    component: FormFillPage,
-});
+export const Route = createLazyFileRoute(
+  '/company-member/dash/member/form-fill/$workPermitId',
+)({
+  // beforeLoad: ensureCompanyMemberWithPermit,
+  component: RouteComponent,
+})
 
-function FormFillPage() {
-    const { workPermitId } = useParams({ from: "/page/app/form-fill/$workPermitId" });
+function RouteComponent() {
+  const { workPermitId } = useParams({ from: "/company-member/dash/member/form-fill/$workPermitId" });
     const [isLoading, setIsLoading] = useState(true);
     const [form, setForm] = useState(null);
+
+    const { getWorkPermitById } = useWorkPermitStore();
+    // console.log("work permit id: ", workPermitId);
+    
 
     useEffect(() => {
         (async () => {
             try {
-                const wp = await coreService.getWorkPermitById(workPermitId);
+                const wp = await getWorkPermitById(workPermitId);
                 setForm(wp?.data || wp);
             } finally {
                 setIsLoading(false);
@@ -60,7 +66,7 @@ function FormFillPage() {
             sectionsTemplate={sectionsTemplate}
             onSubmit={handleSubmit}
             isSubmitting={false}
+            containerClassName="h-full"
         />
     );
 }
-

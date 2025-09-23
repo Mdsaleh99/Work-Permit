@@ -17,21 +17,24 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-    const { isAuthCheck, checkAuth, authUser, resendEmailVerification } = useAuthStore();
-    const { getCurrentCompanyMember } = useCompanyStore();
-    const ranMemberInit = React.useRef(false)
+    const { checkAuth, authUser, resendEmailVerification } = useAuthStore();
+    const { getCurrentCompanyMember, currentCompanyMember } = useCompanyStore();
     const [isResending, setIsResending] = React.useState(false)
     const [resendMsg, setResendMsg] = React.useState("")
     const [needLogin, setNeedLogin] = React.useState(false)
     
     React.useEffect(() => {
-        // call once without subscribing to avoid re-runs
-        checkAuth();
-    }, [checkAuth])
-
-    if (isAuthCheck) {
-        return <div>Checking authentication...</div>; // or a loading spinner
-    }
+        // Kick off the relevant auth check based on the current area
+        const path = typeof window !== 'undefined' ? window.location.pathname : '';
+        if (path.startsWith('/company-member')) {
+            getCurrentCompanyMember().catch(() => {});
+        } else {
+            checkAuth();
+        }
+        console.log("currentCompanyMember in root: ", currentCompanyMember);
+        
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     return (
         <React.Fragment>

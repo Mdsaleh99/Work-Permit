@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyJWT } from "../middlewares/auth.middlewares.js";
+import { verifyJWT, verifyEitherJWT } from "../middlewares/auth.middlewares.js";
 import {
     createWorkPermitForm,
     duplicateWorkPermitForm,
@@ -14,7 +14,7 @@ const router = express.Router();
 
 router.route("/:companyId/create").post(verifyJWT, createWorkPermitForm);
 router.route("/get-all").get(verifyJWT, getAllWorkPermitForm);
-router.route("/:workPermitFormId").get(verifyJWT, getWorkPermitFormById);
+router.route("/:workPermitFormId").get(verifyEitherJWT, getWorkPermitFormById);
 // router.route("/:workPermitFormId").delete(verifyJWT, deleteWorkPermitForm);
 router
     .route("/:workPermitFormId/duplicate")
@@ -25,7 +25,7 @@ router
 
 router
     .route("/:workPermitFormId/submissions")
-    .get(verifyJWT, listWorkPermitSubmissions)
-    .post(verifyJWT, createWorkPermitSubmission);
+    .get(verifyEitherJWT, listWorkPermitSubmissions)
+    .post(verifyEitherJWT, createWorkPermitSubmission);
 
 export default router;

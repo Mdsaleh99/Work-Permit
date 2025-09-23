@@ -8,8 +8,8 @@ import { ChevronLeft, ChevronRight, FileText, ClipboardList, Wrench, Shield, Shi
 import PrintView from "./PrintView";
 
 // Simple member filler that renders input controls for each component type
-// Props: { title, sectionsTemplate, onSubmit, isSubmitting }
-const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting }) => {
+// Props: { title, sectionsTemplate, onSubmit, isSubmitting, containerClassName }
+const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, containerClassName }) => {
     // Map section titles to icons
     const getSectionIcon = (sectionTitle, className = "w-4 h-4") => {
         const t = (sectionTitle || "").toLowerCase();
@@ -228,7 +228,7 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting }) => {
     }
 
     return (
-        <div className="h-screen bg-gray-50 flex overflow-hidden">
+        <div className={cn("bg-gray-50 flex overflow-hidden", containerClassName ? containerClassName : "h-screen") }>
             {/* Desktop Sidebar */}
             <div className={cn(
                 "bg-white border-r border-gray-200 flex flex-col transition-all duration-300 shadow-sm h-full",

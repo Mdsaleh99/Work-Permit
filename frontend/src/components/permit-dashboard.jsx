@@ -139,7 +139,7 @@ export function PermitsDashboard() {
     return (
         <div className="p-6 space-y-6 bg-background min-h-screen">
             {/* Alert Notifications */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
                 <Alert className="border-red-200 bg-red-50">
                     <AlertTriangle className="h-4 w-4 text-red-600" />
                     <AlertDescription className="text-red-800">
@@ -152,7 +152,7 @@ export function PermitsDashboard() {
                         12 Permits need your approval
                     </AlertDescription>
                 </Alert>
-            </div>
+            </div> */}
 
             {/* Navigation Tabs */}
             <Tabs defaultValue="permits" className="w-full">

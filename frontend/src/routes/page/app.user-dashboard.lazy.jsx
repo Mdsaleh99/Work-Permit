@@ -1,17 +1,9 @@
 import UserDashboard from '@/components/user-dashboard'
-import { createLazyFileRoute, redirect } from '@tanstack/react-router'
-import { useCompanyStore } from '@/store/useCompanyStore'
+import { createLazyFileRoute } from '@tanstack/react-router'
+import { ensureCompanyMember } from '../../lib/ensureCompanyMember.js'
 
 export const Route = createLazyFileRoute('/page/app/user-dashboard')({
-  beforeLoad: async () => {
-    const { currentCompanyMember, getCurrentCompanyMember } = useCompanyStore.getState()
-    if (!currentCompanyMember) {
-      await getCurrentCompanyMember().catch(() => {})
-    }
-    if (!useCompanyStore.getState().currentCompanyMember) {
-      throw redirect({ to: '/company-member/signin' })
-    }
-  },
+  beforeLoad: ensureCompanyMember,
   component: RouteComponent,
 })
 

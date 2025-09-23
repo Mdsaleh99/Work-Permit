@@ -1,5 +1,6 @@
 import axios from "axios";
 import { StorageKeys } from "@/lib/constants";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
@@ -26,7 +27,13 @@ axiosInstance.interceptors.response.use(
         const originalRequest = error.config || {};
         const status = error.response?.status;
 
-        if ((status === 419 || status === 401) && !originalRequest._retry) {
+        const urlPath = (originalRequest?.url || "").toString();
+        const isMemberAPI = /^\/company\//.test(urlPath);
+        const isRefreshCall = /\/auth\/refresh-token$/.test(urlPath);
+        const hasPrimaryUser = Boolean(useAuthStore.getState()?.authUser);
+
+        // Only refresh for primary-user requests when a primary user exists
+        if ((status === 419 || status === 401) && !originalRequest._retry && !isMemberAPI && !isRefreshCall && hasPrimaryUser) {
             originalRequest._retry = true;
             try {
                 if (!refreshingPromise) {
@@ -42,14 +49,8 @@ axiosInstance.interceptors.response.use(
                 // Retry original request with fresh cookies
                 return axiosInstance(originalRequest);
             } catch (err) {
+                // Refresh failed. Do not hard-redirect here; let route guards decide.
                 refreshingPromise = null;
-                const path = window.location.pathname || "";
-                const isOnAuthSignin = path === "/auth/signin";
-                const isOnCompanyMemberAuth = path.startsWith("/company-member");
-                // Do not redirect away from company member auth pages
-                if (!isOnAuthSignin && !isOnCompanyMemberAuth) {
-                    window.location.href = "/auth/signin";
-                }
                 return Promise.reject(err);
             }
         }
