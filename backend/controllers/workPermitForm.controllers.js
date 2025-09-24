@@ -420,10 +420,23 @@ export const duplicateWorkPermitForm = asyncHandler(async (req, res) => {
     }
     
 
+    // Generate a new unique 6-digit permit number
+    const generateSixDigit = () => String(Math.floor(100000 + Math.random() * 900000));
+    let newPermitNo = null;
+    for (let i = 0; i < 10; i++) {
+        const candidate = generateSixDigit();
+        const exists = await db.workPermitForm.findFirst({ where: { workPermitNo: candidate } });
+        if (!exists) {
+            newPermitNo = candidate;
+            break;
+        }
+    }
+
     // Create duplicated work permit (create a new WorkPermitForm, not a Draft)
     const duplicatedWorkPermitForm = await db.workPermitForm.create({
         data: {
             title: `${originalWorkPermitForm.title} (Copy)`,
+            workPermitNo: newPermitNo, // may be null if uniqueness not found in attempts
             userId,
             companyId: originalWorkPermitForm.companyId,
             sections: {
@@ -459,7 +472,8 @@ export const duplicateWorkPermitForm = asyncHandler(async (req, res) => {
 export const createWorkPermitSubmission = asyncHandler(async (req, res) => {
     const { workPermitFormId } = req.params;
     const { answers } = req.body;
-    const userId = req.user.id;
+    const primaryUserId = req.user?.id || null;
+    const memberId = req.member?.id || null;
 
     if (!workPermitFormId) throw new ApiError(400, "workPermitFormId is required");
     if (!answers) throw new ApiError(400, "answers are required");
@@ -467,17 +481,33 @@ export const createWorkPermitSubmission = asyncHandler(async (req, res) => {
     const form = await db.workPermitForm.findUnique({ where: { id: workPermitFormId } });
     if (!form) throw new ApiError(404, "Form not found");
 
-    // Optional: verify user is a member of the form's company
-    const membership = await db.companyMember.findFirst({ where: { companyId: form.companyId, userId } });
-    if (!membership && req.user.role !== "ADMIN" && req.user.role !== "SUPER_ADMIN") {
-        throw new ApiError(403, "Not allowed to submit for this company");
+    // Authorization: allow
+    // - company members belonging to the form's company
+    // - primary users (ADMIN/SUPER_ADMIN) or the owner of the form
+    if (memberId) {
+        const member = await db.companyMember.findUnique({ where: { id: memberId } });
+        if (!member || member.companyId !== form.companyId) {
+            throw new ApiError(403, "Not allowed to submit for this company");
+        }
+    } else if (primaryUserId) {
+        const user = req.user; // provided by middleware
+        const isOwner = form.userId === primaryUserId;
+        const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+        if (!isOwner && !isAdmin) {
+            throw new ApiError(403, "Not allowed to submit for this company");
+        }
+    } else {
+        throw new ApiError(401, "Unauthorized");
     }
+
+    // Note: submittedById references User. For member submissions, attribute to form owner to satisfy FK.
+    const submittedById = primaryUserId || form.userId;
 
     const submission = await db.workPermitSubmission.create({
         data: {
             workPermitFormId: form.id,
             companyId: form.companyId,
-            submittedById: userId,
+            submittedById,
             answers: answers,
         },
     });

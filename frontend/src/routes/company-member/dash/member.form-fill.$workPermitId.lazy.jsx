@@ -5,11 +5,12 @@ import MemberDashboardLayout from '@/components/company/MemberDashboardLayout'
 import { ensureCompanyMemberWithPermit } from '../../../lib/ensureCompanyMember.js'
 import { Loader } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { workPermitService } from '@/services/workPermit.service';
 
 export const Route = createLazyFileRoute(
   '/company-member/dash/member/form-fill/$workPermitId',
 )({
-  // beforeLoad: ensureCompanyMemberWithPermit,
+  beforeLoad: ensureCompanyMemberWithPermit,
   component: RouteComponent,
 })
 
@@ -64,6 +65,7 @@ function RouteComponent() {
         <FormFiller
             title={form?.title || "Work Permit"}
             sectionsTemplate={sectionsTemplate}
+            permitNo={form?.workPermitNo}
             onSubmit={handleSubmit}
             isSubmitting={false}
             containerClassName="h-full"

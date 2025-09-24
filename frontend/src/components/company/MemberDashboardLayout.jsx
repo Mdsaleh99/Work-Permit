@@ -46,7 +46,7 @@ export default function MemberDashboardLayout({ children }) {
                         Dashboard
                     </Link>
                     <Link
-                        to="/company-member/dash/member/form-fill/$workPermitId"
+                        to="/company-member/dash/member/permits"
                         className={cn(
                             "flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-gray-100"
                         )}

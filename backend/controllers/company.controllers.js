@@ -117,7 +117,7 @@ export const getCompanyByUser = asyncHandler(async (req, res) => {
 
 export const createCompanyMember = asyncHandler(async (req, res) => {
     const { companyId } = req.params;
-    const { name, email, password } = req.body;
+    const { name, email, password, allowedWorkPermitIds } = req.body;
 
     if (!companyId) {
         throw new ApiError(400, "companyId is required");
@@ -154,6 +154,16 @@ export const createCompanyMember = asyncHandler(async (req, res) => {
             name,
             email,
             password,
+            ...(Array.isArray(allowedWorkPermitIds) && allowedWorkPermitIds.length
+                ? {
+                      allowedWorkPermits: {
+                          connect: allowedWorkPermitIds.map((id) => ({ id })),
+                      },
+                  }
+                : {}),
+        },
+        include: {
+            allowedWorkPermits: { select: { id: true, title: true, workPermitNo: true } },
         },
     });
 
@@ -164,6 +174,9 @@ export const createCompanyMember = asyncHandler(async (req, res) => {
     const createdMember = await db.companyMember.findUnique({
         where: {
             id: member.id,
+        },
+        include: {
+            allowedWorkPermits: { select: { id: true, title: true, workPermitNo: true } },
         },
         omit: {
             password: true,
@@ -280,6 +293,42 @@ export const updateCompanyMemberRole = asyncHandler(async (req, res) => {
         );
 });
 
+export const updateCompanyMemberAllowedPermits = asyncHandler(async (req, res) => {
+    const { companyId, memberId } = req.params;
+    const { allowedWorkPermitIds } = req.body;
+
+    if (!companyId || !memberId) {
+        throw new ApiError(400, "companyId and memberId are required");
+    }
+
+    const company = await db.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new ApiError(404, "Company not found");
+
+    const member = await db.companyMember.findUnique({ where: { id: memberId } });
+    if (!member) throw new ApiError(404, "Member not found");
+
+    if (!Array.isArray(allowedWorkPermitIds)) {
+        throw new ApiError(400, "allowedWorkPermitIds must be an array");
+    }
+
+    const updated = await db.companyMember.update({
+        where: { id: memberId },
+        data: {
+            allowedWorkPermits: {
+                set: allowedWorkPermitIds.map((id) => ({ id })),
+            },
+        },
+        include: {
+            allowedWorkPermits: { select: { id: true, title: true, workPermitNo: true } },
+        },
+        omit: { password: true, refreshToken: true },
+    });
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, updated, "Allowed permits updated successfully"));
+});
+
 export const companyMemberSignIn = asyncHandler(async (req, res) => {
     const { companyId } = req.params;
     const { email, password } = req.body;
@@ -369,6 +418,9 @@ export const getCurrentCompanyMember = asyncHandler(async (req, res) => {
     const member = await db.companyMember.findUnique({
         where: {
             id,
+        },
+        include: {
+            allowedWorkPermits: { select: { id: true, title: true, workPermitNo: true, companyId: true } },
         },
         omit: {
             password: true,

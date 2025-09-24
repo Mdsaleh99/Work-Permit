@@ -88,6 +88,35 @@ export const useFormBuilder = ({ title, sectionsTemplate, startWithTemplate = tr
         }
     }, [workPermitId, sectionsTemplate, title]);
 
+    // In edit mode, if backend has a workPermitNo, inject it into the 'Work Permit No' component and disable it
+    useEffect(() => {
+        if (!workPermitId) return;
+        const wpNo = currentWorkPermit?.workPermitNo;
+        if (!wpNo) return;
+        if (!formData?.sections?.length) return;
+
+        const targetSectionIndex = formData.sections.findIndex(sec =>
+            (sec.components || []).some(c => /work\s*permit\s*no/i.test(c.label))
+        );
+        if (targetSectionIndex === -1) return;
+        const section = formData.sections[targetSectionIndex];
+        const componentIndex = (section.components || []).findIndex(c => /work\s*permit\s*no/i.test(c.label));
+        if (componentIndex === -1) return;
+
+        setFormData(prev => {
+            const next = { ...prev };
+            const sec = { ...next.sections[targetSectionIndex] };
+            const comps = [...sec.components];
+            const existingVal = comps[componentIndex]?.value;
+            if (existingVal === wpNo && comps[componentIndex]?.enabled === false) return prev;
+            comps[componentIndex] = { ...comps[componentIndex], value: wpNo, enabled: false };
+            sec.components = comps;
+            next.sections = [...next.sections];
+            next.sections[targetSectionIndex] = sec;
+            return next;
+        });
+    }, [workPermitId, currentWorkPermit?.workPermitNo, formData.sections]);
+
     // Auto-generate 6-digit unique Work Permit No for new forms (once)
     useEffect(() => {
         if (workPermitId) return; // don't generate on edit

@@ -29,7 +29,7 @@ export const workPermitService = {
 
     // submissions
     createSubmission: async (workPermitFormId, answers) => {
-        const res = await axiosInstance.post(`/work-permit-form/${workPermitFormId}/submissions`, { answers });
+        const res = await axiosInstance.post(`/work-permit/${workPermitFormId}/submissions`, { answers });
         return res.data;
     },
     listSubmissions: async (workPermitFormId) => {

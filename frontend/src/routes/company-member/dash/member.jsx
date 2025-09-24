@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 import MemberDashboardLayout from '@/components/company/MemberDashboardLayout'
 import { ensureCompanyMember } from '../../../lib/ensureCompanyMember.js'
 

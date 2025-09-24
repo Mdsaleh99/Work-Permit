@@ -9,7 +9,7 @@ import PrintView from "./PrintView";
 
 // Simple member filler that renders input controls for each component type
 // Props: { title, sectionsTemplate, onSubmit, isSubmitting, containerClassName }
-const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, containerClassName }) => {
+const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, containerClassName, permitNo }) => {
     // Map section titles to icons
     const getSectionIcon = (sectionTitle, className = "w-4 h-4") => {
         const t = (sectionTitle || "").toLowerCase();
@@ -32,10 +32,22 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                 }
             });
         });
+        // Inject Work Permit No if present and component exists
+        if (permitNo) {
+            const workPermitComponent = (sectionsTemplate || [])
+                .flatMap(s => s.components || [])
+                .find(c => /work\s*permit\s*no/i.test(c.label));
+            if (workPermitComponent) {
+                map[workPermitComponent.id] = permitNo;
+            }
+        }
         return map;
-    }, [sectionsTemplate]);
+    }, [sectionsTemplate, permitNo]);
 
     const [answers, setAnswers] = useState(initialAnswers);
+    React.useEffect(() => {
+        setAnswers(initialAnswers);
+    }, [initialAnswers]);
     const [showPrint, setShowPrint] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -273,10 +285,7 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                             ? "bg-blue-100 text-blue-600" 
                                             : "bg-gray-100 text-gray-600"
                                     )}>
-                                        {sidebarCollapsed 
-                                            ? getSectionIcon(section.title)
-                                            : <span className="text-xs font-semibold">{index + 1}</span>
-                                        }
+                                        {getSectionIcon(section.title)}
                                     </div>
                                 </div>
                                 {!sidebarCollapsed && (

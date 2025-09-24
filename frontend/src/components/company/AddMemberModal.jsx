@@ -9,6 +9,7 @@ import { useCompanyStore } from "@/store/useCompanyStore";
 import { PasswordInput } from "../ui/password-input";
 import { Label } from "../ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useWorkPermitStore } from "@/store/useWorkPermitStore";
 
 const CompanyMembersSchema = z.object({
     email: z.email({ error: "Enter valid email" }),
@@ -36,6 +37,7 @@ export default function AddMemberModal({ open, onClose, loading }) {
         getCompanyByUser,
         companyError,
     } = useCompanyStore();
+    const { getAllWorkPermits } = useWorkPermitStore();
     const search = useSearch({ from: "/page/app/company-members" });
 
     React.useEffect(() => {
@@ -52,6 +54,30 @@ export default function AddMemberModal({ open, onClose, loading }) {
         }
     }, [open, reset]);
 
+    const [availablePermits, setAvailablePermits] = React.useState([]);
+    const [selectedPermitIds, setSelectedPermitIds] = React.useState([]);
+
+    React.useEffect(() => {
+        if (!open) return;
+        (async () => {
+            try {
+                const companyData = await getCompanyByUser();
+                const all = await getAllWorkPermits();
+                const list = Array.isArray(all)
+                    ? all.filter((p) => !companyData?.id || p.companyId === companyData.id)
+                    : [];
+                setAvailablePermits(list);
+            } catch {}
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
+
+    const togglePermit = (id) => {
+        setSelectedPermitIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+        );
+    };
+
     if (!open) return null;
 
     const onSubmit = async (data) => {
@@ -60,7 +86,7 @@ export default function AddMemberModal({ open, onClose, loading }) {
             const companyId = companyData?.id;
             // console.log("companyId: ", companyId);
             // console.log("data: ", data);
-            await createCompanyMember(data, companyId);
+            await createCompanyMember({ ...data, allowedWorkPermitIds: selectedPermitIds }, companyId);
             // Close immediately on success so the page can refresh the list
             onClose?.();
         } catch (error) {
@@ -180,6 +206,26 @@ export default function AddMemberModal({ open, onClose, loading }) {
                         </Button>
                     </div>
                 </form>
+                <div className="mt-4 border-t pt-3">
+                    <div className="text-sm font-medium mb-2">Allow permits for this member</div>
+                    <div className="max-h-40 overflow-auto space-y-2">
+                        {availablePermits.length === 0 ? (
+                            <div className="text-xs text-gray-500">No permits available</div>
+                        ) : (
+                            availablePermits.map((p) => (
+                                <label key={p.id} className="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4"
+                                        checked={selectedPermitIds.includes(p.id)}
+                                        onChange={() => togglePermit(p.id)}
+                                    />
+                                    <span>{p.title}{p.workPermitNo ? ` — ${p.workPermitNo}` : ""}</span>
+                                </label>
+                            ))
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

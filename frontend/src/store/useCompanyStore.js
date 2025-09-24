@@ -143,6 +143,22 @@ export const useCompanyStore = create((set) => ({
         }
     },
 
+    updateCompanyMemberAllowedPermits: async (companyId, memberId, allowedWorkPermitIds) => {
+        set({ companyError: null })
+        try {
+            const updated = await companyService.updateCompanyMemberAllowedPermits(companyId, memberId, allowedWorkPermitIds)
+            set((state) => ({
+                companyMembers: (state.companyMembers || []).map(m => (
+                    m.id === memberId ? { ...m, allowedWorkPermits: updated?.allowedWorkPermits || [] } : m
+                ))
+            }))
+            return updated
+        } catch (error) {
+            set({ companyError: error })
+            throw error
+        }
+    },
+
     deleteCompanyMember: async (companyId, memberId) => {
         set({ companyError: null })
         try {

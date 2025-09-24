@@ -30,6 +30,13 @@ enum LoginType {
   EMAIL_PASSWORD
 }
 
+enum WorkPermitFormStatus {
+  PENDING
+  APPROVED
+  CANCELLED
+  CLOSED
+}
+
 enum WorkPermitComponentType {
   text
   checkbox
@@ -101,6 +108,8 @@ model CompanyMember {
   updatedAt DateTime @updatedAt
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  // Allowed work permits this member can access
+  allowedWorkPermits WorkPermitForm[]
   
 
   @@index([companyId])
@@ -113,9 +122,12 @@ model WorkPermitForm {
   workPermitNo String? @unique @db.VarChar(12)
   userId    String
   companyId String
+  status  WorkPermitFormStatus @default(PENDING)
   formUrl   String?
   sections  WorkPermitSection[]
   submissions WorkPermitSubmission[]
+  // Members allowed to access this permit
+  allowedMembers CompanyMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

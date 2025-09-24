@@ -17,11 +17,18 @@ export const ensureCompanyMember = async () => {
 export const ensureCompanyMemberWithPermit = async ({ params }) => {
   await ensureCompanyMember();
   const member = useCompanyStore.getState().currentCompanyMember;
-  const assigned = Array.isArray(member?.allowedWorkPermitIds)
-    ? member.allowedWorkPermitIds.includes(params.workPermitId)
+  // Support either an ids array or populated objects from API
+  const allowedIdsFromObjects = Array.isArray(member?.allowedWorkPermits)
+    ? member.allowedWorkPermits.map((p) => p.id)
+    : [];
+  const allowedIds = Array.isArray(member?.allowedWorkPermitIds)
+    ? member.allowedWorkPermitIds
+    : allowedIdsFromObjects;
+  const assigned = Array.isArray(allowedIds)
+    ? allowedIds.includes(params.workPermitId)
     : true;
   if (!assigned) {
-    throw redirect({ to: "/page/app/dashboard" });
+    throw redirect({ to: "/company-member/dash/member/dashboard" });
   }
 };
 

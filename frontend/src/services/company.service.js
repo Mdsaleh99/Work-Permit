@@ -29,6 +29,11 @@ export const companyService = {
         return response.data.data
     },
 
+    updateCompanyMemberAllowedPermits: async (companyId, memberId, allowedWorkPermitIds) => {
+        const response = await axiosInstance.put(`/company/${companyId}/${memberId}/allowed-permits`, { allowedWorkPermitIds })
+        return response.data.data
+    },
+
     deleteCompanyMember: async (companyId, memberId) => {
         const response = await axiosInstance.delete(`/company/${companyId}/${memberId}`)
         return response.data.data

@@ -115,6 +115,10 @@ const createCompanyMemberValidator = () => {
             .isLength({ max: 16 })
             .withMessage("password cannot exceed 16 character"),
         // body("role").trim().notEmpty().withMessage("Role is Required"),
+        body("allowedWorkPermitIds")
+            .optional()
+            .isArray()
+            .withMessage("allowedWorkPermitIds must be an array"),
     ];
 };
 

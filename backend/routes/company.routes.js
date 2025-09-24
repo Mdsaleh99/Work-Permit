@@ -8,6 +8,7 @@ import {
     getAllCompanyMembers,
     deleteCompanyMember,
     updateCompanyMemberRole,
+    updateCompanyMemberAllowedPermits,
     companyMemberSignIn,
     companyMemberSignOut,
     getCurrentCompanyMember,
@@ -24,6 +25,7 @@ router.route("/get-company").get(verifyJWT, getCompanyByUser);
 router.route("/:companyId/create-member").post(createCompanyMemberValidator(), verifyJWT, createCompanyMember);
 router.route("/:companyId/get-members").get(verifyJWT, getAllCompanyMembers);
 router.route("/:companyId/:memberId/role").put(verifyJWT, updateCompanyMemberRole);
+router.route("/:companyId/:memberId/allowed-permits").put(verifyJWT, updateCompanyMemberAllowedPermits);
 router.route("/:companyId/:memberId").delete(verifyJWT, deleteCompanyMember);
 router.route("/member-signin/:companyId").post(companyMemberSignInValidator(), companyMemberSignIn);
 router.route("/member-signout").post(companyMemberVerifyJWT, companyMemberSignOut);

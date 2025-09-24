@@ -67,12 +67,12 @@ export function CompanyMemberSignin({ className, ...props }) {
             // Navigate based on member role
             const role = member?.role;
             if (role === CompanyMemberRoles.MANAGER) {
-                navigate({ to: "/page/app/dashboard" });
+                navigate({ to: "/company-member/dash/member/dashboard" });
             } else if (role === CompanyMemberRoles.COMPANY_MEMBER) {
-                navigate({ to: "/page/app/form-fill/$workPermitId" });
+                navigate({ to: "/company-member/dash/member/dashboard" });
             } else {
                 // Fallback
-                navigate({ to: "/page/app/dashboard" });
+                navigate({ to: "/company-member/dash/member/dashboard" });
             }
         } catch (error) {
             // Map server field errors to form fields if provided

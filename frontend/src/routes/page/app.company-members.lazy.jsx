@@ -25,6 +25,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import { useWorkPermitStore } from "@/store/useWorkPermitStore";
 
 export const Route = createLazyFileRoute("/page/app/company-members")({
     component: RouteComponent,
@@ -123,7 +124,7 @@ function RouteComponent() {
                                     <TableHead>Email</TableHead>
                                     <TableHead>Role</TableHead>
                                     <TableHead>Joined</TableHead>
-                                    <TableHead className="w-[200px]">
+                                    <TableHead className="w-[320px]">
                                         Actions
                                     </TableHead>
                                 </TableRow>
@@ -159,7 +160,7 @@ function RouteComponent() {
                                                 : "-"}
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger
                                                         asChild
@@ -211,6 +212,7 @@ function RouteComponent() {
                                                         ))}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
+                                                <AllowPermitButton companyId={company?.id} member={m} />
                                                 <Popover
                                                     open={
                                                         confirmDeleteFor ===
@@ -312,5 +314,91 @@ function RouteComponent() {
                 loading={submitting}
             />
         </div>
+    );
+}
+
+function AllowPermitButton({ companyId, member }) {
+    const { getCompanyByUser } = useCompanyStore();
+    const { getAllWorkPermits } = useWorkPermitStore();
+    const { updateCompanyMemberAllowedPermits } = useCompanyStore();
+    const [open, setOpen] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+    const [list, setList] = React.useState([]);
+    const [selected, setSelected] = React.useState(
+        Array.isArray(member?.allowedWorkPermits)
+            ? member.allowedWorkPermits.map((p) => p.id)
+            : []
+    );
+
+    React.useEffect(() => {
+        if (!open) return;
+        (async () => {
+            try {
+                const companyData = await getCompanyByUser();
+                const store = getAllWorkPermits();
+                const all = await store;
+                const filtered = Array.isArray(all)
+                    ? all.filter((p) => !companyData?.id || p.companyId === companyData.id)
+                    : [];
+                setList(filtered);
+            } catch {}
+        })();
+    }, [open]);
+
+    const toggle = (id) => {
+        setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    };
+
+    const submit = async () => {
+        if (!companyId || !member?.id) return;
+        setLoading(true);
+        try {
+            await updateCompanyMemberAllowedPermits(companyId, member.id, selected);
+            setOpen(false);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <>
+            <Button size="sm" variant="outline" className="cursor-pointer" onClick={() => setOpen(true)}>
+                Allow Permit
+            </Button>
+            {open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/20" onClick={() => !loading && setOpen(false)} />
+                    <div className="relative z-10 w-full max-w-lg rounded-md border bg-white p-4 shadow-lg">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="text-base font-semibold">Allow Permits</div>
+                            <button className="text-gray-500" onClick={() => !loading && setOpen(false)}>✕</button>
+                        </div>
+                        <div className="max-h-72 overflow-auto space-y-2">
+                            {list.length === 0 ? (
+                                <div className="text-sm text-gray-500">No permits</div>
+                            ) : (
+                                list.map((p) => (
+                                    <label key={p.id} className="flex items-center gap-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            className="h-4 w-4"
+                                            checked={selected.includes(p.id)}
+                                            onChange={() => toggle(p.id)}
+                                        />
+                                        <span>{p.title}{p.workPermitNo ? ` — ${p.workPermitNo}` : ""}</span>
+                                    </label>
+                                ))
+                            )}
+                        </div>
+                        <div className="mt-3 flex items-center justify-end gap-2">
+                            <Button size="sm" variant="outline" className="cursor-pointer" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
+                            <Button size="sm" className="cursor-pointer" onClick={submit} disabled={loading}>{loading ? "Saving…" : "Save"}</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }

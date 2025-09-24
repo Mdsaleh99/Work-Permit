@@ -65,6 +65,9 @@ const PageAppFormFillWorkPermitIdLazyRouteImport = createFileRoute(
 const PageAppFormBuilderWorkPermitIdLazyRouteImport = createFileRoute(
   '/page/app/form-builder/$workPermitId',
 )()
+const CompanyMemberDashMemberPermitsLazyRouteImport = createFileRoute(
+  '/company-member/dash/member/permits',
+)()
 const CompanyMemberDashMemberDashboardLazyRouteImport = createFileRoute(
   '/company-member/dash/member/dashboard',
 )()
@@ -257,6 +260,16 @@ const PageAppFormBuilderWorkPermitIdLazyRoute =
       (d) => d.Route,
     ),
   )
+const CompanyMemberDashMemberPermitsLazyRoute =
+  CompanyMemberDashMemberPermitsLazyRouteImport.update({
+    id: '/permits',
+    path: '/permits',
+    getParentRoute: () => CompanyMemberDashMemberRoute,
+  } as any).lazy(() =>
+    import('./routes/company-member/dash/member.permits.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 const CompanyMemberDashMemberDashboardLazyRoute =
   CompanyMemberDashMemberDashboardLazyRouteImport.update({
     id: '/dashboard',
@@ -314,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
   '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
   '/company-member/dash/member/dashboard': typeof CompanyMemberDashMemberDashboardLazyRoute
+  '/company-member/dash/member/permits': typeof CompanyMemberDashMemberPermitsLazyRoute
   '/page/app/form-builder/$workPermitId': typeof PageAppFormBuilderWorkPermitIdLazyRoute
   '/page/app/form-fill/$workPermitId': typeof PageAppFormFillWorkPermitIdLazyRoute
   '/page/app/form-builder/': typeof PageAppFormBuilderIndexLazyRoute
@@ -345,6 +359,7 @@ export interface FileRoutesByTo {
   '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
   '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
   '/company-member/dash/member/dashboard': typeof CompanyMemberDashMemberDashboardLazyRoute
+  '/company-member/dash/member/permits': typeof CompanyMemberDashMemberPermitsLazyRoute
   '/page/app/form-builder/$workPermitId': typeof PageAppFormBuilderWorkPermitIdLazyRoute
   '/page/app/form-fill/$workPermitId': typeof PageAppFormFillWorkPermitIdLazyRoute
   '/page/app/form-builder': typeof PageAppFormBuilderIndexLazyRoute
@@ -378,6 +393,7 @@ export interface FileRoutesById {
   '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
   '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
   '/company-member/dash/member/dashboard': typeof CompanyMemberDashMemberDashboardLazyRoute
+  '/company-member/dash/member/permits': typeof CompanyMemberDashMemberPermitsLazyRoute
   '/page/app/form-builder/$workPermitId': typeof PageAppFormBuilderWorkPermitIdLazyRoute
   '/page/app/form-fill/$workPermitId': typeof PageAppFormFillWorkPermitIdLazyRoute
   '/page/app/form-builder/': typeof PageAppFormBuilderIndexLazyRoute
@@ -412,6 +428,7 @@ export interface FileRouteTypes {
     | '/page/app/user-dashboard'
     | '/page/app/work-permits'
     | '/company-member/dash/member/dashboard'
+    | '/company-member/dash/member/permits'
     | '/page/app/form-builder/$workPermitId'
     | '/page/app/form-fill/$workPermitId'
     | '/page/app/form-builder/'
@@ -443,6 +460,7 @@ export interface FileRouteTypes {
     | '/page/app/user-dashboard'
     | '/page/app/work-permits'
     | '/company-member/dash/member/dashboard'
+    | '/company-member/dash/member/permits'
     | '/page/app/form-builder/$workPermitId'
     | '/page/app/form-fill/$workPermitId'
     | '/page/app/form-builder'
@@ -475,6 +493,7 @@ export interface FileRouteTypes {
     | '/page/app/user-dashboard'
     | '/page/app/work-permits'
     | '/company-member/dash/member/dashboard'
+    | '/company-member/dash/member/permits'
     | '/page/app/form-builder/$workPermitId'
     | '/page/app/form-fill/$workPermitId'
     | '/page/app/form-builder/'
@@ -689,6 +708,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PageAppFormBuilderWorkPermitIdLazyRouteImport
       parentRoute: typeof PageAppFormBuilderLazyRoute
     }
+    '/company-member/dash/member/permits': {
+      id: '/company-member/dash/member/permits'
+      path: '/permits'
+      fullPath: '/company-member/dash/member/permits'
+      preLoaderRoute: typeof CompanyMemberDashMemberPermitsLazyRouteImport
+      parentRoute: typeof CompanyMemberDashMemberRoute
+    }
     '/company-member/dash/member/dashboard': {
       id: '/company-member/dash/member/dashboard'
       path: '/dashboard'
@@ -768,6 +794,7 @@ const PageAppRouteWithChildren =
 
 interface CompanyMemberDashMemberRouteChildren {
   CompanyMemberDashMemberDashboardLazyRoute: typeof CompanyMemberDashMemberDashboardLazyRoute
+  CompanyMemberDashMemberPermitsLazyRoute: typeof CompanyMemberDashMemberPermitsLazyRoute
   CompanyMemberDashMemberFormFillWorkPermitIdLazyRoute: typeof CompanyMemberDashMemberFormFillWorkPermitIdLazyRoute
 }
 
@@ -775,6 +802,8 @@ const CompanyMemberDashMemberRouteChildren: CompanyMemberDashMemberRouteChildren
   {
     CompanyMemberDashMemberDashboardLazyRoute:
       CompanyMemberDashMemberDashboardLazyRoute,
+    CompanyMemberDashMemberPermitsLazyRoute:
+      CompanyMemberDashMemberPermitsLazyRoute,
     CompanyMemberDashMemberFormFillWorkPermitIdLazyRoute:
       CompanyMemberDashMemberFormFillWorkPermitIdLazyRoute,
   }
