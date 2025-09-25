@@ -24,9 +24,13 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
     const initialAnswers = useMemo(() => {
         const map = {};
         (sectionsTemplate || []).forEach(section => {
+            const isToolsEquipSection = (section?.title || "").toLowerCase().includes("tools") && (section?.title || "").toLowerCase().includes("equipment");
             (section.components || []).forEach(component => {
                 if (component.type === "checkbox") {
                     map[component.id] = [];
+                } else if (isToolsEquipSection) {
+                    // For Tools & Equipment, always use 18 blanks regardless of component type
+                    map[component.id] = Array(18).fill("");
                 } else {
                     map[component.id] = "";
                 }
@@ -48,9 +52,23 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
     React.useEffect(() => {
         setAnswers(initialAnswers);
     }, [initialAnswers]);
+
+    // Ensure Work Permit No is injected even if user enters Print View immediately
+    React.useEffect(() => {
+        if (!permitNo) return;
+        const workPermitComponent = (sectionsTemplate || [])
+            .flatMap(s => s.components || [])
+            .find(c => /work\s*permit\s*no/i.test(c.label));
+        if (!workPermitComponent) return;
+        const current = answers?.[workPermitComponent.id];
+        if (current === undefined || current === "") {
+            setAnswers(prev => ({ ...prev, [workPermitComponent.id]: permitNo }));
+        }
+    }, [permitNo, sectionsTemplate]);
     const [showPrint, setShowPrint] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const timeLocalRef = React.useRef({});
     
     // Filter out declaration sections for initial selection
     const initialVisibleSections = sectionsTemplate?.filter(s => 
@@ -132,10 +150,39 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
 
     // Render component based on type
     const renderComponent = (component) => {
+                                const isToolsEquip = ((currentSection?.title || "").toLowerCase().includes("tools") && (currentSection?.title || "").toLowerCase().includes("equipment"))
+                                    || ((component?.label || "").toLowerCase().includes("tools") && (component?.label || "").toLowerCase().includes("equipment"));
                                 switch (component.type) {
                                     case "text":
                                     case "date":
-                                    case "time":
+                                        if (component.type === "text" && isToolsEquip) {
+                                            const values = Array.isArray(answers[component.id]) ? answers[component.id] : Array(18).fill("");
+                                            const setItem = (idx, val) => {
+                                                setAnswers(prev => {
+                                                    const arr = Array.isArray(prev[component.id]) ? [...prev[component.id]] : Array(18).fill("");
+                                                    arr[idx] = val;
+                                                    return { ...prev, [component.id]: arr };
+                                                });
+                                            };
+                                            return (
+                    <div key={component.id} className="space-y-2">
+                        <Label className="text-sm sm:text-base font-semibold text-gray-700 flex items-center">
+                            {component.label}
+                            {component.required && <span className="text-red-500 ml-1 text-lg">*</span>}
+                        </Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {values.map((v, i) => (
+                                <Input
+                                    key={i}
+                                    value={v || ""}
+                                    onChange={e => setItem(i, e.target.value)}
+                                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                />
+                            ))}
+                        </div>
+                    </div>
+                                            );
+                                        }
                                         return (
                     <div key={component.id} className="space-y-2">
                         <Label className="text-sm sm:text-base font-semibold text-gray-700 flex items-center">
@@ -151,7 +198,93 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                                 />
                                             </div>
                                         );
+                                    case "time": {
+                                        // Keep a per-field local buffer so typing isn't wiped while incomplete
+                                        const local = (timeLocalRef.current[component.id] ?? (answers[component.id] || ""));
+                                        const m = String(local).trim().match(/^(\d{0,2})(?::(\d{0,2}))?\s*(AM|PM)?$/i) || [];
+                                        const hhStr = m[1] || "";
+                                        const mmStr = m[2] || "";
+                                        const apStr = (m[3] || "AM").toUpperCase();
+                                        const hmDisplay = hhStr + (mmStr !== "" || local.includes(":") ? ":" + mmStr : "");
+                                        const updateLocal = (nextHm, nextAp) => {
+                                            const sanitizedHm = nextHm.replace(/[^0-9:]/g, "").slice(0,5);
+                                            const parts = sanitizedHm.split(":");
+                                            let nh = (parts[0] || "").slice(0,2);
+                                            let nm = (parts[1] || "").slice(0,2);
+                                            // Clamp softly
+                                            const numH = parseInt(nh || "", 10);
+                                            if (!isNaN(numH)) {
+                                                if (numH < 1) nh = nh ? "01" : nh;
+                                                if (numH > 12) nh = "12";
+                                            }
+                                            const numM = parseInt(nm || "", 10);
+                                            if (!isNaN(numM)) {
+                                                if (numM < 0) nm = "00";
+                                                if (numM > 59) nm = "59";
+                                            }
+                                            const composedHm = nh + (sanitizedHm.includes(":") || nm ? ":" + nm : "");
+                                            const composed = (composedHm ? (composedHm + " ") : "") + (nextAp || apStr);
+                                            timeLocalRef.current[component.id] = composed;
+                                            setValue(component.id, composed);
+                                        };
+                                        return (
+                    <div key={component.id} className="space-y-2">
+                        <Label className="text-sm sm:text-base font-semibold text-gray-700 flex items-center">
+                            {component.label}
+                            {component.required && <span className="text-red-500 ml-1 text-lg">*</span>}
+                        </Label>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="hh:mm"
+                                value={hmDisplay}
+                                onChange={e => updateLocal(e.target.value, apStr)}
+                                required={component.required}
+                                className="w-28 px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            />
+                            <select
+                                value={apStr}
+                                onChange={e => updateLocal(hmDisplay, e.target.value.toUpperCase())}
+                                className="px-3 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            >
+                                <option>AM</option>
+                                <option>PM</option>
+                            </select>
+                        </div>
+                    </div>
+                                        );
+                                    }
                                     case "textarea":
+                                        // Special handling for Tools & Equipment multi-line blanks
+                                        if (isToolsEquip) {
+                                            const values = Array.isArray(answers[component.id]) ? answers[component.id] : Array(18).fill("");
+                                            const setItem = (idx, val) => {
+                                                setAnswers(prev => {
+                                                    const arr = Array.isArray(prev[component.id]) ? [...prev[component.id]] : Array(18).fill("");
+                                                    arr[idx] = val;
+                                                    return { ...prev, [component.id]: arr };
+                                                });
+                                            };
+                                            return (
+                    <div key={component.id} className="space-y-2">
+                        <Label className="text-sm sm:text-base font-semibold text-gray-700 flex items-center">
+                            {component.label}
+                            {component.required && <span className="text-red-500 ml-1 text-lg">*</span>}
+                        </Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {values.map((v, i) => (
+                                <Input
+                                    key={i}
+                                    value={v || ""}
+                                    onChange={e => setItem(i, e.target.value)}
+                                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                />
+                            ))}
+                        </div>
+                    </div>
+                                            );
+                                        }
                                         return (
                     <div key={component.id} className="space-y-2">
                         <Label className="text-sm sm:text-base font-semibold text-gray-700 flex items-center">
@@ -215,6 +348,34 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                             </div>
                                         );
                                     default:
+                                        if (isToolsEquip) {
+                                            const values = Array.isArray(answers[component.id]) ? answers[component.id] : Array(18).fill("");
+                                            const setItem = (idx, val) => {
+                                                setAnswers(prev => {
+                                                    const arr = Array.isArray(prev[component.id]) ? [...prev[component.id]] : Array(18).fill("");
+                                                    arr[idx] = val;
+                                                    return { ...prev, [component.id]: arr };
+                                                });
+                                            };
+                                            return (
+                    <div key={component.id} className="space-y-2">
+                        <Label className="text-sm sm:text-base font-semibold text-gray-700 flex items-center">
+                            {component.label}
+                            {component.required && <span className="text-red-500 ml-1 text-lg">*</span>}
+                        </Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {values.map((v, i) => (
+                                <Input
+                                    key={i}
+                                    value={v || ""}
+                                    onChange={e => setItem(i, e.target.value)}
+                                    className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                />
+                            ))}
+                        </div>
+                    </div>
+                                            );
+                                        }
                                         return (
                     <div key={component.id} className="space-y-2">
                         <Label className="text-sm sm:text-base font-semibold text-gray-700 flex items-center">

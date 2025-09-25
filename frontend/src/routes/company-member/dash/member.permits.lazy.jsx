@@ -2,6 +2,7 @@ import { createLazyFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ensureCompanyMember } from "../../../lib/ensureCompanyMember.js";
 import { useCompanyStore } from "@/store/useCompanyStore";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import {
     Table,
     TableBody,
@@ -19,12 +20,37 @@ export const Route = createLazyFileRoute(
 });
 
 function RouteComponent() {
-    const { currentCompanyMember } = useCompanyStore();
+    const { currentCompanyMember, getCurrentCompanyMember } = useCompanyStore();
     const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                if (!currentCompanyMember || !Array.isArray(currentCompanyMember.allowedWorkPermits)) {
+                    await getCurrentCompanyMember();
+                }
+            } finally {
+                if (mounted) setIsLoading(false);
+            }
+        })();
+        return () => { mounted = false; };
+    }, []);
 
     const permits = Array.isArray(currentCompanyMember?.allowedWorkPermits)
         ? currentCompanyMember.allowedWorkPermits
         : [];
+
+    if (isLoading) {
+        return (
+            <div className="max-w-5xl mx-auto p-4">
+                <div className="bg-white border rounded-md p-8 text-center text-gray-500 text-sm">
+                    Loading...
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-5xl mx-auto p-4">

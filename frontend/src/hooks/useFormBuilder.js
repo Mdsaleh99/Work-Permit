@@ -108,6 +108,7 @@ export const useFormBuilder = ({ title, sectionsTemplate, startWithTemplate = tr
             const sec = { ...next.sections[targetSectionIndex] };
             const comps = [...sec.components];
             const existingVal = comps[componentIndex]?.value;
+            // If value missing or empty, or enabled is true (editable), ensure we show the server value and lock it
             if (existingVal === wpNo && comps[componentIndex]?.enabled === false) return prev;
             comps[componentIndex] = { ...comps[componentIndex], value: wpNo, enabled: false };
             sec.components = comps;

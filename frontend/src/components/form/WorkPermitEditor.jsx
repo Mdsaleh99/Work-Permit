@@ -8,7 +8,7 @@ import FormBuilderModular from "./FormBuilderModular";
  * - sectionsTemplate
  * - workPermitId
  */
-const WorkPermitEditor = ({ title, sectionsTemplate, workPermitId }) => {
+const WorkPermitEditor = ({ title, sectionsTemplate, workPermitId, workPermit }) => {
     return (
         <FormBuilderModular
             title={title}
@@ -16,6 +16,7 @@ const WorkPermitEditor = ({ title, sectionsTemplate, workPermitId }) => {
             startWithTemplate={false}
             workPermitId={workPermitId}
             isReadOnly={false}
+            workPermit={workPermit}
         />
     );
 };

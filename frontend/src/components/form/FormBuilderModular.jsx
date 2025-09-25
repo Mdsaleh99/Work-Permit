@@ -29,7 +29,8 @@ const FormBuilderModular = ({
     sectionsTemplate, 
     startWithTemplate = true, 
     workPermitId = null,
-    permitType = "work"
+    permitType = "work",
+    workPermit
 }) => {
     // console.log("FormBuilder props:", { title, sectionsTemplate, startWithTemplate, workPermitId, isReadOnly, permitType });
     
@@ -278,9 +279,38 @@ const FormBuilderModular = ({
 
     // Render print view
     if (showPrintView) {
+        // Ensure Work Permit No is visible in PrintView immediately
+        const formDataForPrint = (() => {
+            try {
+                const wpNo = currentWorkPermit?.workPermitNo;
+                if (!wpNo) return formData;
+                const sections = Array.isArray(formData?.sections) ? formData.sections : [];
+                let patched = false;
+                const nextSections = sections.map((sec) => {
+                    const comps = Array.isArray(sec.components) ? sec.components : [];
+                    let didPatchSection = false;
+                    const nextComps = comps.map((c) => {
+                        if (/work\s*permit\s*no/i.test(c?.label || "")) {
+                            const currentVal = c?.value ?? c?.text ?? "";
+                            if (!currentVal) {
+                                didPatchSection = true;
+                                return { ...c, value: wpNo, enabled: false };
+                            }
+                        }
+                        return c;
+                    });
+                    if (didPatchSection) patched = true;
+                    return didPatchSection ? { ...sec, components: nextComps } : sec;
+                });
+                if (!patched) return formData;
+                return { ...formData, sections: nextSections };
+            } catch {
+                return formData;
+            }
+        })();
         return (
             <div className="min-h-screen bg-white">
-                <PrintView formData={formData} onToggleView={() => setShowPrintView(false)} />
+                <PrintView formData={formDataForPrint} onToggleView={() => setShowPrintView(false)} />
             </div>
         );
     }

@@ -3,6 +3,7 @@ import WorkPermitEditor from "@/components/form/WorkPermitEditor";
 import { workPermitService } from "@/services/workPermit.service";
 import { useEffect, useState } from "react";
 import { Loader } from "lucide-react";
+import { useWorkPermitStore } from "@/store/useWorkPermitStore";
 
 export const Route = createLazyFileRoute("/page/app/form-builder/$workPermitId")({
     component: RouteComponent,
@@ -12,6 +13,7 @@ function RouteComponent() {
     const { workPermitId } = useParams({ from: "/page/app/form-builder/$workPermitId" });
     const [isLoading, setIsLoading] = useState(true);
     const [workPermit, setWorkPermit] = useState(null);
+    const { setCurrentWorkPermit } = useWorkPermitStore();
 
     
     
@@ -22,6 +24,8 @@ function RouteComponent() {
                 console.log("data", data);
                 
                 setWorkPermit(data);
+                // Make it available to builder hooks that rely on store
+                setCurrentWorkPermit(data);
             } catch (error) {
                 console.error("Error loading work permit:", error);
             } finally {
@@ -77,7 +81,8 @@ function RouteComponent() {
             type: component.type,
             required: component.required,
             enabled: component.enabled,
-            options: component.options || []
+            options: component.options || [],
+            value: component.value, // preserve existing values such as Work Permit No
         }))
     }));
 
@@ -89,6 +94,7 @@ function RouteComponent() {
             title={workPermit.title || "Work Permit"}
             sectionsTemplate={sectionsTemplate}
             workPermitId={workPermitId}
+            workPermit={workPermit}
         />
     );
 }

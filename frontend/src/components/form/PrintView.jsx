@@ -105,6 +105,23 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
         const answerVal = normalizeAnswer(rawAnswer, component.options);
         const componentVal = (component && (component.value ?? component.text)) || "";
         const displayVal = answers ? answerVal : componentVal;
+        // Special handling: Tools & Equipment prints dashed lines with inline values, no long line
+        // Always render the dashed grid even if there are no answers yet (builder/new form case)
+        if (sectionKey === 'tools-equipment') {
+            const arr = Array.isArray(displayVal) ? displayVal : [];
+            return (
+                <div className="ptw-component-inner">
+                    <div className="ptw-label">{component.label}:</div>
+                    <div className="ptw-multi-lines-12">
+                        {Array.from({ length: 18 }).map((_, idx) => (
+                            <div key={idx} className="ptw-input-line ptw-list-line">
+                                <span style={{visibility:'visible'}}>{String(arr[idx] || '')}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
         // This entire function is stable and correct. No changes.
         switch (component.type) {
             case 'text':
@@ -268,13 +285,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                                     ) : (
                                         <div className="ptw-label text-gray-500">No components configured.</div>
                                     )}
-                                    {sectionKey === 'tools-equipment' && (
-                                        <div className="ptw-multi-lines-12">
-                                            {Array.from({ length: 18 }).map((_, idx) => (
-                                                <div key={idx} className="ptw-input-line ptw-list-line"></div>
-                                            ))}
-                                        </div>
-                                    )}
+                                    {/* Tools & Equipment: do not render an extra long line block here. Lines are rendered per component above. */}
                                 </div>
                             </div>
                         );})
@@ -422,11 +433,12 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                     margin-top: 6px;
                     display: grid;
                     grid-template-columns: repeat(6, 1fr);
-                    gap: 8px 12px;
+                    gap: 12px 16px; /* more spacing to fill area */
                     align-items: end;
+                    width: 100%;
                 }
                 .ptw-list-line {
-                    height: 12px;
+                    height: 16px; /* taller lines */
                     border-bottom: 1px dashed #000; /* small dashed */
                     width: 100%;
                 }
@@ -458,6 +470,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                 .ptw-section-row[data-section="tools-equipment"] .ptw-component-wrapper {
                     display: grid; grid-template-columns: repeat(6, 1fr); gap: 0 10px;
                 }
+                .ptw-section-row[data-section="tools-equipment"] .ptw-component { grid-column: 1 / -1; }
                 .ptw-section-row[data-section="tools-equipment"] .ptw-label {
                     white-space: nowrap; /* keep heading in one line */
                 }
