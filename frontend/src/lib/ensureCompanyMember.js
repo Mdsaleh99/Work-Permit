@@ -4,11 +4,11 @@ import { useCompanyStore } from "@/store/useCompanyStore";
 export const ensureCompanyMember = async () => {
   const store = useCompanyStore.getState();
   const memberFromState = store.currentCompanyMember;
-  console.log("memberFromState: ", memberFromState);
+  // console.log("memberFromState: ", memberFromState);
   const fetched = memberFromState ?? (await store.getCurrentCompanyMember().catch(() => null));
-  console.log("fetched: ", fetched);
+  // console.log("fetched: ", fetched);
   const finalMember = fetched ?? useCompanyStore.getState().currentCompanyMember;
-  console.log("finalMember: ", finalMember);
+  // console.log("finalMember: ", finalMember);
   if (!finalMember) {
     throw redirect({ to: "/company-member/signin" });
   }

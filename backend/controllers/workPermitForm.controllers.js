@@ -472,7 +472,7 @@ export const duplicateWorkPermitForm = asyncHandler(async (req, res) => {
 export const createWorkPermitSubmission = asyncHandler(async (req, res) => {
     const { workPermitFormId } = req.params;
     const { answers } = req.body;
-    const primaryUserId = req.user?.id || null;
+    // const primaryUserId = req.user?.id || null;
     const memberId = req.member?.id || null;
 
     if (!workPermitFormId) throw new ApiError(400, "workPermitFormId is required");
@@ -500,14 +500,14 @@ export const createWorkPermitSubmission = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Unauthorized");
     }
 
-    // Note: submittedById references User. For member submissions, attribute to form owner to satisfy FK.
-    const submittedById = primaryUserId || form.userId;
+    // Note: submittedById references CompanyMember now. Prefer member id; fallback to form owner mapping is removed.
+    // const submittedById = memberId // for primary user submissions, this should be null unless model supports users
 
     const submission = await db.workPermitSubmission.create({
         data: {
             workPermitFormId: form.id,
             companyId: form.companyId,
-            submittedById,
+            submittedById: memberId,
             answers: answers,
         },
     });

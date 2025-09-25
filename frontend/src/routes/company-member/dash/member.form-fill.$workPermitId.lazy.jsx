@@ -6,6 +6,7 @@ import { ensureCompanyMemberWithPermit } from '../../../lib/ensureCompanyMember.
 import { Loader } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { workPermitService } from '@/services/workPermit.service';
+import WorkPermitViewer from '@/components/form/WorkPermitViewer';
 
 export const Route = createLazyFileRoute(
   '/company-member/dash/member/form-fill/$workPermitId',
@@ -48,9 +49,10 @@ function RouteComponent() {
         })),
     }));
 
+    const [submitted, setSubmitted] = useState(false);
     const handleSubmit = async (answers) => {
         await workPermitService.createSubmission(workPermitId, answers);
-        window.history.back();
+        setSubmitted(true);
     };
 
     if (isLoading) {
@@ -58,6 +60,16 @@ function RouteComponent() {
             <div className="min-h-[50vh] flex items-center justify-center text-gray-500">
                 <Loader className="w-5 h-5 animate-spin mr-2" /> Loading...
             </div>
+        );
+    }
+
+    if (submitted) {
+        return (
+            <WorkPermitViewer
+                title={form?.title || 'Work Permit'}
+                sectionsTemplate={sectionsTemplate}
+                workPermitId={workPermitId}
+            />
         );
     }
 

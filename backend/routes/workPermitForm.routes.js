@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyJWT, verifyEitherJWT } from "../middlewares/auth.middlewares.js";
+import { verifyJWT, verifyEitherJWT, companyMemberVerifyJWT } from "../middlewares/auth.middlewares.js";
 import {
     createWorkPermitForm,
     duplicateWorkPermitForm,
@@ -26,6 +26,6 @@ router
 router
     .route("/:workPermitFormId/submissions")
     .get(verifyEitherJWT, listWorkPermitSubmissions)
-    .post(verifyEitherJWT, createWorkPermitSubmission);
+    .post(companyMemberVerifyJWT, createWorkPermitSubmission);
 
 export default router;

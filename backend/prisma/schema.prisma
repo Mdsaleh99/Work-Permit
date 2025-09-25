@@ -72,7 +72,7 @@ model User {
   company        Company?
   workPermitForm WorkPermitForm[]
   workPermitDraft WorkPermitDraft[]
-  workPermitSubmission WorkPermitSubmission[]
+  // Removed: workPermitSubmission relation now references CompanyMember instead
 }
 
 model Company {
@@ -110,6 +110,7 @@ model CompanyMember {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   // Allowed work permits this member can access
   allowedWorkPermits WorkPermitForm[]
+  workPermitSubmission WorkPermitSubmission[]
   
 
   @@index([companyId])
@@ -185,7 +186,7 @@ model WorkPermitSubmission {
 
   workPermitForm WorkPermitForm @relation(fields: [workPermitFormId], references: [id], onDelete: Cascade)
   company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  submittedBy    User           @relation(fields: [submittedById], references: [id])
+  submittedBy    CompanyMember  @relation(fields: [submittedById], references: [id])
 
   @@index([workPermitFormId])
   @@index([companyId])
