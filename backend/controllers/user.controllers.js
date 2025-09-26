@@ -16,6 +16,84 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
+const createSuperAdmin = asyncHandler(async (req, res) => {
+    const { name, email, password } = req.body;
+    const { companyId } = req.params;
+
+    if (!name || !email || !password) {
+        throw new ApiError(400, "name, email and password are required");
+    }
+
+    if (!companyId) {
+        throw new ApiError(400, "companyId is required");
+    }
+
+    const company = await db.company.findUnique({ where: { id: companyId } });
+    if (!company) {
+        throw new ApiError(404, "Company not found");
+    }
+    
+
+    // Check if a SUPER_ADMIN already exists
+    const superAdminCount = await db.user.count({ where: { role: "SUPER_ADMIN" } });
+
+    // If at least one SUPER_ADMIN exists, only a logged-in SUPER_ADMIN or ADMIN can create another
+    if (superAdminCount > 0) {
+        const requesterId = req.user?.id;
+        if (!requesterId) {
+            throw new ApiError(401, "Only ADMIN or SUPER_ADMIN can create a SUPER_ADMIN");
+        }
+        const requester = await db.user.findUnique({ where: { id: requesterId } });
+        if (!requester || (requester.role !== "SUPER_ADMIN" && requester.role !== "ADMIN")) {
+            throw new ApiError(401, "Only ADMIN or SUPER_ADMIN can create a SUPER_ADMIN");
+        }
+    }
+
+    const existing = await db.user.findUnique({ where: { email } });
+    if (existing) {
+        throw new ApiError(409, "User with this email already exists");
+    }
+
+    const created = await db.user.create({
+        data: {
+            name,
+            email,
+            password,
+            role: "SUPER_ADMIN",
+            isEmailVerified: true,
+        },
+    });
+
+    // Link this SUPER_ADMIN to the company in CompanyAdmin join table
+    await db.companyAdmin.upsert({
+        where: { companyId_userId: { companyId, userId: created.id } },
+        update: { role: "SUPER_ADMIN" },
+        create: { companyId, userId: created.id, role: "SUPER_ADMIN" },
+    });
+
+    const responseUser = await db.user.findUnique({
+        where: { id: created.id },
+        omit: {
+            password: true,
+            refreshToken: true,
+            forgotPasswordExpiry: true,
+            forgotPasswordToken: true,
+            emailVerificationExpiry: true,
+            emailVerificationToken: true,
+        },
+        include: {
+            companyAdmins: {
+                where: { companyId },
+                select: { companyId: true, role: true },
+            },
+        },
+    });
+
+    return res
+        .status(201)
+        .json(new ApiResponse(201, responseUser, "SUPER_ADMIN created successfully"));
+});
+
 const signUp = asyncHandler(async (req, res) => {
     const { email, name, password } = req.body;
 
@@ -137,6 +215,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
 
 const signIn = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
+    const companyIdParam = req.params?.companyId;
 
     const user = await db.user.findUnique({
         where: {
@@ -157,6 +236,23 @@ const signIn = asyncHandler(async (req, res) => {
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) {
         throw new ApiError(400, "Email or Password is wrong.");
+    }
+
+    // If companyId is provided, enforce SUPER_ADMIN role and membership to that company
+    if (companyIdParam) {
+        const company = await db.company.findUnique({ where: { id: companyIdParam } });
+        if (!company) {
+            throw new ApiError(404, "Company not found");
+        }
+        if (user.role !== "SUPER_ADMIN") {
+            throw new ApiError(403, "Only SUPER_ADMIN can sign in with company scope");
+        }
+        const link = await db.companyAdmin.findUnique({
+            where: { companyId_userId: { companyId: companyIdParam, userId: user.id } },
+        });
+        if (!link) {
+            throw new ApiError(403, "SUPER_ADMIN is not associated with this company");
+        }
     }
 
     const accessToken = generateAccessToken(user);
@@ -530,6 +626,45 @@ const getAllUsers = asyncHandler(async (req, res) => {
     );
 });
 
+// Return only SUPER_ADMIN users (optionally could filter by company if needed later)
+const getAllSuperAdmins = asyncHandler(async (req, res) => {
+    const superAdmins = await db.user.findMany({
+        where: { role: "SUPER_ADMIN" },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            updatedAt: true,
+            isEmailVerified: true,
+        },
+        orderBy: { createdAt: "desc" },
+    });
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, superAdmins, "super admins fetched successfully"));
+});
+
+// Return SUPER_ADMIN users linked to a specific company via CompanyAdmin
+const getCompanySuperAdmins = asyncHandler(async (req, res) => {
+    const { companyId } = req.params;
+    if (!companyId) {
+        throw new ApiError(400, "companyId is required");
+    }
+
+    const links = await db.companyAdmin.findMany({
+        where: { companyId, role: "SUPER_ADMIN" },
+        include: { user: { select: { id: true, name: true, email: true, role: true, createdAt: true } } },
+        orderBy: { createdAt: "desc" },
+    });
+
+    const list = links.map(l => ({ id: l.user.id, name: l.user.name, email: l.user.email, role: l.user.role, createdAt: l.user.createdAt }));
+
+    return res.status(200).json(new ApiResponse(200, list, "company super admins fetched successfully"));
+});
+
 const googleCallback = asyncHandler(async (req, res) => {
     const user = await db.user.findUnique({
         where: {
@@ -573,4 +708,7 @@ export {
     resendEmailVerification,
     resetForgottenPassword,
     verifyEmail,
+    createSuperAdmin,
+    getAllSuperAdmins,
+    getCompanySuperAdmins,
 };

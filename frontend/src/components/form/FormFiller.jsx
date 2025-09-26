@@ -66,15 +66,26 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
         }
     }, [permitNo, sectionsTemplate]);
     const [showPrint, setShowPrint] = useState(false);
+    const [showOpeningModal, setShowOpeningModal] = useState(false);
+    const [openingLocal, setOpeningLocal] = useState({});
+    const [openingSupers, setOpeningSupers] = useState([]);
+    const [openingMember, setOpeningMember] = useState(null);
+    const [openingCompanyName, setOpeningCompanyName] = useState("");
+    const [openingSupersError, setOpeningSupersError] = useState("");
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const timeLocalRef = React.useRef({});
     
-    // Filter out declaration sections for initial selection
+    // Filter out declaration, opening-ptw and closure sections for initial selection (still shown in PrintView)
     const initialVisibleSections = sectionsTemplate?.filter(s => 
         s.enabled !== false && 
         !s.id?.toLowerCase().includes('declaration') && 
-        !s.title?.toLowerCase().includes('declaration')
+        !s.title?.toLowerCase().includes('declaration') &&
+        !s.id?.toLowerCase().includes('opening-ptw') &&
+        !(s.title || '').toLowerCase().includes('opening') &&
+        (s.title || '').toLowerCase().indexOf('ptw') === -1 &&
+        !s.id?.toLowerCase().includes('closure') &&
+        !s.title?.toLowerCase().includes('closure')
     ) || [];
     
     const [selectedSection, setSelectedSection] = useState(initialVisibleSections?.[0]?.id || null);
@@ -102,7 +113,12 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
         const newVisibleSections = sectionsTemplate?.filter(s => 
             s.enabled !== false && 
             !s.id?.toLowerCase().includes('declaration') && 
-            !s.title?.toLowerCase().includes('declaration')
+            !s.title?.toLowerCase().includes('declaration') &&
+            !s.id?.toLowerCase().includes('opening-ptw') &&
+            !(s.title || '').toLowerCase().includes('opening') &&
+            (s.title || '').toLowerCase().indexOf('ptw') === -1 &&
+            !s.id?.toLowerCase().includes('closure') &&
+            !s.title?.toLowerCase().includes('closure')
         ) || [];
         
         if (newVisibleSections.length > 0 && !selectedSection) {
@@ -121,11 +137,16 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
         });
     };
 
-    // Filter out declaration sections for display (but keep them for print view)
+    // Filter out declaration, opening-ptw and closure sections for display (but keep them for print view)
     const visibleSections = sectionsTemplate?.filter(s => 
         s.enabled !== false && 
         !s.id?.toLowerCase().includes('declaration') && 
-        !s.title?.toLowerCase().includes('declaration')
+        !s.title?.toLowerCase().includes('declaration') &&
+        !s.id?.toLowerCase().includes('opening-ptw') &&
+        !(s.title || '').toLowerCase().includes('opening') &&
+        (s.title || '').toLowerCase().indexOf('ptw') === -1 &&
+        !s.id?.toLowerCase().includes('closure') &&
+        !s.title?.toLowerCase().includes('closure')
     ) || [];
     
     // Get current section
@@ -147,6 +168,49 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
             setSelectedSection(nextSection.id);
         }
     };
+
+    // Detect Opening/PTW section (hidden in filler UI, shown in print)
+    const openingSection = useMemo(() => {
+        return (sectionsTemplate || []).find((s) => {
+            const id = (s.id || "").toLowerCase();
+            const t = (s.title || "").toLowerCase();
+            return id.includes("opening-ptw") || (t.includes("opening") && t.includes("ptw"));
+        });
+    }, [sectionsTemplate]);
+
+    const hasOpeningPTW = Boolean(openingSection);
+
+    // When Opening/PTW modal opens, fetch super admins and current member; seed receiving authority name
+    React.useEffect(() => {
+        if (!showOpeningModal || !hasOpeningPTW) return;
+        (async () => {
+            try {
+                const storeMod = await import("@/store/useCompanyStore");
+                const svcMod = await import("@/services/auth.service");
+                const authStoreMod = await import("@/store/useAuthStore");
+                const companyStore = storeMod.useCompanyStore.getState();
+                const authStore = authStoreMod.useAuthStore.getState();
+                const member = await companyStore.getCurrentCompanyMember().catch(() => null);
+                setOpeningMember(member);
+                // Only use member's companyId; do not fallback to primary user's company
+                const companyId = member?.companyId || null;
+                if (companyId) {
+                    const list = await svcMod.authService.getCompanySuperAdmins(companyId);
+                    setOpeningSupers(Array.isArray(list) ? list : []);
+                    setOpeningSupersError(Array.isArray(list) && list.length > 0 ? "" : "No super admins found for this company");
+                } else {
+                    setOpeningSupers([]);
+                    setOpeningSupersError("No super admins found for this company");
+                }
+                // Seed receiving authority value if we can identify the field id
+                const recvId = (openingSection?.components || []).find(c => /permit\s*receiving\s*authority\s*-?\s*name/i.test(c.label))?.id;
+                const recvName = member?.name || authStore?.authUser?.name || "";
+                if (recvId && recvName) {
+                    setOpeningLocal(prev => ({ ...prev, [recvId]: recvName }));
+                }
+            } catch {}
+        })();
+    }, [showOpeningModal, hasOpeningPTW, openingSection]);
 
     // Render component based on type
     const renderComponent = (component) => {
@@ -394,7 +458,10 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
     };
 
     if (showPrint) {
-        const formData = { title, sections: sectionsTemplate || [], answers };
+        // Ensure any values captured in the Opening/PTW modal (openingLocal)
+        // are also visible in Print View even before final submit
+        const mergedAnswers = { ...(answers || {}), ...(openingLocal || {}) };
+        const formData = { title, sections: sectionsTemplate || [], answers: mergedAnswers };
         return (
             <PrintView formData={formData} onToggleView={() => setShowPrint(false)} />
         );
@@ -402,6 +469,122 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
 
     return (
         <div className={cn("bg-gray-50 flex overflow-hidden", containerClassName ? containerClassName : "h-screen") }>
+            {hasOpeningPTW && showOpeningModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40" onClick={() => setShowOpeningModal(false)} />
+                    <div className="relative z-10 w-full max-w-2xl rounded-md border bg-white p-5 shadow-xl max-h-[80vh] overflow-auto">
+                        <div className="text-lg font-semibold mb-2">Opening / PTW</div>
+                        <div className="space-y-4 mt-2">
+                            {(openingSection?.components || []).map((c) => (
+                                <div key={c.id} className="space-y-2">
+                                    <Label className="text-sm font-semibold">{c.label}{c.required && <span className="text-red-500 ml-1">*</span>}</Label>
+                                    {/* Special cases: authority fields */}
+                                    {/permit\s*issuing\s*authority\s*-?\s*name/i.test(c.label) ? (
+                                        <>
+                                            <select
+                                                className="w-full border border-gray-300 rounded px-3 py-2 bg-white"
+                                                value={openingLocal[c.id] || ""}
+                                                onChange={(e) => setOpeningLocal(prev => ({ ...prev, [c.id]: e.target.value }))}
+                                            >
+                                                <option value="">Select Super Admin</option>
+                                                {openingSupers.map(u => (
+                                                    <option key={u.id} value={u.name}>{u.name}{openingCompanyName ? ` — ${openingCompanyName}` : ''}</option>
+                                                ))}
+                                            </select>
+                                            {openingSupersError && (
+                                                <div className="text-xs text-red-600 mt-1">{openingSupersError}</div>
+                                            )}
+                                        </>
+                                    ) : /permit\s*receiving\s*authority\s*-?\s*name/i.test(c.label) ? (
+                                        <Input
+                                            value={openingLocal[c.id] || openingMember?.name || ""}
+                                            onChange={(e) => setOpeningLocal(prev => ({ ...prev, [c.id]: e.target.value }))}
+                                            disabled
+                                            readOnly
+                                            className="bg-gray-100 text-gray-900 font-semibold"
+                                        />
+                                    ) : c.type === 'textarea' ? (
+                                        <textarea
+                                            rows={3}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded"
+                                            value={openingLocal[c.id] || ''}
+                                            onChange={(e) => setOpeningLocal(prev => ({ ...prev, [c.id]: e.target.value }))}
+                                        />
+                                    ) : c.type === 'date' ? (
+                                        <Input
+                                            type="date"
+                                            value={openingLocal[c.id] || ''}
+                                            onChange={(e) => setOpeningLocal(prev => ({ ...prev, [c.id]: e.target.value }))}
+                                        />
+                                    ) : c.type === 'time' ? (
+                                        (() => {
+                                            const current = String(openingLocal[c.id] || '').trim();
+                                            const m = current.match(/^(\d{1,2})(?::(\d{1,2}))?\s*(AM|PM)?$/i) || [];
+                                            const hh = m[1] || '';
+                                            const mm = m[2] || '';
+                                            const ap = (m[3] || 'AM').toUpperCase();
+                                            const hmDisplay = hh + (current.includes(':') || mm ? ':' + mm : '');
+                                            const update = (nextHm, nextAp) => {
+                                                const sanitized = nextHm.replace(/[^0-9:]/g, '').slice(0,5);
+                                                const parts = sanitized.split(':');
+                                                let nh = (parts[0] || '').slice(0,2);
+                                                let nm = (parts[1] || '').slice(0,2);
+                                                const numH = parseInt(nh || '', 10);
+                                                if (!isNaN(numH)) {
+                                                    if (numH < 1) nh = nh ? '01' : nh;
+                                                    if (numH > 12) nh = '12';
+                                                }
+                                                const numM = parseInt(nm || '', 10);
+                                                if (!isNaN(numM)) {
+                                                    if (numM < 0) nm = '00';
+                                                    if (numM > 59) nm = '59';
+                                                }
+                                                const composedHm = nh + ((sanitized.includes(':') || nm) ? (':' + nm) : '');
+                                                const composed = (composedHm ? (composedHm + ' ') : '') + (nextAp || ap);
+                                                setOpeningLocal(prev => ({ ...prev, [c.id]: composed }));
+                                            };
+                                            return (
+                                                <div className="flex items-center gap-2">
+                                                    <Input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        placeholder="hh:mm"
+                                                        value={hmDisplay}
+                                                        onChange={(e) => update(e.target.value, ap)}
+                                                        className="w-28"
+                                                    />
+                                                    <select
+                                                        value={ap}
+                                                        onChange={(e) => update(hmDisplay, e.target.value.toUpperCase())}
+                                                        className="px-3 py-2 border border-gray-300 rounded bg-white"
+                                                    >
+                                                        <option>AM</option>
+                                                        <option>PM</option>
+                                                    </select>
+                                                </div>
+                                            );
+                                        })()
+                                    ) : (
+                                        <Input
+                                            value={openingLocal[c.id] || ''}
+                                            onChange={(e) => setOpeningLocal(prev => ({ ...prev, [c.id]: e.target.value }))}
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-4 flex items-center justify-end gap-2">
+                            <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => setShowOpeningModal(false)}>Cancel</Button>
+                            <Button size="sm" className="cursor-pointer" onClick={() => {
+                                setShowOpeningModal(false);
+                                const merged = { ...answers, ...openingLocal };
+                                setAnswers(merged);
+                                onSubmit && onSubmit(merged);
+                            }}>Confirm & Submit</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Desktop Sidebar */}
             <div className={cn(
                 "bg-white border-r border-gray-200 flex flex-col transition-all duration-300 shadow-sm h-full",
@@ -590,7 +773,19 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                             </Button>
                             <Button 
                                 size="sm" 
-                                onClick={() => onSubmit && onSubmit(answers)} 
+                                onClick={() => {
+                                    if (hasOpeningPTW) {
+                                        const seed = {};
+                                        (openingSection?.components || []).forEach((c) => {
+                                            const existing = answers[c.id];
+                                            seed[c.id] = existing !== undefined ? existing : (c.type === "checkbox" ? [] : "");
+                                        });
+                                        setOpeningLocal(seed);
+                                        setShowOpeningModal(true);
+                                    } else {
+                                        onSubmit && onSubmit(answers);
+                                    }
+                                }} 
                                 disabled={isSubmitting} 
                                 className="px-4 sm:px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs sm:text-sm"
                             >
@@ -675,3 +870,58 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
 export default FormFiller;
 
 
+
+// Helper component to populate issuing/receiving authorities in Opening/PTW modal
+function OpeningPTWExtras({ onSeed }) {
+    const [supers, setSupers] = React.useState([]);
+    const [member, setMember] = React.useState(null);
+    React.useEffect(() => {
+        (async () => {
+            try {
+                const storeMod = await import("@/store/useCompanyStore");
+                const authStoreMod = await import("@/store/useAuthStore");
+                const svcMod = await import("@/services/auth.service");
+                const companyStore = storeMod.useCompanyStore.getState();
+                const authStore = authStoreMod.useAuthStore.getState();
+                const company = await companyStore.getCompanyByUser().catch(() => null);
+                const currentMember = await companyStore.getCurrentCompanyMember().catch(() => null);
+                setMember(currentMember);
+                if (company?.id) {
+                    const list = await svcMod.authService.getCompanySuperAdmins(company.id);
+                    setSupers(Array.isArray(list) ? list : []);
+                    // Pre-seed receiving authority name to member name if present
+                    const seed = {};
+                    const ra = (currentMember?.name) || authStore?.authUser?.name || "";
+                    if (ra) seed["permit-receiving-authority-name"] = ra;
+                    onSeed && onSeed((prev) => ({ ...(prev || {}), ...seed }));
+                }
+            } catch {}
+        })();
+    }, [onSeed]);
+
+    return (
+        <div className="space-y-3">
+            <div>
+                <Label className="text-sm font-semibold">Permit Issuing Authority - Name</Label>
+                <select
+                    className="w-full border border-gray-300 rounded px-3 py-2 bg-white"
+                    onChange={(e) => onSeed && onSeed((prev) => ({ ...(prev || {}), ["permit-issuing-authority-name"]: e.target.value }))}
+                >
+                    <option value="">Select Super Admin</option>
+                    {supers.map((u) => (
+                        <option key={u.id} value={u.name}>{u.name} ({u.email})</option>
+                    ))}
+                </select>
+            </div>
+            <div>
+                <Label className="text-sm font-semibold">Permit Receiving Authority - Name</Label>
+                <input
+                    className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
+                    value={member?.name || ""}
+                    disabled
+                    readOnly
+                />
+            </div>
+        </div>
+    );
+}

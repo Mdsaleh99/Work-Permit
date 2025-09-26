@@ -100,11 +100,21 @@ export const getCompanyByUser = asyncHandler(async (req, res) => {
         throw new ApiError(404, "user not found");
     }
 
-    const company = await db.company.findFirst({
+    // First, try the direct owner relationship (creator of the company)
+    let company = await db.company.findFirst({
         where: {
             userId: user.id,
         },
     });
+
+    // If not found, resolve via CompanyAdmin association (for SUPER_ADMIN/ADMIN linked to a company)
+    if (!company) {
+        const link = await db.companyAdmin.findFirst({
+            where: { userId },
+            include: { company: true },
+        });
+        company = link?.company || null;
+    }
 
     if (!company) {
         throw new ApiError(404, "No company found");
@@ -196,6 +206,9 @@ export const getAllCompanyMembers = asyncHandler(async (req, res) => {
     const members = await db.companyMember.findMany({
         where: {
             companyId,
+        },
+        include: {
+            allowedWorkPermits: { select: { id: true, title: true, workPermitNo: true } },
         },
         omit: {
             password: true,

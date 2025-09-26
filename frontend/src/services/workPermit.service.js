@@ -33,7 +33,7 @@ export const workPermitService = {
         return res.data;
     },
     listSubmissions: async (workPermitFormId) => {
-        const res = await axiosInstance.get(`/work-permit-form/${workPermitFormId}/submissions`);
+        const res = await axiosInstance.get(`/work-permit/${workPermitFormId}/submissions`);
         return res.data;
     },
 };

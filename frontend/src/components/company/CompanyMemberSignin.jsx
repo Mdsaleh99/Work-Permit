@@ -35,15 +35,11 @@ export function CompanyMemberSignin({ className, ...props }) {
         handleSubmit,
         formState: { errors },
         setError,
-        setValue,
-        watch,
     } = useForm({ resolver: zodResolver(SignInSchema), defaultValues: { companyId: defaultCompanyId } });
     
     const {
-        getCompanyByUser,
         companyError,
         companyMemberSignIn,
-        getCurrentCompanyMember,
         clearCompanyError,
         isCompanyMemberSigningIn,
     } = useCompanyStore();

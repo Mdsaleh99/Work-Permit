@@ -126,7 +126,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
         switch (component.type) {
             case 'text':
                 return (
-                    <div className={`ptw-component-inner ${['work-description', 'certificate'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
+                    <div className={`ptw-component-inner ${['work-description', 'certificate', 'opening-ptw'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
                         <div className="ptw-label">{component.label}:</div>
                         <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(displayVal || '')}</span></div>
                     </div>
@@ -212,7 +212,10 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => onToggleView ? onToggleView() : navigate({ to: builderPath })}
+                            onClick={() => {
+                                if (onToggleView) { onToggleView(); return; }
+                                try { navigate({ to: builderPath }); } catch (_) { window.history.back(); }
+                            }}
                             className="flex items-center space-x-2"
                         >
                             <ArrowLeft className="w-4 h-4" />
@@ -265,6 +268,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                     formData.sections
                         .map((section) => {
                             const sectionKey = getSectionKey(section);
+                            // Skip rendering Opening/PTW in print? No, requirement says show in print.
                             return (
                             <div key={section.id} className="ptw-section-row" data-section={sectionKey}>
                                 <div className="ptw-sidebar-label-wrapper">

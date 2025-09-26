@@ -72,7 +72,7 @@ model User {
   company        Company?
   workPermitForm WorkPermitForm[]
   workPermitDraft WorkPermitDraft[]
-  // Removed: workPermitSubmission relation now references CompanyMember instead
+  companyAdmins  CompanyAdmin[]
 }
 
 model Company {
@@ -85,6 +85,7 @@ model Company {
   workPermitForm WorkPermitForm[]
   workPermitDraft WorkPermitDraft[]
   members        CompanyMember[]
+  companyAdmins  CompanyAdmin[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -242,4 +243,22 @@ model WorkPermitDraftComponent {
   workPermitDraftSection WorkPermitDraftSection @relation(fields: [workPermitDraftSectionId], references: [id], onDelete: Cascade)
 
   @@index([workPermitDraftSectionId])
+}
+
+// Join model to associate multiple admins (ADMIN/SUPER_ADMIN) with a company
+model CompanyAdmin {
+  id         String   @id @default(uuid())
+  companyId  String
+  userId     String
+  role       UserRole
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@index([companyId])
+  @@index([userId])
 }

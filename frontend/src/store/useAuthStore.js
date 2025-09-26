@@ -51,6 +51,20 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
+    signinSuperAdmin: async (companyId, userData) => {
+        set({ isSignIn: true, authError: null });
+        try {
+            await authService.signinSuperAdmin(companyId, userData);
+            const fullUser = await authService.getCurrentUser();
+            set({ authUser: fullUser });
+        } catch (error) {
+            set({ authError: error });
+            throw error;
+        } finally {
+            set({ isSignIn: false });
+        }
+    },
+
     signout: async () => {
         try {
             await authService.signout();
@@ -63,6 +77,14 @@ export const useAuthStore = create((set, get) => ({
     resendEmailVerification: async () => {
         try {
             await authService.resendEmailVerification();
+        } catch (error) {
+            set({ authError: error });
+            throw error;
+        }
+    },
+    createSuperAdmin: async (companyId, data) => {
+        try {
+            return await authService.createSuperAdmin(companyId, data);
         } catch (error) {
             set({ authError: error });
             throw error;

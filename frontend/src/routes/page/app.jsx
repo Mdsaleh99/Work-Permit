@@ -9,20 +9,16 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 export const Route = createFileRoute("/page/app")({
     beforeLoad: async () => {
         const { authUser, checkAuth } = useAuthStore.getState();
-        // const { getCurrentCompanyMember, currentCompanyMember } = useCompanyStore();
-        // console.log("currentCompanyMember: ", currentCompanyMember);
-        
 
-        // If no user yet, trigger checkAuth
         if (!authUser) {
-            await checkAuth(); // wait for cookie-based auth
+            await checkAuth();
         }
 
-        // After check, if still no user -> redirect
-        if (!useAuthStore.getState().authUser) {
-            throw redirect({
-                to: "/auth/signin",
-            });
+        const user = useAuthStore.getState().authUser;
+        const role = user?.role;
+        const isAllowed = role === 'ADMIN' || role === 'SUPER_ADMIN';
+        if (!user || !isAllowed) {
+            throw redirect({ to: "/auth/signin" });
         }
     },
     component: RouteComponent,

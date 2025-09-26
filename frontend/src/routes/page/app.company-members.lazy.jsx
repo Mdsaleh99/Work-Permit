@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { useCompanyStore } from "@/store/useCompanyStore";
 import AddMemberModal from "@/components/company/AddMemberModal";
+import { SuperAdminCreateInline } from "@/components/auth/super-admin-create-inline";
 import { Select } from "@/components/ui/select";
 import {
     DropdownMenu,
@@ -92,13 +93,16 @@ function RouteComponent() {
                             </p>
                         )}
                     </div>
-                    <Button
-                        onClick={() => setOpenModal(true)}
-                        size="sm"
-                        className="cursor-pointer"
-                    >
-                        Add Member
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            onClick={() => setOpenModal(true)}
+                            size="sm"
+                            className="cursor-pointer"
+                        >
+                            Add Member
+                        </Button>
+                        <SuperAdminCreateInline />
+                    </div>
                 </div>
             </div>
 
@@ -313,6 +317,7 @@ function RouteComponent() {
                 onClose={() => setOpenModal(false)}
                 loading={submitting}
             />
+            <SuperAdminsSection />
         </div>
     );
 }
@@ -334,6 +339,8 @@ function AllowPermitButton({ companyId, member }) {
         if (!open) return;
         (async () => {
             try {
+                // Reset selected from latest member.allowedWorkPermits when opening
+                setSelected(Array.isArray(member?.allowedWorkPermits) ? member.allowedWorkPermits.map(p => p.id) : []);
                 const companyData = await getCompanyByUser();
                 const store = getAllWorkPermits();
                 const all = await store;
@@ -343,7 +350,7 @@ function AllowPermitButton({ companyId, member }) {
                 setList(filtered);
             } catch {}
         })();
-    }, [open]);
+    }, [open, member]);
 
     const toggle = (id) => {
         setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -353,7 +360,11 @@ function AllowPermitButton({ companyId, member }) {
         if (!companyId || !member?.id) return;
         setLoading(true);
         try {
-            await updateCompanyMemberAllowedPermits(companyId, member.id, selected);
+            const updated = await updateCompanyMemberAllowedPermits(companyId, member.id, selected);
+            // Update local member reference so it stays checked after refresh/reopen
+            if (updated && Array.isArray(updated.allowedWorkPermits)) {
+                member.allowedWorkPermits = updated.allowedWorkPermits;
+            }
             setOpen(false);
         } catch (e) {
             console.error(e);
@@ -400,5 +411,98 @@ function AllowPermitButton({ companyId, member }) {
                 </div>
             )}
         </>
+    );
+}
+
+function SuperAdminsSection() {
+    const [list, setList] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState("");
+
+    const load = React.useCallback(async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const svc = (await import("@/services/auth.service")).authService;
+            const store = (await import("@/store/useCompanyStore")).useCompanyStore.getState();
+            const company = await store.getCompanyByUser().catch(() => null);
+            const companyId = company?.id;
+            if (!companyId) {
+                setList([]);
+                return;
+            }
+            const users = await svc.getCompanySuperAdmins(companyId);
+            setList(Array.isArray(users) ? users : []);
+        } catch (e) {
+            setError(e?.message || 'Failed to load super admins');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    React.useEffect(() => {
+        load();
+    }, [load]);
+
+    React.useEffect(() => {
+        const handler = (e) => {
+            const created = e?.detail;
+            if (created && (created.role === 'SUPER_ADMIN' || created.user?.role === 'SUPER_ADMIN')) {
+                setList((prev) => [{
+                    id: created.id || created.user?.id,
+                    name: created.name || created.user?.name,
+                    email: created.email || created.user?.email,
+                    role: created.role || created.user?.role,
+                    createdAt: created.createdAt || new Date().toISOString(),
+                }, ...prev]);
+            } else {
+                load();
+            }
+        };
+        window.addEventListener('super-admin-created', handler);
+        return () => window.removeEventListener('super-admin-created', handler);
+    }, [load]);
+
+    return (
+        <div className="max-w-6xl mx-auto p-4">
+            <h2 className="text-base font-semibold mb-2">Super Admins</h2>
+            {error && (
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+            )}
+            {loading ? (
+                <div className="text-sm text-gray-600">Loading…</div>
+            ) : (
+                <div className="bg-white border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[80px]">#</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Role</TableHead>
+                                <TableHead>Created</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {list.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center text-sm text-gray-500 py-8">No super admins</TableCell>
+                                </TableRow>
+                            ) : (
+                                list.map((u, idx) => (
+                                    <TableRow key={u.id}>
+                                        <TableCell>{idx + 1}</TableCell>
+                                        <TableCell>{u.name || '-'}</TableCell>
+                                        <TableCell>{u.email}</TableCell>
+                                        <TableCell>{u.role}</TableCell>
+                                        <TableCell>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+        </div>
     );
 }

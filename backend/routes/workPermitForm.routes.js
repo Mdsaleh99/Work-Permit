@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyJWT, verifyEitherJWT, companyMemberVerifyJWT } from "../middlewares/auth.middlewares.js";
+import { verifyJWT, verifyEitherJWT, companyMemberVerifyJWT, authorizeRoles } from "../middlewares/auth.middlewares.js";
 import {
     createWorkPermitForm,
     duplicateWorkPermitForm,
@@ -8,6 +8,8 @@ import {
     updateWorkPermitForm,
     createWorkPermitSubmission,
     listWorkPermitSubmissions,
+    approveWorkPermitForm,
+    closeWorkPermitForm,
 } from "../controllers/workPermitForm.controllers.js";
 
 const router = express.Router();
@@ -27,5 +29,14 @@ router
     .route("/:workPermitFormId/submissions")
     .get(verifyEitherJWT, listWorkPermitSubmissions)
     .post(companyMemberVerifyJWT, createWorkPermitSubmission);
+
+// SUPER_ADMIN only actions
+router
+    .route("/:workPermitFormId/approve")
+    .post(verifyJWT, authorizeRoles("SUPER_ADMIN"), approveWorkPermitForm);
+
+router
+    .route("/:workPermitFormId/close")
+    .post(verifyJWT, authorizeRoles("SUPER_ADMIN"), closeWorkPermitForm);
 
 export default router;

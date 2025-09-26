@@ -19,6 +19,7 @@ import { Route as AuthSigninRouteImport } from './routes/auth/signin'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as CompanyMemberDashMemberRouteImport } from './routes/company-member/dash/member'
 import { Route as AuthVerifyEmailSuccessVerificationTokenRouteImport } from './routes/auth/verify-email-success.$verificationToken'
+import { Route as AuthSuperAdminSigninRouteImport } from './routes/auth/super-admin.signin'
 import { Route as AuthResetPasswordResetTokenRouteImport } from './routes/auth/reset-password.$resetToken'
 
 const CompanyIndexLazyRouteImport = createFileRoute('/company/')()
@@ -226,6 +227,11 @@ const AuthVerifyEmailSuccessVerificationTokenRoute =
     path: '/auth/verify-email-success/$verificationToken',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthSuperAdminSigninRoute = AuthSuperAdminSigninRouteImport.update({
+  id: '/auth/super-admin/signin',
+  path: '/auth/super-admin/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthResetPasswordResetTokenRoute =
   AuthResetPasswordResetTokenRouteImport.update({
     id: '/auth/reset-password/$resetToken',
@@ -313,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/company-member/signin': typeof CompanyMemberSigninLazyRoute
   '/company': typeof CompanyIndexLazyRoute
   '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
+  '/auth/super-admin/signin': typeof AuthSuperAdminSigninRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
   '/company-member/dash/member': typeof CompanyMemberDashMemberRouteWithChildren
   '/page/app/audit': typeof PageAppAuditLazyRoute
@@ -346,6 +353,7 @@ export interface FileRoutesByTo {
   '/company-member/signin': typeof CompanyMemberSigninLazyRoute
   '/company': typeof CompanyIndexLazyRoute
   '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
+  '/auth/super-admin/signin': typeof AuthSuperAdminSigninRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
   '/company-member/dash/member': typeof CompanyMemberDashMemberRouteWithChildren
   '/page/app/audit': typeof PageAppAuditLazyRoute
@@ -379,6 +387,7 @@ export interface FileRoutesById {
   '/company-member/signin': typeof CompanyMemberSigninLazyRoute
   '/company/': typeof CompanyIndexLazyRoute
   '/auth/reset-password/$resetToken': typeof AuthResetPasswordResetTokenRoute
+  '/auth/super-admin/signin': typeof AuthSuperAdminSigninRoute
   '/auth/verify-email-success/$verificationToken': typeof AuthVerifyEmailSuccessVerificationTokenRoute
   '/company-member/dash/member': typeof CompanyMemberDashMemberRouteWithChildren
   '/page/app/audit': typeof PageAppAuditLazyRoute
@@ -414,6 +423,7 @@ export interface FileRouteTypes {
     | '/company-member/signin'
     | '/company'
     | '/auth/reset-password/$resetToken'
+    | '/auth/super-admin/signin'
     | '/auth/verify-email-success/$verificationToken'
     | '/company-member/dash/member'
     | '/page/app/audit'
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/company-member/signin'
     | '/company'
     | '/auth/reset-password/$resetToken'
+    | '/auth/super-admin/signin'
     | '/auth/verify-email-success/$verificationToken'
     | '/company-member/dash/member'
     | '/page/app/audit'
@@ -479,6 +490,7 @@ export interface FileRouteTypes {
     | '/company-member/signin'
     | '/company/'
     | '/auth/reset-password/$resetToken'
+    | '/auth/super-admin/signin'
     | '/auth/verify-email-success/$verificationToken'
     | '/company-member/dash/member'
     | '/page/app/audit'
@@ -513,6 +525,7 @@ export interface RootRouteChildren {
   CompanyMemberSigninLazyRoute: typeof CompanyMemberSigninLazyRoute
   CompanyIndexLazyRoute: typeof CompanyIndexLazyRoute
   AuthResetPasswordResetTokenRoute: typeof AuthResetPasswordResetTokenRoute
+  AuthSuperAdminSigninRoute: typeof AuthSuperAdminSigninRoute
   AuthVerifyEmailSuccessVerificationTokenRoute: typeof AuthVerifyEmailSuccessVerificationTokenRoute
   CompanyMemberDashMemberRoute: typeof CompanyMemberDashMemberRouteWithChildren
 }
@@ -680,6 +693,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthVerifyEmailSuccessVerificationTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/super-admin/signin': {
+      id: '/auth/super-admin/signin'
+      path: '/auth/super-admin/signin'
+      fullPath: '/auth/super-admin/signin'
+      preLoaderRoute: typeof AuthSuperAdminSigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/reset-password/$resetToken': {
       id: '/auth/reset-password/$resetToken'
       path: '/auth/reset-password/$resetToken'
@@ -825,6 +845,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompanyMemberSigninLazyRoute: CompanyMemberSigninLazyRoute,
   CompanyIndexLazyRoute: CompanyIndexLazyRoute,
   AuthResetPasswordResetTokenRoute: AuthResetPasswordResetTokenRoute,
+  AuthSuperAdminSigninRoute: AuthSuperAdminSigninRoute,
   AuthVerifyEmailSuccessVerificationTokenRoute:
     AuthVerifyEmailSuccessVerificationTokenRoute,
   CompanyMemberDashMemberRoute: CompanyMemberDashMemberRouteWithChildren,

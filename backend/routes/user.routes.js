@@ -6,6 +6,7 @@ import {
     getAllUsers,
     getCurrentUser,
     googleCallback,
+    createSuperAdmin,
     refreshAccessToken,
     resendEmailVerification,
     resetForgottenPassword,
@@ -13,6 +14,8 @@ import {
     signOut,
     signUp,
     verifyEmail,
+    getAllSuperAdmins,
+    getCompanySuperAdmins,
 } from "../controllers/user.controllers.js";
 import {
     userAssignRoleValidator,
@@ -23,7 +26,7 @@ import {
     userResetForgottenPasswordValidator,
 } from "../validators/index.js";
 import { validate } from "../middlewares/validate.middlewares.js";
-import { authorizeRoles, verifyJWT } from "../middlewares/auth.middlewares.js";
+import { authorizeRoles, verifyEitherJWT, verifyJWT } from "../middlewares/auth.middlewares.js";
 import { UserRolesEnum } from "../utils/constants.js";
 import passport from "passport";
 
@@ -32,8 +35,15 @@ const router = express.Router();
 // Unsecured route
 router.route("/signup").post(userRegisterValidator(), validate, signUp);
 router.route("/signin").post(userLoginValidator(), validate, signIn);
+// Super Admin scoped signin (companyId in params) -> reuses same controller
+router.route("/signin/:companyId").post(userLoginValidator(), validate, signIn);
 router.route("/refresh-token").post(refreshAccessToken);
 router.route("/verify-email/:verificationToken").get(verifyEmail);
+
+// Bootstrap + managed creation of SUPER_ADMIN (scoped to a company)
+// - If no SUPER_ADMIN exists: open (no auth) to create the first one
+// - If at least one exists: must be called by an authenticated ADMIN or SUPER_ADMIN
+router.route("/create-super-admin/:companyId").post(verifyJWT, createSuperAdmin);
 
 router
     .route("/forgot-password")
@@ -53,6 +63,12 @@ router.route("/current-user").get(verifyJWT, getCurrentUser);
 router
     .route("/get-all")
     .get(verifyJWT, authorizeRoles(UserRolesEnum.ADMIN), getAllUsers);
+router
+    .route("/get-all-super-admins")
+    .get(verifyJWT, authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN), getAllSuperAdmins);
+router
+    .route("/company/:companyId/super-admins")
+    .get(verifyEitherJWT, getCompanySuperAdmins);
 router
     .route("/change-password")
     .post(

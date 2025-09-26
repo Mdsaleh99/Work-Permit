@@ -89,27 +89,34 @@ export const getAllWorkPermitForm = asyncHandler(async (req, res) => {
         throw new ApiError(400, "user id is required")
     }
 
-    const workPermit = await db.workPermitForm.findMany({
+    // Determine the company scope for this user.
+    // If the user directly owns a company (creator), use that.
+    // Otherwise, if the user is linked via CompanyAdmin (ADMIN/SUPER_ADMIN), use that company.
+    let company = await db.company.findFirst({ where: { userId } })
+    if (!company) {
+        const link = await db.companyAdmin.findFirst({ where: { userId }, include: { company: true } })
+        company = link?.company || null
+    }
+
+    if (!company) {
+        throw new ApiError(404, "No company found for current user")
+    }
+
+    const workPermits = await db.workPermitForm.findMany({
         where: {
-            userId
+            companyId: company.id,
         },
-        orderBy: {
-            createdAt: "desc"
-        },
+        orderBy: { createdAt: "desc" },
         include: {
-            sections: {
-                include: {
-                    components: true
-                }
-            }
-        }
+            sections: { include: { components: true } },
+        },
     })
 
-    if (!workPermit || workPermit.length === 0) {
+    if (!workPermits || workPermits.length === 0) {
         throw new ApiError(404, "No work permit found")
     }
 
-    res.status(200).json(new ApiResponse(200, workPermit, "All work permit form fetched successfully"))
+    res.status(200).json(new ApiResponse(200, workPermits, "All work permit form fetched successfully"))
 })
 
 
@@ -526,6 +533,48 @@ export const listWorkPermitSubmissions = asyncHandler(async (req, res) => {
     });
 
     return res.status(200).json(new ApiResponse(200, submissions, "submissions fetched"));
+});
+
+// SUPER_ADMIN only: Approve a work permit form
+export const approveWorkPermitForm = asyncHandler(async (req, res) => {
+    const { workPermitFormId } = req.params;
+
+    if (!workPermitFormId) {
+        throw new ApiError(400, "workPermitFormId is required");
+    }
+
+    const form = await db.workPermitForm.findUnique({ where: { id: workPermitFormId } });
+    if (!form) {
+        throw new ApiError(404, "Form not found");
+    }
+
+    const updated = await db.workPermitForm.update({
+        where: { id: workPermitFormId },
+        data: { status: "APPROVED" },
+    });
+
+    return res.status(200).json(new ApiResponse(200, updated, "work permit approved"));
+});
+
+// SUPER_ADMIN only: Close a work permit form
+export const closeWorkPermitForm = asyncHandler(async (req, res) => {
+    const { workPermitFormId } = req.params;
+
+    if (!workPermitFormId) {
+        throw new ApiError(400, "workPermitFormId is required");
+    }
+
+    const form = await db.workPermitForm.findUnique({ where: { id: workPermitFormId } });
+    if (!form) {
+        throw new ApiError(404, "Form not found");
+    }
+
+    const updated = await db.workPermitForm.update({
+        where: { id: workPermitFormId },
+        data: { status: "CLOSED" },
+    });
+
+    return res.status(200).json(new ApiResponse(200, updated, "work permit closed"));
 });
 
 // export const deleteWorkPermitForm = asyncHandler(async (req, res) => {
