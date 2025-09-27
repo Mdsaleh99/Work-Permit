@@ -36,6 +36,9 @@ const PageAppWorkPermitsLazyRouteImport = createFileRoute(
 const PageAppUserDashboardLazyRouteImport = createFileRoute(
   '/page/app/user-dashboard',
 )()
+const PageAppPermitApprovalLazyRouteImport = createFileRoute(
+  '/page/app/permit-approval',
+)()
 const PageAppPermitLazyRouteImport = createFileRoute('/page/app/permit')()
 const PageAppObservationLazyRouteImport = createFileRoute(
   '/page/app/observation',
@@ -148,6 +151,14 @@ const PageAppUserDashboardLazyRoute =
     getParentRoute: () => PageAppRoute,
   } as any).lazy(() =>
     import('./routes/page/app.user-dashboard.lazy').then((d) => d.Route),
+  )
+const PageAppPermitApprovalLazyRoute =
+  PageAppPermitApprovalLazyRouteImport.update({
+    id: '/permit-approval',
+    path: '/permit-approval',
+    getParentRoute: () => PageAppRoute,
+  } as any).lazy(() =>
+    import('./routes/page/app.permit-approval.lazy').then((d) => d.Route),
   )
 const PageAppPermitLazyRoute = PageAppPermitLazyRouteImport.update({
   id: '/permit',
@@ -331,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/page/app/form-builder': typeof PageAppFormBuilderLazyRouteWithChildren
   '/page/app/observation': typeof PageAppObservationLazyRoute
   '/page/app/permit': typeof PageAppPermitLazyRoute
+  '/page/app/permit-approval': typeof PageAppPermitApprovalLazyRoute
   '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
   '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
   '/company-member/dash/member/dashboard': typeof CompanyMemberDashMemberDashboardLazyRoute
@@ -364,6 +376,7 @@ export interface FileRoutesByTo {
   '/page/app/fleet-management': typeof PageAppFleetManagementLazyRoute
   '/page/app/observation': typeof PageAppObservationLazyRoute
   '/page/app/permit': typeof PageAppPermitLazyRoute
+  '/page/app/permit-approval': typeof PageAppPermitApprovalLazyRoute
   '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
   '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
   '/company-member/dash/member/dashboard': typeof CompanyMemberDashMemberDashboardLazyRoute
@@ -399,6 +412,7 @@ export interface FileRoutesById {
   '/page/app/form-builder': typeof PageAppFormBuilderLazyRouteWithChildren
   '/page/app/observation': typeof PageAppObservationLazyRoute
   '/page/app/permit': typeof PageAppPermitLazyRoute
+  '/page/app/permit-approval': typeof PageAppPermitApprovalLazyRoute
   '/page/app/user-dashboard': typeof PageAppUserDashboardLazyRoute
   '/page/app/work-permits': typeof PageAppWorkPermitsLazyRoute
   '/company-member/dash/member/dashboard': typeof CompanyMemberDashMemberDashboardLazyRoute
@@ -435,6 +449,7 @@ export interface FileRouteTypes {
     | '/page/app/form-builder'
     | '/page/app/observation'
     | '/page/app/permit'
+    | '/page/app/permit-approval'
     | '/page/app/user-dashboard'
     | '/page/app/work-permits'
     | '/company-member/dash/member/dashboard'
@@ -468,6 +483,7 @@ export interface FileRouteTypes {
     | '/page/app/fleet-management'
     | '/page/app/observation'
     | '/page/app/permit'
+    | '/page/app/permit-approval'
     | '/page/app/user-dashboard'
     | '/page/app/work-permits'
     | '/company-member/dash/member/dashboard'
@@ -502,6 +518,7 @@ export interface FileRouteTypes {
     | '/page/app/form-builder'
     | '/page/app/observation'
     | '/page/app/permit'
+    | '/page/app/permit-approval'
     | '/page/app/user-dashboard'
     | '/page/app/work-permits'
     | '/company-member/dash/member/dashboard'
@@ -614,6 +631,13 @@ declare module '@tanstack/react-router' {
       path: '/user-dashboard'
       fullPath: '/page/app/user-dashboard'
       preLoaderRoute: typeof PageAppUserDashboardLazyRouteImport
+      parentRoute: typeof PageAppRoute
+    }
+    '/page/app/permit-approval': {
+      id: '/page/app/permit-approval'
+      path: '/permit-approval'
+      fullPath: '/page/app/permit-approval'
+      preLoaderRoute: typeof PageAppPermitApprovalLazyRouteImport
       parentRoute: typeof PageAppRoute
     }
     '/page/app/permit': {
@@ -789,6 +813,7 @@ interface PageAppRouteChildren {
   PageAppFormBuilderLazyRoute: typeof PageAppFormBuilderLazyRouteWithChildren
   PageAppObservationLazyRoute: typeof PageAppObservationLazyRoute
   PageAppPermitLazyRoute: typeof PageAppPermitLazyRoute
+  PageAppPermitApprovalLazyRoute: typeof PageAppPermitApprovalLazyRoute
   PageAppUserDashboardLazyRoute: typeof PageAppUserDashboardLazyRoute
   PageAppWorkPermitsLazyRoute: typeof PageAppWorkPermitsLazyRoute
   PageAppFormFillWorkPermitIdLazyRoute: typeof PageAppFormFillWorkPermitIdLazyRoute
@@ -804,6 +829,7 @@ const PageAppRouteChildren: PageAppRouteChildren = {
   PageAppFormBuilderLazyRoute: PageAppFormBuilderLazyRouteWithChildren,
   PageAppObservationLazyRoute: PageAppObservationLazyRoute,
   PageAppPermitLazyRoute: PageAppPermitLazyRoute,
+  PageAppPermitApprovalLazyRoute: PageAppPermitApprovalLazyRoute,
   PageAppUserDashboardLazyRoute: PageAppUserDashboardLazyRoute,
   PageAppWorkPermitsLazyRoute: PageAppWorkPermitsLazyRoute,
   PageAppFormFillWorkPermitIdLazyRoute: PageAppFormFillWorkPermitIdLazyRoute,

@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Outlet, Link, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, BarChart3, FileText, Menu, X, Dock, Telescope, PencilRuler, Files } from "lucide-react";
+import { LayoutDashboard, BarChart3, FileText, Menu, X, Dock, Telescope, PencilRuler, Files, CheckCircle } from "lucide-react";
 import { UserDetail } from "./user-detail";
+import { useAuthStore } from "@/store/useAuthStore";
 
 const navigation = [
     {
@@ -35,6 +36,8 @@ const navigation = [
 
 export function DashboardLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const { authUser } = useAuthStore();
+    
     // Auto-close sidebar on medium and smaller screens, open on large screens
     useEffect(() => {
         const handleResize = () => {
@@ -47,6 +50,17 @@ export function DashboardLayout() {
         return () => window.removeEventListener("resize", handleResize);
     }, []);
     const location = useLocation();
+
+    // Add Permit Approval link for SUPER_ADMIN users
+    const superAdminNavigation = authUser?.role === 'SUPER_ADMIN' ? [
+        {
+            name: "Permit Approval",
+            href: "/page/app/permit-approval",
+            icon: CheckCircle,
+        }
+    ] : [];
+
+    const allNavigation = [...navigation, ...superAdminNavigation];
 
     return (
         <div className="flex h-screen bg-background">
@@ -78,7 +92,7 @@ export function DashboardLayout() {
                     </div>
 
                     <nav className="flex-1 p-4 space-y-2">
-                        {navigation.map((item) => {
+                        {allNavigation.map((item) => {
                             const isActive = location.pathname.startsWith(item.href);
                             return (
                                 <Link

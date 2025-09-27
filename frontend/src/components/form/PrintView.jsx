@@ -105,6 +105,17 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
         const answerVal = normalizeAnswer(rawAnswer, component.options);
         const componentVal = (component && (component.value ?? component.text)) || "";
         const displayVal = answers ? answerVal : componentVal;
+        
+        // Debug Work Permit No specifically
+        if (/work\s*permit\s*no/i.test(component?.label || "")) {
+            console.log('PrintView - Work Permit No component:', {
+                label: component.label,
+                componentVal: componentVal,
+                answerVal: answerVal,
+                answers: answers,
+                displayVal: displayVal
+            });
+        }
         // Special handling: Tools & Equipment prints dashed lines with inline values, no long line
         // Always render the dashed grid even if there are no answers yet (builder/new form case)
         if (sectionKey === 'tools-equipment') {

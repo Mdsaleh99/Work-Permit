@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { cn } from "../../lib/utils";
 import { X } from "lucide-react";
+import { workPermitService } from "../../services/workPermit.service";
 
 // Custom hooks
 import { useFormBuilder } from "../../hooks/useFormBuilder";
@@ -36,6 +37,32 @@ const FormBuilderModular = ({
     
     const navigate = useNavigate();
     const isEditingMode = Boolean(workPermitId);
+    
+    // State for submitted data
+    const [submittedData, setSubmittedData] = useState(null);
+    const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+
+    // Load submitted data when in edit mode
+    useEffect(() => {
+        if (isEditingMode && workPermitId) {
+            const loadSubmissions = async () => {
+                setLoadingSubmissions(true);
+                try {
+                    const submissions = await workPermitService.listSubmissions(workPermitId);
+                    if (submissions?.data && submissions.data.length > 0) {
+                        // Get the latest submission
+                        const latestSubmission = submissions.data[0];
+                        setSubmittedData(latestSubmission.answers);
+                    }
+                } catch (error) {
+                    console.error('Error loading submissions:', error);
+                } finally {
+                    setLoadingSubmissions(false);
+                }
+            };
+            loadSubmissions();
+        }
+    }, [isEditingMode, workPermitId]);
 
     // Main form builder hook
     const formBuilderState = useFormBuilder({ 
@@ -308,9 +335,15 @@ const FormBuilderModular = ({
                 return formData;
             }
         })();
+        
+        // Merge submitted data if available
+        const finalFormData = submittedData 
+            ? { ...formDataForPrint, answers: submittedData }
+            : formDataForPrint;
+            
         return (
             <div className="min-h-screen bg-white">
-                <PrintView formData={formDataForPrint} onToggleView={() => setShowPrintView(false)} />
+                <PrintView formData={finalFormData} onToggleView={() => setShowPrintView(false)} />
             </div>
         );
     }

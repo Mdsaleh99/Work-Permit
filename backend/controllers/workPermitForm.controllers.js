@@ -577,6 +577,117 @@ export const closeWorkPermitForm = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, updated, "work permit closed"));
 });
 
+// SUPER_ADMIN only: Get forms pending approval for a specific super admin
+export const getFormsPendingApproval = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const userName = req.user.name;
+    const userRole = req.user.role;
+
+    console.log('=== getFormsPendingApproval called ===');
+    console.log('User ID:', userId);
+    console.log('User Name:', userName);
+    console.log('User Role:', userRole);
+    console.log('Request headers:', req.headers);
+    console.log('Request user object:', req.user);
+
+    console.log('Super admin:', userName, 'looking for forms pending approval');
+
+    try {
+        // Test database connection first
+        console.log('Testing database connection...');
+        const testQuery = await db.workPermitSubmission.count();
+        console.log('Total submissions in database:', testQuery);
+        
+        // Get all submissions and filter manually since JSON path queries can be tricky
+        const allSubmissions = await db.workPermitSubmission.findMany({
+        include: {
+            workPermitForm: {
+                include: {
+                    user: {
+                        select: { name: true, email: true }
+                    },
+                    company: {
+                        select: { name: true }
+                    }
+                }
+            },
+            submittedBy: {
+                select: { name: true, email: true }
+            }
+        },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    console.log('Total submissions found:', allSubmissions.length);
+    
+    // Debug: Log a few sample answers to see the structure
+    if (allSubmissions.length > 0) {
+        console.log('Sample answers structure:', JSON.stringify(allSubmissions[0].answers, null, 2));
+        console.log('Sample form status:', allSubmissions[0].workPermitForm.status);
+    } else {
+        console.log('No submissions found in database');
+    }
+
+    // Filter submissions where this super admin is the issuing authority
+    console.log('Starting to filter submissions for super admin:', userName);
+    const relevantSubmissions = allSubmissions.filter(submission => {
+        const answers = submission.answers;
+        console.log('Checking submission:', submission.id, 'Answers:', answers);
+        
+        if (!answers || typeof answers !== 'object') {
+            console.log('Submission', submission.id, 'has no answers or invalid answers');
+            return false;
+        }
+        
+        // Check if opening-ptw section exists and has permit-issuing-authority-name
+        const openingPTW = answers['opening-ptw'];
+        console.log('Opening PTW for submission', submission.id, ':', openingPTW);
+        
+        if (!openingPTW || typeof openingPTW !== 'object') {
+            console.log('Submission', submission.id, 'has no opening-ptw section');
+            return false;
+        }
+        
+        const issuingAuthority = openingPTW['permit-issuing-authority-name'];
+        console.log('Found issuing authority:', issuingAuthority, 'Looking for:', userName);
+        
+        // More flexible matching - check if the name contains the super admin name
+        // This handles cases where the name might be stored differently
+        const isMatch = issuingAuthority === userName || 
+                       (issuingAuthority && userName && issuingAuthority.includes(userName)) ||
+                       (issuingAuthority && userName && userName.includes(issuingAuthority));
+        
+        return isMatch;
+    });
+
+    console.log('Submissions with this super admin as issuing authority:', relevantSubmissions.length);
+    console.log('Relevant submissions:', relevantSubmissions.map(s => ({ 
+        id: s.id, 
+        status: s.workPermitForm.status,
+        formTitle: s.workPermitForm.title 
+    })));
+
+    // Filter forms that are still pending approval
+    const pendingForms = relevantSubmissions.filter(submission => {
+        const isPending = submission.workPermitForm.status === 'PENDING';
+        console.log('Form', submission.id, 'status:', submission.workPermitForm.status, 'isPending:', isPending);
+        return isPending;
+    });
+
+    console.log('Pending forms:', pendingForms.length);
+    console.log('Final pending forms:', pendingForms.map(f => ({ 
+        id: f.id, 
+        status: f.workPermitForm.status,
+        title: f.workPermitForm.title 
+    })));
+
+    return res.status(200).json(new ApiResponse(200, pendingForms, "Forms pending approval fetched"));
+    } catch (error) {
+        console.error('Error in getFormsPendingApproval:', error);
+        throw new ApiError(500, `Failed to fetch pending forms: ${error.message}`);
+    }
+});
+
 // export const deleteWorkPermitForm = asyncHandler(async (req, res) => {
 //     const { workPermitFormId } = req.params;
 //     const userId = req.user.id;

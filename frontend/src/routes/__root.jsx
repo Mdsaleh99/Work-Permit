@@ -31,7 +31,6 @@ function RootComponent() {
         } else {
             checkAuth();
         }
-        console.log("currentCompanyMember in root: ", currentCompanyMember);
         
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])

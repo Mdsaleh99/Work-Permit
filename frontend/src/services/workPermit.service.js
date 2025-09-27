@@ -36,4 +36,20 @@ export const workPermitService = {
         const res = await axiosInstance.get(`/work-permit/${workPermitFormId}/submissions`);
         return res.data;
     },
+
+    // SUPER_ADMIN only actions
+    approveWorkPermit: async (workPermitFormId) => {
+        const response = await axiosInstance.post(`/work-permit/${workPermitFormId}/approve`);
+        return response.data.data;
+    },
+
+    closeWorkPermit: async (workPermitFormId) => {
+        const response = await axiosInstance.post(`/work-permit/${workPermitFormId}/close`);
+        return response.data.data;
+    },
+
+    getFormsPendingApproval: async () => {
+        const response = await axiosInstance.get("/work-permit/pending-approval");
+        return response.data.data;
+    },
 };

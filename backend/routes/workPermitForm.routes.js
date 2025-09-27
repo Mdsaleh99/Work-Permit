@@ -10,6 +10,7 @@ import {
     listWorkPermitSubmissions,
     approveWorkPermitForm,
     closeWorkPermitForm,
+    getFormsPendingApproval,
 } from "../controllers/workPermitForm.controllers.js";
 
 const router = express.Router();
@@ -38,5 +39,9 @@ router
 router
     .route("/:workPermitFormId/close")
     .post(verifyJWT, authorizeRoles("SUPER_ADMIN"), closeWorkPermitForm);
+
+router
+    .route("/pending-approval")
+    .get(verifyJWT, authorizeRoles("SUPER_ADMIN"), getFormsPendingApproval);
 
 export default router;

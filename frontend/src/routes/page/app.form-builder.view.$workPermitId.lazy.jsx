@@ -82,6 +82,7 @@ function RouteComponent() {
             title={workPermit.title || "Work Permit"}
             sectionsTemplate={sectionsTemplate}
             workPermit={workPermit}
+            workPermitId={workPermitId}
         />
     );
 }

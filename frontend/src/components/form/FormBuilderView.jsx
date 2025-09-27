@@ -1,8 +1,10 @@
-import React from "react";
-import { FileText, ClipboardList, Wrench, Shield, ShieldCheck, AlertTriangle, ListChecks } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { FileText, ClipboardList, Wrench, Shield, ShieldCheck, AlertTriangle, ListChecks, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import PrintView from "./PrintView";
+import { workPermitService } from "@/services/workPermit.service";
 
 /**
  * Read-only Builder View for Work Permit forms.
@@ -10,7 +12,7 @@ import { Label } from "@/components/ui/label";
  * - title: string
  * - sectionsTemplate: array of sections with components (from backend)
  */
-export default function FormBuilderView({ title, sectionsTemplate, workPermit }) {
+export default function FormBuilderView({ title, sectionsTemplate, workPermit, workPermitId }) {
     const getSectionIcon = (title, className = "w-4 h-4 mr-2 text-gray-600") => {
         const t = (title || "").toLowerCase();
         if (t.includes("work description")) return <ClipboardList className={className} />;
@@ -21,6 +23,12 @@ export default function FormBuilderView({ title, sectionsTemplate, workPermit })
         if (t.includes("last minute") || t.includes("risk assessment")) return <ListChecks className={className} />;
         return <FileText className={className} />;
     };
+    
+    // State for Print View and submission data
+    const [showPrintView, setShowPrintView] = useState(false);
+    const [submittedData, setSubmittedData] = useState(null);
+    const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+    
     const [formData, setFormData] = React.useState(() => ({
         title: title || "GENERAL WORK PERMIT",
         sections: Array.isArray(sectionsTemplate) ? sectionsTemplate : [],
@@ -35,6 +43,102 @@ export default function FormBuilderView({ title, sectionsTemplate, workPermit })
         });
     }, [title, sectionsTemplate]);
 
+    // Load submission data when workPermitId is available
+    useEffect(() => {
+        if (workPermitId) {
+            const loadSubmissions = async () => {
+                setLoadingSubmissions(true);
+                try {
+                    const submissions = await workPermitService.listSubmissions(workPermitId);
+                    if (submissions?.data && submissions.data.length > 0) {
+                        // Get the latest submission
+                        const latestSubmission = submissions.data[0];
+                        setSubmittedData(latestSubmission.answers);
+                    }
+                } catch (error) {
+                    console.error('Error loading submissions:', error);
+                } finally {
+                    setLoadingSubmissions(false);
+                }
+            };
+            loadSubmissions();
+        }
+    }, [workPermitId]);
+
+    // Render Print View if enabled
+    if (showPrintView) {
+        // Ensure Work Permit No is visible in PrintView even when no submitted data
+        const printFormData = (() => {
+            try {
+                const wpNo = workPermit?.workPermitNo;
+                console.log('FormBuilderView Print View - Work Permit No:', wpNo);
+                console.log('FormBuilderView Print View - workPermit object:', workPermit);
+                console.log('FormBuilderView Print View - formData sections:', formData.sections);
+                
+                if (!wpNo) {
+                    console.log('No Work Permit No found, returning original formData');
+                    return {
+                        title: formData.title,
+                        sections: formData.sections,
+                        answers: submittedData || null // Use null instead of empty object
+                    };
+                }
+                
+                const sections = Array.isArray(formData?.sections) ? formData.sections : [];
+                let patched = false;
+                const nextSections = sections.map((sec) => {
+                    const comps = Array.isArray(sec.components) ? sec.components : [];
+                    let didPatchSection = false;
+                    const nextComps = comps.map((c) => {
+                        if (/work\s*permit\s*no/i.test(c?.label || "")) {
+                            const currentVal = c?.value ?? c?.text ?? "";
+                            console.log('Found Work Permit No component:', c.label, 'Current value:', currentVal, 'Will inject:', wpNo);
+                            if (!currentVal) {
+                                didPatchSection = true;
+                                return { ...c, value: wpNo, enabled: false };
+                            }
+                        }
+                        return c;
+                    });
+                    if (didPatchSection) patched = true;
+                    return didPatchSection ? { ...sec, components: nextComps } : sec;
+                });
+                
+                if (!patched) {
+                    return {
+                        title: formData.title,
+                        sections: formData.sections,
+                        answers: submittedData || null // Use null instead of empty object
+                    };
+                }
+                
+                console.log('Work Permit No patched successfully');
+                return { 
+                    title: formData.title,
+                    sections: nextSections,
+                    answers: submittedData || null // Use null instead of empty object
+                };
+            } catch {
+                return {
+                    title: formData.title,
+                    sections: formData.sections,
+                    answers: submittedData || null // Use null instead of empty object
+                };
+            }
+        })();
+        
+        console.log('FormBuilderView Print View - Final printFormData:', printFormData);
+        
+        return (
+            <div className="min-h-screen bg-white">
+                <PrintView 
+                    formData={printFormData} 
+                    onToggleView={() => setShowPrintView(false)} 
+                />
+            </div>
+        );
+    }
+
     return (
         <div className="h-screen bg-gray-50 flex flex-col">
             {/* Header (read-only, no buttons) */}
@@ -44,9 +148,16 @@ export default function FormBuilderView({ title, sectionsTemplate, workPermit })
                         <h2 className="text-lg md:text-xl font-bold text-gray-900 truncate">
                             {formData.title}
                         </h2>
-                        {/* <Button size="sm" variant="outline" onClick={() => window.print()} className="cursor-pointer">
-                            Print View
-                        </Button> */}
+                        <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => setShowPrintView(true)} 
+                            className="cursor-pointer"
+                            disabled={loadingSubmissions}
+                        >
+                            <Printer className="w-4 h-4 mr-2" />
+                            {loadingSubmissions ? "Loading..." : "Print View"}
+                        </Button>
                     </div>
                     {workPermit && (
                         <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-gray-700">
