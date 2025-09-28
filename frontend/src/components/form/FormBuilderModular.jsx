@@ -118,7 +118,6 @@ const FormBuilderModular = ({
         getAllDrafts,
         getDraftById,
         deleteDraft,
-        duplicateDraft,
         getCompanyByUser,
     } = formBuilderState;
 
@@ -131,7 +130,6 @@ const FormBuilderModular = ({
         getAllDrafts,
         getDraftById,
         deleteDraft,
-        duplicateDraft,
         currentDraftId,
         setCurrentDraftId,
         isCreatingNewForm,
@@ -267,18 +265,6 @@ const FormBuilderModular = ({
         }
     };
 
-    // Handle duplicate draft
-    const handleDuplicateDraft = async (draftId) => {
-        try {
-            await duplicateDraft(draftId);
-            toast.success("Draft duplicated successfully");
-            getAllDrafts(); // Refresh drafts list
-        } catch (error) {
-            console.error("Error duplicating draft:", error);
-            toast.error("Failed to duplicate draft");
-        }
-    };
-
     // Handle section navigation
     const handleNavigateSection = (sectionId) => {
         setFormData(prev => ({ ...prev, selectedSection: sectionId }));
@@ -411,7 +397,6 @@ const FormBuilderModular = ({
                     onShowDeclarationModal={() => setShowAgreeModal(true)}
                     onLoadDraft={handleLoadDraft}
                     onDeleteDraft={handleDeleteDraft}
-                    onDuplicateDraft={handleDuplicateDraft}
                     drafts={drafts}
                     isMobile={isMobile}
                     isEditingMode={isEditingMode}
@@ -474,7 +459,6 @@ const FormBuilderModular = ({
                 drafts={drafts}
                 onLoadDraft={handleLoadDraft}
                 onDeleteDraft={handleDeleteDraft}
-                onDuplicateDraft={handleDuplicateDraft}
                 isLoading={isCreatingDraft}
             />
 

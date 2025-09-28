@@ -28,7 +28,6 @@ export const useFormBuilder = ({ title, sectionsTemplate, startWithTemplate = tr
         getAllDrafts, 
         getDraftById, 
         deleteDraft, 
-        duplicateDraft,
         drafts,
         currentDraft,
         isAutoSaving,
@@ -215,7 +214,6 @@ export const useFormBuilder = ({ title, sectionsTemplate, startWithTemplate = tr
         getAllDrafts,
         getDraftById,
         deleteDraft,
-        duplicateDraft,
         getCompanyByUser,
     };
 };

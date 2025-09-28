@@ -5,10 +5,7 @@ import {
     createOrUpdateDraft,
     getAllDrafts,
     getDraftById,
-    updateDraft,
     deleteDraft,
-    duplicateDraft,
-    publishDraft,
 } from "../controllers/workPermitDraft.controllers.js";
 
 const router = express.Router();
@@ -25,16 +22,7 @@ router.route("/get-all").get(getAllDrafts);
 // Get Draft by ID
 router.route("/:draftId").get(getDraftById);
 
-// Update Draft
-router.route("/:draftId").patch(updateDraft);
-
 // Delete Draft
 router.route("/:draftId").delete(deleteDraft);
-
-// Duplicate Draft
-router.route("/:draftId/duplicate").post(duplicateDraft);
-
-// Publish Draft (Convert to Work Permit Form)
-router.route("/:draftId/publish").post(publishDraft);
 
 export { router as workPermitDraftRouters };

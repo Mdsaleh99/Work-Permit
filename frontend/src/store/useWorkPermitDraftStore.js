@@ -88,24 +88,6 @@ export const useWorkPermitDraftStore = create((set, get) => ({
         }
     },
 
-    // Update Draft
-    updateDraft: async (draftData, draftId) => {
-        set({ isUpdating: true, draftError: null });
-        try {
-            const draft = await workPermitDraftService.updateDraft(draftData, draftId);
-            set((state) => ({
-                drafts: state.drafts.map(d => d.id === draftId ? draft : d),
-                currentDraft: state.currentDraft?.id === draftId ? draft : state.currentDraft
-            }));
-            return draft;
-        } catch (error) {
-            set({ draftError: error });
-            throw error;
-        } finally {
-            set({ isUpdating: false });
-        }
-    },
-
     // Delete Draft
     deleteDraft: async (draftId) => {
         set({ isDeleting: true, draftError: null });
@@ -120,43 +102,6 @@ export const useWorkPermitDraftStore = create((set, get) => ({
             throw error;
         } finally {
             set({ isDeleting: false });
-        }
-    },
-
-    // Duplicate Draft
-    duplicateDraft: async (draftId) => {
-        set({ isCreating: true, draftError: null });
-        try {
-            const duplicatedDraft = await workPermitDraftService.duplicateDraft(draftId);
-            set((state) => ({
-                drafts: [duplicatedDraft, ...state.drafts],
-                currentDraft: duplicatedDraft
-            }));
-            return duplicatedDraft;
-        } catch (error) {
-            set({ draftError: error });
-            throw error;
-        } finally {
-            set({ isCreating: false });
-        }
-    },
-
-    // Publish Draft
-    publishDraft: async (draftId) => {
-        set({ isUpdating: true, draftError: null });
-        try {
-            const workPermitForm = await workPermitDraftService.publishDraft(draftId);
-            // Optionally remove the draft from the list after publishing
-            set((state) => ({
-                drafts: state.drafts.filter(d => d.id !== draftId),
-                currentDraft: state.currentDraft?.id === draftId ? null : state.currentDraft
-            }));
-            return workPermitForm;
-        } catch (error) {
-            set({ draftError: error });
-            throw error;
-        } finally {
-            set({ isUpdating: false });
         }
     },
 

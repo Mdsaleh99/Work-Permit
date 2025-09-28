@@ -14,7 +14,6 @@ export const useDraftOperations = ({
     getAllDrafts,
     getDraftById,
     deleteDraft,
-    duplicateDraft,
     currentDraftId,
     setCurrentDraftId,
     isCreatingNewForm,
@@ -219,19 +218,6 @@ export const useDraftOperations = ({
         }
     };
 
-    const duplicateDraftAction = async (draftId) => {
-        if (!draftId) return;
-        
-        try {
-            const duplicatedDraft = await duplicateDraft(draftId);
-            setCurrentDraftId(duplicatedDraft.id);
-            toast.success("Draft duplicated successfully");
-        } catch (error) {
-            console.error("Error duplicating draft:", error);
-            toast.error("Failed to duplicate draft");
-        }
-    };
-
     const restoreLatestDraft = async () => {
         try {
             if (!companyData?.id) {
@@ -283,7 +269,6 @@ export const useDraftOperations = ({
         createNewDraft,
         loadDraft,
         clearDraft,
-        duplicateDraftAction,
         restoreLatestDraft,
         testAutoSave,
     };
