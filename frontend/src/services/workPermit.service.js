@@ -43,8 +43,8 @@ export const workPermitService = {
         return response.data.data;
     },
 
-    closeWorkPermit: async (workPermitFormId) => {
-        const response = await axiosInstance.post(`/work-permit/${workPermitFormId}/close`);
+    closeWorkPermit: async (workPermitFormId, data = {}) => {
+        const response = await axiosInstance.post(`/work-permit/${workPermitFormId}/close`, data);
         return response.data.data;
     },
 

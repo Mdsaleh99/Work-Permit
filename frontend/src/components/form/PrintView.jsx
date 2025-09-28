@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import { Printer, ArrowLeft } from "lucide-react";
 
 // COMPONENT JSX (No changes, this logic is stable)
-const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app/form-builder", onToggleView }) => {
+const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app/form-builder", onToggleView, closureData }) => {
     const navigate = useNavigate();
     if (!formData) {
         return (
@@ -133,6 +133,76 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                 </div>
             );
         }
+        
+        // Special handling for Opening PTW section with closure data
+        if (sectionKey === 'opening-ptw' && closureData?.openingPTW) {
+            const openingPTW = closureData.openingPTW;
+            const fieldName = component.label?.toLowerCase().replace(/\s+/g, '-');
+            
+            // Map component labels to closure data fields
+            let closureValue = '';
+            if (fieldName?.includes('issuing-authority-name')) {
+                closureValue = openingPTW['permit-issuing-authority-name'] || '';
+            } else if (fieldName?.includes('issuing-authority-date') || fieldName?.includes('issuing-date')) {
+                closureValue = openingPTW['permit-issuing-authority-date'] || '';
+            } else if (fieldName?.includes('receiving-authority-name')) {
+                closureValue = openingPTW['permit-receiving-authority-name'] || '';
+            } else if (fieldName?.includes('receiving-authority-date') || fieldName?.includes('receiving-date')) {
+                closureValue = openingPTW['permit-receiving-authority-date'] || '';
+            }
+            
+            if (closureValue) {
+                return (
+                    <div className={`ptw-component-inner ${['work-description', 'certificate', 'opening-ptw'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
+                        <div className="ptw-label">{component.label}:</div>
+                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(closureValue)}</span></div>
+                    </div>
+                );
+            }
+        }
+
+        // Special handling for Closure section to display closureData values
+        if (sectionKey === 'closure' && closureData) {
+            const fieldName = (component.label || '').toLowerCase();
+            let closureValue = '';
+
+            if (
+                fieldName.includes('work clearance') ||
+                fieldName.includes('work is completed') ||
+                fieldName.includes('working area cleared') ||
+                fieldName.includes('area cleared') ||
+                fieldName.includes('completion')
+            ) {
+                closureValue = closureData.workClearanceDescription || '';
+            } else if (fieldName.includes('closed by') || fieldName.includes('issuing authority')) {
+                // Some templates might label this differently
+                closureValue = closureData.closedBy || '';
+            } else if (fieldName.includes('closed at')) {
+                const dateStr = closureData.closedAt || '';
+                closureValue = dateStr ? String(dateStr).split('T')[0] : '';
+            } else if (fieldName.includes('permit receiving authority') || fieldName.includes('receiving authority')) {
+                // Show the receiving authority captured in Opening PTW
+                const openingPTW = closureData.openingPTW || {};
+                closureValue = openingPTW['permit-receiving-authority-name'] || '';
+            } else if (fieldName.includes('receiving date')) {
+                const openingPTW = closureData.openingPTW || {};
+                closureValue = openingPTW['permit-receiving-authority-date'] || '';
+            } else if (fieldName === 'date' || fieldName.endsWith(': date')) {
+                // Generic Date label on left column — prefer Opening PTW issuing/receiving dates if present
+                const openingPTW = closureData.openingPTW || {};
+                closureValue = openingPTW['permit-issuing-authority-date'] || openingPTW['permit-receiving-authority-date'] || '';
+            }
+
+            if (closureValue) {
+                return (
+                    <div className={`ptw-component-inner ${['closure', 'opening-ptw'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
+                        <div className="ptw-label">{component.label}:</div>
+                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(closureValue)}</span></div>
+                    </div>
+                );
+            }
+        }
+        
         // This entire function is stable and correct. No changes.
         switch (component.type) {
             case 'text':

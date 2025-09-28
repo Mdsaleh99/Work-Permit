@@ -538,6 +538,12 @@ export const listWorkPermitSubmissions = asyncHandler(async (req, res) => {
 // SUPER_ADMIN only: Approve a work permit form
 export const approveWorkPermitForm = asyncHandler(async (req, res) => {
     const { workPermitFormId } = req.params;
+    const userId = req.user.id;
+    const userName = req.user.name;
+
+    console.log('=== Approving Work Permit Form ===');
+    console.log('Form ID:', workPermitFormId);
+    console.log('Approved by:', userName, '(ID:', userId, ')');
 
     if (!workPermitFormId) {
         throw new ApiError(400, "workPermitFormId is required");
@@ -548,10 +554,16 @@ export const approveWorkPermitForm = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Form not found");
     }
 
+    console.log('Current form status:', form.status);
+    console.log('Form title:', form.title);
+
     const updated = await db.workPermitForm.update({
         where: { id: workPermitFormId },
         data: { status: "APPROVED" },
     });
+
+    console.log('Updated form status:', updated.status);
+    console.log('Form approved successfully');
 
     return res.status(200).json(new ApiResponse(200, updated, "work permit approved"));
 });
@@ -559,6 +571,15 @@ export const approveWorkPermitForm = asyncHandler(async (req, res) => {
 // SUPER_ADMIN only: Close a work permit form
 export const closeWorkPermitForm = asyncHandler(async (req, res) => {
     const { workPermitFormId } = req.params;
+    const { openingPTWData, workClearanceDescription } = req.body;
+    const userId = req.user.id;
+    const userName = req.user.name;
+
+    console.log('=== Closing Work Permit Form ===');
+    console.log('Form ID:', workPermitFormId);
+    console.log('Closed by:', userName, '(ID:', userId, ')');
+    console.log('Opening PTW Data:', openingPTWData);
+    console.log('Work Clearance Description:', workClearanceDescription);
 
     if (!workPermitFormId) {
         throw new ApiError(400, "workPermitFormId is required");
@@ -569,10 +590,26 @@ export const closeWorkPermitForm = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Form not found");
     }
 
+    console.log('Current form status:', form.status);
+    console.log('Form title:', form.title);
+
+    // Update form status to CLOSED
     const updated = await db.workPermitForm.update({
         where: { id: workPermitFormId },
-        data: { status: "CLOSED" },
+        data: { 
+            status: "CLOSED",
+            // Store the Opening PTW data and work clearance description
+            closureData: {
+                openingPTW: openingPTWData,
+                workClearanceDescription: workClearanceDescription,
+                closedBy: userName,
+                closedAt: new Date().toISOString()
+            }
+        },
     });
+
+    console.log('Updated form status:', updated.status);
+    console.log('Form closed successfully');
 
     return res.status(200).json(new ApiResponse(200, updated, "work permit closed"));
 });
@@ -583,13 +620,6 @@ export const getFormsPendingApproval = asyncHandler(async (req, res) => {
     const userName = req.user.name;
     const userRole = req.user.role;
 
-    console.log('=== getFormsPendingApproval called ===');
-    console.log('User ID:', userId);
-    console.log('User Name:', userName);
-    console.log('User Role:', userRole);
-    console.log('Request headers:', req.headers);
-    console.log('Request user object:', req.user);
-
     console.log('Super admin:', userName, 'looking for forms pending approval');
 
     try {
@@ -597,6 +627,16 @@ export const getFormsPendingApproval = asyncHandler(async (req, res) => {
         console.log('Testing database connection...');
         const testQuery = await db.workPermitSubmission.count();
         console.log('Total submissions in database:', testQuery);
+        
+        // Also check work permit forms
+        const formCount = await db.workPermitForm.count();
+        console.log('Total work permit forms in database:', formCount);
+        
+        // Check if there are any PENDING forms
+        const pendingCount = await db.workPermitForm.count({
+            where: { status: 'PENDING' }
+        });
+        console.log('Total PENDING work permit forms:', pendingCount);
         
         // Get all submissions and filter manually since JSON path queries can be tricky
         const allSubmissions = await db.workPermitSubmission.findMany({
@@ -607,7 +647,7 @@ export const getFormsPendingApproval = asyncHandler(async (req, res) => {
                         select: { name: true, email: true }
                     },
                     company: {
-                        select: { name: true }
+                        select: { compName: true }
                     }
                 }
             },
@@ -624,67 +664,155 @@ export const getFormsPendingApproval = asyncHandler(async (req, res) => {
     if (allSubmissions.length > 0) {
         console.log('Sample answers structure:', JSON.stringify(allSubmissions[0].answers, null, 2));
         console.log('Sample form status:', allSubmissions[0].workPermitForm.status);
+        console.log('Sample form title:', allSubmissions[0].workPermitForm.title);
+        console.log('Sample submitted by:', allSubmissions[0].submittedBy.name);
+        
+        // Check if any submission has opening-ptw section
+        const hasOpeningPTW = allSubmissions.some(sub => {
+            const answers = sub.answers;
+            return answers && typeof answers === 'object' && answers['opening-ptw'];
+        });
+        console.log('Any submission has opening-ptw section:', hasOpeningPTW);
+        
+        if (hasOpeningPTW) {
+            const sampleWithPTW = allSubmissions.find(sub => {
+                const answers = sub.answers;
+                return answers && typeof answers === 'object' && answers['opening-ptw'];
+            });
+            console.log('Sample opening-ptw data:', JSON.stringify(sampleWithPTW.answers['opening-ptw'], null, 2));
+        } else {
+            // Check if any submission has permit-issuing-authority-name in any section
+            console.log('Checking for permit-issuing-authority-name in any section...');
+            allSubmissions.forEach((sub, index) => {
+                const answers = sub.answers;
+                if (answers && typeof answers === 'object') {
+                    // Look for any field that might contain the issuing authority name
+                    Object.keys(answers).forEach(key => {
+                        const value = answers[key];
+                        if (typeof value === 'string' && value.includes('Mohammed Saleh')) {
+                            console.log(`Found "Mohammed Saleh" in submission ${sub.id}, field ${key}:`, value);
+                        }
+                    });
+                }
+            });
+        }
     } else {
         console.log('No submissions found in database');
     }
 
     // Filter submissions where this super admin is the issuing authority
-    console.log('Starting to filter submissions for super admin:', userName);
     const relevantSubmissions = allSubmissions.filter(submission => {
         const answers = submission.answers;
-        console.log('Checking submission:', submission.id, 'Answers:', answers);
         
         if (!answers || typeof answers !== 'object') {
-            console.log('Submission', submission.id, 'has no answers or invalid answers');
             return false;
         }
         
-        // Check if opening-ptw section exists and has permit-issuing-authority-name
+        // First, try the new structure with opening-ptw section
         const openingPTW = answers['opening-ptw'];
-        console.log('Opening PTW for submission', submission.id, ':', openingPTW);
-        
-        if (!openingPTW || typeof openingPTW !== 'object') {
-            console.log('Submission', submission.id, 'has no opening-ptw section');
-            return false;
+        if (openingPTW && typeof openingPTW === 'object') {
+            const issuingAuthority = openingPTW['permit-issuing-authority-name'];
+            console.log('Checking submission:', submission.id, '(opening-ptw structure)');
+            console.log('Found issuing authority:', issuingAuthority, 'Type:', typeof issuingAuthority);
+            console.log('Looking for super admin:', userName, 'Type:', typeof userName);
+            
+            const isMatch = issuingAuthority === userName || 
+                           (issuingAuthority && userName && issuingAuthority.includes(userName)) ||
+                           (issuingAuthority && userName && userName.includes(issuingAuthority));
+            
+            console.log('Match result:', isMatch);
+            console.log('---');
+            return isMatch;
         }
         
-        const issuingAuthority = openingPTW['permit-issuing-authority-name'];
-        console.log('Found issuing authority:', issuingAuthority, 'Looking for:', userName);
+        // Fallback: Check if any field contains the super admin name
+        console.log('Checking submission:', submission.id, '(fallback search)');
+        let foundMatch = false;
         
-        // More flexible matching - check if the name contains the super admin name
-        // This handles cases where the name might be stored differently
-        const isMatch = issuingAuthority === userName || 
-                       (issuingAuthority && userName && issuingAuthority.includes(userName)) ||
-                       (issuingAuthority && userName && userName.includes(issuingAuthority));
+        Object.keys(answers).forEach(key => {
+            const value = answers[key];
+            if (typeof value === 'string' && value === userName) {
+                console.log(`Found exact match in field ${key}:`, value);
+                foundMatch = true;
+            }
+        });
         
-        return isMatch;
+        console.log('Fallback match result:', foundMatch);
+        console.log('---');
+        return foundMatch;
     });
 
     console.log('Submissions with this super admin as issuing authority:', relevantSubmissions.length);
-    console.log('Relevant submissions:', relevantSubmissions.map(s => ({ 
-        id: s.id, 
-        status: s.workPermitForm.status,
-        formTitle: s.workPermitForm.title 
-    })));
 
     // Filter forms that are still pending approval
-    const pendingForms = relevantSubmissions.filter(submission => {
-        const isPending = submission.workPermitForm.status === 'PENDING';
-        console.log('Form', submission.id, 'status:', submission.workPermitForm.status, 'isPending:', isPending);
-        return isPending;
-    });
+    const pendingForms = relevantSubmissions.filter(submission => 
+        submission.workPermitForm.status === 'PENDING'
+    );
 
     console.log('Pending forms:', pendingForms.length);
-    console.log('Final pending forms:', pendingForms.map(f => ({ 
-        id: f.id, 
-        status: f.workPermitForm.status,
-        title: f.workPermitForm.title 
-    })));
-
-    return res.status(200).json(new ApiResponse(200, pendingForms, "Forms pending approval fetched"));
+    console.log('All relevant forms (any status):', relevantSubmissions.length);
+    
+    // Debug: Show all form statuses
+    const statusCounts = {};
+    relevantSubmissions.forEach(sub => {
+        const status = sub.workPermitForm.status;
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+    });
+    console.log('Form status distribution:', statusCounts);
+    
+    // TEMPORARY: Return all relevant forms to show them
+    // TODO: Create new test forms or reset existing forms to PENDING status
+    console.log('Returning all relevant forms (temporary):', relevantSubmissions.length);
+    
+    return res.status(200).json(new ApiResponse(200, relevantSubmissions, "Forms pending approval fetched (showing all forms temporarily)"));
     } catch (error) {
         console.error('Error in getFormsPendingApproval:', error);
         throw new ApiError(500, `Failed to fetch pending forms: ${error.message}`);
+    }
+});
+
+// TEMPORARY: Reset all forms to PENDING status for testing
+export const resetFormsToPending = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const userName = req.user.name;
+
+    console.log('=== Resetting Forms to PENDING Status ===');
+    console.log('Reset by:', userName, '(ID:', userId, ')');
+
+    try {
+        // Get all forms that are APPROVED or CLOSED
+        const formsToReset = await db.workPermitForm.findMany({
+            where: {
+                status: {
+                    in: ['APPROVED', 'CLOSED']
+                }
+            }
+        });
+
+        console.log('Found forms to reset:', formsToReset.length);
+
+        if (formsToReset.length === 0) {
+            return res.status(200).json(new ApiResponse(200, [], "No forms found to reset"));
+        }
+
+        // Reset all forms to PENDING
+        const updatedForms = await db.workPermitForm.updateMany({
+            where: {
+                status: {
+                    in: ['APPROVED', 'CLOSED']
+                }
+            },
+            data: {
+                status: 'PENDING'
+            }
+        });
+
+        console.log('Reset forms count:', updatedForms.count);
+
+        return res.status(200).json(new ApiResponse(200, { count: updatedForms.count }, "Forms reset to PENDING status"));
+    } catch (error) {
+        console.error('Error resetting forms:', error);
+        throw new ApiError(500, `Failed to reset forms: ${error.message}`);
     }
 });
 

@@ -133,6 +133,7 @@ export default function FormBuilderView({ title, sectionsTemplate, workPermit, w
             <div className="min-h-screen bg-white">
                 <PrintView 
                     formData={printFormData} 
+                    closureData={workPermit?.closureData}
                     onToggleView={() => setShowPrintView(false)} 
                 />
             </div>

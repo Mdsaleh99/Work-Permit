@@ -126,6 +126,7 @@ model WorkPermitForm {
   companyId String
   status  WorkPermitFormStatus @default(PENDING)
   formUrl   String?
+  closureData Json? // Store closing data and work clearance description
   sections  WorkPermitSection[]
   submissions WorkPermitSubmission[]
   // Members allowed to access this permit

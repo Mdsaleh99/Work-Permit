@@ -11,12 +11,25 @@ import {
     approveWorkPermitForm,
     closeWorkPermitForm,
     getFormsPendingApproval,
+    resetFormsToPending,
 } from "../controllers/workPermitForm.controllers.js";
 
 const router = express.Router();
 
 router.route("/:companyId/create").post(verifyJWT, createWorkPermitForm);
 router.route("/get-all").get(verifyJWT, getAllWorkPermitForm);
+
+// SUPER_ADMIN only actions - MUST come before parameterized routes
+router
+    .route("/pending-approval")
+    .get(verifyJWT, authorizeRoles("SUPER_ADMIN"), getFormsPendingApproval);
+
+// TEMPORARY: Reset forms to PENDING for testing
+router
+    .route("/reset-to-pending")
+    .post(verifyJWT, authorizeRoles("SUPER_ADMIN"), resetFormsToPending);
+
+// Parameterized routes - MUST come after specific routes
 router.route("/:workPermitFormId").get(verifyEitherJWT, getWorkPermitFormById);
 // router.route("/:workPermitFormId").delete(verifyJWT, deleteWorkPermitForm);
 router
@@ -39,9 +52,5 @@ router
 router
     .route("/:workPermitFormId/close")
     .post(verifyJWT, authorizeRoles("SUPER_ADMIN"), closeWorkPermitForm);
-
-router
-    .route("/pending-approval")
-    .get(verifyJWT, authorizeRoles("SUPER_ADMIN"), getFormsPendingApproval);
 
 export default router;
