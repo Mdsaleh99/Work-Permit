@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useCompanyStore } from "@/store/useCompanyStore";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -45,10 +46,6 @@ export function SuperAdminCreateInline() {
             const created = await createSuperAdmin(companyId, data);
             setSuccess("Super Admin created");
             reset({ name: "", email: "", password: "" });
-            // Notify listeners to refresh list immediately
-            try {
-                window.dispatchEvent(new CustomEvent('super-admin-created', { detail: created }));
-            } catch {}
             // Close modal on success
             setOpen(false);
         } catch (error) {
@@ -64,57 +61,58 @@ export function SuperAdminCreateInline() {
         }
     };
 
-    if (!open) {
-        return (
-            <Button size="sm" className="cursor-pointer" onClick={() => setOpen(true)}>
-                Add Super Admin
-            </Button>
-        );
-    }
-
     return (
-        <div className="relative">
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-                <div className="absolute inset-0 bg-black/20" onClick={() => !loading && setOpen(false)} />
-                <div className="relative z-10 w-full max-w-md rounded-md border bg-white p-4 shadow-lg">
-                    <div className="text-base font-semibold mb-2">Create Super Admin</div>
-                    {(authError || success) && (
-                        <Alert variant={authError ? "destructive" : "default"}>
-                            <AlertDescription>
-                                {authError?.message || success}
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-                        <div>
-                            <Label htmlFor="sa_name">Full name</Label>
-                            <Input id="sa_name" placeholder="Full name" aria-invalid={!!errors.name} {...register("name")} />
-                            {errors.name && (
-                                <p className="text-xs text-red-600">{errors.name.message}</p>
-                            )}
-                        </div>
-                        <div>
-                            <Label htmlFor="sa_email">Email</Label>
-                            <Input id="sa_email" type="email" placeholder="superadmin@example.com" aria-invalid={!!errors.email} {...register("email")} />
-                            {errors.email && (
-                                <p className="text-xs text-red-600">{errors.email.message}</p>
-                            )}
-                        </div>
-                        <div>
-                            <Label htmlFor="sa_password">Password</Label>
-                            <PasswordInput id="sa_password" register={register("password")} placeholder="*******" className={"border bg-background placeholder:text-muted-foreground"} />
-                            {errors.password && (
-                                <p className="text-xs text-red-600">{errors.password.message}</p>
-                            )}
-                        </div>
-                        <div className="flex items-center justify-end gap-2 pt-1">
-                            <Button type="button" variant="outline" size="sm" className="cursor-pointer" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
-                            <Button type="submit" size="sm" className="cursor-pointer" disabled={loading}>{loading ? 'Creating…' : 'Create'}</Button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" className="cursor-pointer">
+                    Add Super Admin
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Create Super Admin</DialogTitle>
+                    <DialogDescription>
+                        Add a new super admin to your company with full administrative privileges.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                {(authError || success) && (
+                    <Alert variant={authError ? "destructive" : "default"}>
+                        <AlertDescription>
+                            {authError?.message || success}
+                        </AlertDescription>
+                    </Alert>
+                )}
+                
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+                    <div>
+                        <Label htmlFor="sa_name">Full name</Label>
+                        <Input id="sa_name" placeholder="Full name" aria-invalid={!!errors.name} {...register("name")} />
+                        {errors.name && (
+                            <p className="text-xs text-red-600">{errors.name.message}</p>
+                        )}
+                    </div>
+                    <div>
+                        <Label htmlFor="sa_email">Email</Label>
+                        <Input id="sa_email" type="email" placeholder="superadmin@example.com" aria-invalid={!!errors.email} {...register("email")} />
+                        {errors.email && (
+                            <p className="text-xs text-red-600">{errors.email.message}</p>
+                        )}
+                    </div>
+                    <div>
+                        <Label htmlFor="sa_password">Password</Label>
+                        <PasswordInput id="sa_password" register={register("password")} placeholder="*******" className={"border bg-background placeholder:text-muted-foreground"} />
+                        {errors.password && (
+                            <p className="text-xs text-red-600">{errors.password.message}</p>
+                        )}
+                    </div>
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                        <Button type="button" variant="outline" size="sm" className="cursor-pointer" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
+                        <Button type="submit" size="sm" className="cursor-pointer" disabled={loading}>{loading ? 'Creating…' : 'Create'}</Button>
+                    </div>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }
 

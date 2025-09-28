@@ -9,6 +9,7 @@ import { useCompanyStore } from "@/store/useCompanyStore";
 import { PasswordInput } from "../ui/password-input";
 import { Label } from "../ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useWorkPermitStore } from "@/store/useWorkPermitStore";
 
 const CompanyMembersSchema = z.object({
@@ -78,8 +79,6 @@ export default function AddMemberModal({ open, onClose, loading }) {
         );
     };
 
-    if (!open) return null;
-
     const onSubmit = async (data) => {
         try {
             const companyData = await getCompanyByUser();
@@ -104,28 +103,16 @@ export default function AddMemberModal({ open, onClose, loading }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div
-                className="absolute inset-0 bg-white/20 backdrop-blur-[2px]"
-                onClick={() => !loading && onClose?.()}
-            ></div>
-            <div className="relative z-10 w-full max-w-md rounded-md border bg-white p-4 shadow-lg">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <h2 className="text-base font-semibold">
-                            Add New Member
-                        </h2>
-                    </div>
-                    <button
-                        className="text-gray-500 hover:text-gray-700"
-                        onClick={() => !loading && onClose?.()}
-                        aria-label="Close"
-                    >
-                        ✕
-                    </button>
-                </div>
+        <Dialog open={open} onOpenChange={onClose}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Add New Member</DialogTitle>
+                    <DialogDescription>
+                        Create a new company member with access to work permits.
+                    </DialogDescription>
+                </DialogHeader>
                 <form
-                    className="mt-4 space-y-3"
+                    className="space-y-3"
                     onSubmit={handleSubmit(onSubmit)}
                 >
                     <div className="space-y-1.5">
@@ -226,7 +213,7 @@ export default function AddMemberModal({ open, onClose, loading }) {
                         )}
                     </div>
                 </div>
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 }

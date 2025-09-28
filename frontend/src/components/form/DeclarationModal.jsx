@@ -3,6 +3,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
 import { X, Shield, AlertTriangle } from "lucide-react";
 
 /**
@@ -42,31 +43,22 @@ const DeclarationModal = ({
     const allChecked = DECLARATIONS.every(d => declarationChecks[d.id]);
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-red-50">
+        <Dialog open={showAgreeModal} onOpenChange={setShowAgreeModal}>
+            <DialogContent className="max-w-2xl max-h-[80vh]">
+                <DialogHeader>
                     <div className="flex items-center space-x-3">
                         <Shield className="w-6 h-6 text-red-600" />
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900">Declaration & Agreement</h2>
-                            <p className="text-sm text-gray-600 mt-1">
+                            <DialogTitle className="text-xl font-bold text-gray-900">Declaration & Agreement</DialogTitle>
+                            <DialogDescription className="text-sm text-gray-600 mt-1">
                                 Please review and agree to all declarations before submitting
-                            </p>
+                            </DialogDescription>
                         </div>
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowAgreeModal(false)}
-                        className="p-2"
-                    >
-                        <X className="w-5 h-5" />
-                    </Button>
-                </div>
+                </DialogHeader>
 
                 {/* Content */}
-                <div className="p-6 overflow-y-auto max-h-[50vh]">
+                <div className="overflow-y-auto max-h-[50vh]">
                     <div className="space-y-5">
                         {/* Warning */}
                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -109,7 +101,7 @@ const DeclarationModal = ({
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 p-6">
                     <div className="text-sm text-gray-600">
                         <span>
                             {DECLARATIONS.filter(d => declarationChecks[d.id]).length} of {DECLARATIONS.length} declarations checked
@@ -138,9 +130,10 @@ const DeclarationModal = ({
                         </Button>
                     </div>
                 </div>
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 };
 
 export default DeclarationModal;
+

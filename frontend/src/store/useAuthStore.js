@@ -7,6 +7,8 @@ export const useAuthStore = create((set, get) => ({
     isSignIn: false,
     isAuthCheck: false,
     authError: null,
+    superAdmins: [], // Store Super Admins list
+    isCreatingSuperAdmin: false,
 
     clearAuthError: () => set({ authError: null }),
 
@@ -83,11 +85,19 @@ export const useAuthStore = create((set, get) => ({
         }
     },
     createSuperAdmin: async (companyId, data) => {
+        set({ isCreatingSuperAdmin: true, authError: null });
         try {
-            return await authService.createSuperAdmin(companyId, data);
+            const superAdmin = await authService.createSuperAdmin(companyId, data);
+            // Optimistically update the super admins list
+            set((state) => ({ 
+                superAdmins: [superAdmin, ...state.superAdmins] 
+            }));
+            return superAdmin;
         } catch (error) {
             set({ authError: error });
             throw error;
+        } finally {
+            set({ isCreatingSuperAdmin: false });
         }
     },
     verifyEmail: async (verificationToken) => {
@@ -140,4 +150,18 @@ export const useAuthStore = create((set, get) => ({
             window.location.href = `${location.origin.replace(/:\\d+$/, '')}/api/v1/auth/google`;
         }
     },
+
+    // Super Admins management
+    getSuperAdmins: async (companyId) => {
+        try {
+            const superAdmins = await authService.getCompanySuperAdmins(companyId);
+            set({ superAdmins: Array.isArray(superAdmins) ? superAdmins : [] });
+            return superAdmins;
+        } catch (error) {
+            set({ authError: error });
+            throw error;
+        }
+    },
+
+    clearSuperAdmins: () => set({ superAdmins: [] }),
 }));

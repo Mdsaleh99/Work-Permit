@@ -10,8 +10,10 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { useCompanyStore } from "@/store/useCompanyStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import AddMemberModal from "@/components/company/AddMemberModal";
 import { SuperAdminCreateInline } from "@/components/auth/super-admin-create-inline";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import {
     DropdownMenu,
@@ -374,48 +376,50 @@ function AllowPermitButton({ companyId, member }) {
     };
 
     return (
-        <>
-            <Button size="sm" variant="outline" className="cursor-pointer" onClick={() => setOpen(true)}>
-                Allow Permit
-            </Button>
-            {open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/20" onClick={() => !loading && setOpen(false)} />
-                    <div className="relative z-10 w-full max-w-lg rounded-md border bg-white p-4 shadow-lg">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="text-base font-semibold">Allow Permits</div>
-                            <button className="text-gray-500" onClick={() => !loading && setOpen(false)}>✕</button>
-                        </div>
-                        <div className="max-h-72 overflow-auto space-y-2">
-                            {list.length === 0 ? (
-                                <div className="text-sm text-gray-500">No permits</div>
-                            ) : (
-                                list.map((p) => (
-                                    <label key={p.id} className="flex items-center gap-2 text-sm">
-                                        <input
-                                            type="checkbox"
-                                            className="h-4 w-4"
-                                            checked={selected.includes(p.id)}
-                                            onChange={() => toggle(p.id)}
-                                        />
-                                        <span>{p.title}{p.workPermitNo ? ` — ${p.workPermitNo}` : ""}</span>
-                                    </label>
-                                ))
-                            )}
-                        </div>
-                        <div className="mt-3 flex items-center justify-end gap-2">
-                            <Button size="sm" variant="outline" className="cursor-pointer" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
-                            <Button size="sm" className="cursor-pointer" onClick={submit} disabled={loading}>{loading ? "Saving…" : "Save"}</Button>
-                        </div>
-                    </div>
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="cursor-pointer">
+                    Allow Permit
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Allow Permits</DialogTitle>
+                    <DialogDescription>
+                        Select which work permits this member can access and fill out.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div className="max-h-72 overflow-auto space-y-2">
+                    {list.length === 0 ? (
+                        <div className="text-sm text-gray-500">No permits</div>
+                    ) : (
+                        list.map((p) => (
+                            <label key={p.id} className="flex items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    className="h-4 w-4"
+                                    checked={selected.includes(p.id)}
+                                    onChange={() => toggle(p.id)}
+                                />
+                                <span>{p.title}{p.workPermitNo ? ` — ${p.workPermitNo}` : ""}</span>
+                            </label>
+                        ))
+                    )}
                 </div>
-            )}
-        </>
+                
+                <div className="flex items-center justify-end gap-2">
+                    <Button size="sm" variant="outline" className="cursor-pointer" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
+                    <Button size="sm" className="cursor-pointer" onClick={submit} disabled={loading}>{loading ? "Saving…" : "Save"}</Button>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }
 
 function SuperAdminsSection() {
-    const [list, setList] = React.useState([]);
+    const { getSuperAdmins, superAdmins, isCreatingSuperAdmin } = useAuthStore();
+    const { getCompanyByUser } = useCompanyStore();
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState("");
 
@@ -423,44 +427,21 @@ function SuperAdminsSection() {
         setLoading(true);
         setError("");
         try {
-            const svc = (await import("@/services/auth.service")).authService;
-            const store = (await import("@/store/useCompanyStore")).useCompanyStore.getState();
-            const company = await store.getCompanyByUser().catch(() => null);
+            const company = await getCompanyByUser().catch(() => null);
             const companyId = company?.id;
             if (!companyId) {
-                setList([]);
                 return;
             }
-            const users = await svc.getCompanySuperAdmins(companyId);
-            setList(Array.isArray(users) ? users : []);
+            await getSuperAdmins(companyId);
         } catch (e) {
             setError(e?.message || 'Failed to load super admins');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [getSuperAdmins, getCompanyByUser]);
 
     React.useEffect(() => {
         load();
-    }, [load]);
-
-    React.useEffect(() => {
-        const handler = (e) => {
-            const created = e?.detail;
-            if (created && (created.role === 'SUPER_ADMIN' || created.user?.role === 'SUPER_ADMIN')) {
-                setList((prev) => [{
-                    id: created.id || created.user?.id,
-                    name: created.name || created.user?.name,
-                    email: created.email || created.user?.email,
-                    role: created.role || created.user?.role,
-                    createdAt: created.createdAt || new Date().toISOString(),
-                }, ...prev]);
-            } else {
-                load();
-            }
-        };
-        window.addEventListener('super-admin-created', handler);
-        return () => window.removeEventListener('super-admin-created', handler);
     }, [load]);
 
     return (
@@ -484,12 +465,12 @@ function SuperAdminsSection() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {list.length === 0 ? (
+                            {superAdmins.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center text-sm text-gray-500 py-8">No super admins</TableCell>
                                 </TableRow>
                             ) : (
-                                list.map((u, idx) => (
+                                superAdmins.map((u, idx) => (
                                     <TableRow key={u.id}>
                                         <TableCell>{idx + 1}</TableCell>
                                         <TableCell>{u.name || '-'}</TableCell>

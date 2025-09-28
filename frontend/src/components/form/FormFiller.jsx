@@ -3,6 +3,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Card, CardContent } from "../ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
 import { cn } from "../../lib/utils";
 import { ChevronLeft, ChevronRight, FileText, ClipboardList, Wrench, Shield, ShieldCheck, AlertTriangle, ListChecks } from "lucide-react";
 import PrintView from "./PrintView";
@@ -469,12 +470,17 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
 
     return (
         <div className={cn("bg-gray-50 flex overflow-hidden", containerClassName ? containerClassName : "h-screen") }>
-            {hasOpeningPTW && showOpeningModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/40" onClick={() => setShowOpeningModal(false)} />
-                    <div className="relative z-10 w-full max-w-2xl rounded-md border bg-white p-5 shadow-xl max-h-[80vh] overflow-auto">
-                        <div className="text-lg font-semibold mb-2">Opening / PTW</div>
-                        <div className="space-y-4 mt-2">
+            {hasOpeningPTW && (
+                <Dialog open={showOpeningModal} onOpenChange={setShowOpeningModal}>
+                    <DialogContent className="max-w-2xl max-h-[80vh]">
+                        <DialogHeader>
+                            <DialogTitle>Opening / PTW</DialogTitle>
+                            <DialogDescription>
+                                Complete the Opening PTW details before submitting the form.
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4 overflow-y-auto max-h-[50vh]">
                             {(openingSection?.components || []).map((c) => (
                                 <div key={c.id} className="space-y-2">
                                     <Label className="text-sm font-semibold">{c.label}{c.required && <span className="text-red-500 ml-1">*</span>}</Label>
@@ -582,8 +588,8 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                 onSubmit && onSubmit(merged);
                             }}>Confirm & Submit</Button>
                         </div>
-                    </div>
-                </div>
+                    </DialogContent>
+                </Dialog>
             )}
             {/* Desktop Sidebar */}
             <div className={cn(

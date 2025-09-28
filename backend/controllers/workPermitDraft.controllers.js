@@ -17,7 +17,7 @@ export const createOrUpdateDraft = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Sections are required");
     }
 
-    // Verify company exists and belongs to user
+    // Verify company exists and user has access to it
     const company = await db.company.findUnique({
         where: { id: companyId },
     });
@@ -26,7 +26,19 @@ export const createOrUpdateDraft = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Company not found");
     }
 
-    if (company.userId !== userId) {
+    // Check if user has access to this company
+    // 1. Direct owner (company.userId === userId)
+    // 2. Super Admin linked via CompanyAdmin table
+    const isOwner = company.userId === userId;
+    const isSuperAdmin = await db.companyAdmin.findFirst({
+        where: {
+            userId,
+            companyId,
+            role: "SUPER_ADMIN"
+        }
+    });
+
+    if (!isOwner && !isSuperAdmin) {
         throw new ApiError(403, "Unauthorized to create draft for this company");
     }
 

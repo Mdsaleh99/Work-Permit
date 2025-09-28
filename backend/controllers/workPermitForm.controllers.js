@@ -571,14 +571,14 @@ export const approveWorkPermitForm = asyncHandler(async (req, res) => {
 // SUPER_ADMIN only: Close a work permit form
 export const closeWorkPermitForm = asyncHandler(async (req, res) => {
     const { workPermitFormId } = req.params;
-    const { openingPTWData, workClearanceDescription } = req.body;
+    const { closureData, workClearanceDescription } = req.body;
     const userId = req.user.id;
     const userName = req.user.name;
 
     console.log('=== Closing Work Permit Form ===');
     console.log('Form ID:', workPermitFormId);
     console.log('Closed by:', userName, '(ID:', userId, ')');
-    console.log('Opening PTW Data:', openingPTWData);
+    console.log('Opening PTW Data:', closureData);
     console.log('Work Clearance Description:', workClearanceDescription);
 
     if (!workPermitFormId) {
@@ -600,7 +600,7 @@ export const closeWorkPermitForm = asyncHandler(async (req, res) => {
             status: "CLOSED",
             // Store the Opening PTW data and work clearance description
             closureData: {
-                openingPTW: openingPTWData,
+                openingPTW: closureData,
                 workClearanceDescription: workClearanceDescription,
                 closedBy: userName,
                 closedAt: new Date().toISOString()
