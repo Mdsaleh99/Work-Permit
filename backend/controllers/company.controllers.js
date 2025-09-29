@@ -434,6 +434,11 @@ export const getCurrentCompanyMember = asyncHandler(async (req, res) => {
         },
         include: {
             allowedWorkPermits: { select: { id: true, title: true, workPermitNo: true, companyId: true } },
+            company: {
+                select: {
+                    compName: true
+                }
+            }
         },
         omit: {
             password: true,

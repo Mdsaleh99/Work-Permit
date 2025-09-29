@@ -146,10 +146,6 @@ export function PermitsDashboard() {
                                 <FileText className="h-4 w-4 mr-2" />
                                 View All Forms
                             </Button>
-                            <Button variant="outline" size="sm" className="self-start sm:self-auto">
-                                <Filter className="h-4 w-4 mr-2" />
-                                All Sites
-                            </Button>
                         </div>
                     </div>
 

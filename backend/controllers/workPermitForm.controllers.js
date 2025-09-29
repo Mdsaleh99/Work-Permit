@@ -120,6 +120,38 @@ export const getAllWorkPermitForm = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, workPermits, "All work permit form fetched successfully"))
 })
 
+// Company-scoped list for members and admins by companyId (read-only)
+export const getCompanyWorkPermits = asyncHandler(async (req, res) => {
+    const { companyId } = req.params;
+    if (!companyId) throw new ApiError(400, "company id is required");
+
+    // If request is from a member, ensure same company
+    if (req.member?.id) {
+        const member = await db.companyMember.findUnique({ where: { id: req.member.id } });
+        if (!member || member.companyId !== companyId) {
+            throw new ApiError(403, "Not allowed for this company");
+        }
+    }
+
+    // If request is from a primary user, ensure they belong to this company (owner/admin)
+    if (req.user?.id && !req.member?.id) {
+        const userId = req.user.id;
+        const isOwner = await db.company.findFirst({ where: { id: companyId, userId } });
+        const isAdmin = await db.companyAdmin.findFirst({ where: { companyId, userId } });
+        if (!isOwner && !isAdmin) {
+            throw new ApiError(403, "Unauthorized to read this company's permits");
+        }
+    }
+
+    const workPermits = await db.workPermitForm.findMany({
+        where: { companyId },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, title: true, status: true, workPermitNo: true },
+    });
+
+    return res.status(200).json(new ApiResponse(200, workPermits, "company work permits fetched"));
+});
+
 
 export const getWorkPermitFormById = asyncHandler(async (req, res) => {
     const { workPermitFormId } = req.params;
@@ -768,14 +800,15 @@ export const approveWorkPermitForm = asyncHandler(async (req, res) => {
 // SUPER_ADMIN only: Close a work permit form
 export const closeWorkPermitForm = asyncHandler(async (req, res) => {
     const { workPermitFormId } = req.params;
-    const { closureData, workClearanceDescription } = req.body;
+    // Accept either openingPTWData (preferred) or closureData for backward compatibility
+    const { openingPTWData, closureData, workClearanceDescription } = req.body;
     const userId = req.user.id;
     const userName = req.user.name;
 
     console.log('=== Closing Work Permit Form ===');
     console.log('Form ID:', workPermitFormId);
     console.log('Closed by:', userName, '(ID:', userId, ')');
-    console.log('Opening PTW Data:', closureData);
+    console.log('Opening PTW Data:', openingPTWData || closureData);
     console.log('Work Clearance Description:', workClearanceDescription);
 
     if (!workPermitFormId) {
@@ -797,7 +830,7 @@ export const closeWorkPermitForm = asyncHandler(async (req, res) => {
             status: "CLOSED",
             // Store the Opening PTW data and work clearance description
             closureData: {
-                openingPTW: closureData,
+                openingPTW: openingPTWData || closureData || {},
                 workClearanceDescription: workClearanceDescription,
                 closedBy: userName,
                 closedAt: new Date().toISOString()

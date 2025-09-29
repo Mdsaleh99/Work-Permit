@@ -24,7 +24,9 @@ const DeclarationModal = ({
     if (!showAgreeModal) return null;
 
     const handleSubmit = () => {
-        if (areAllDeclarationsChecked()) {
+        // Use local computed state to avoid stale callback mismatches
+        const allCheckedLocal = DECLARATIONS.every(d => declarationChecks[d.id]);
+        if (allCheckedLocal) {
             onSubmitForm();
             setShowAgreeModal(false);
         }
@@ -86,7 +88,7 @@ const DeclarationModal = ({
                                         <Checkbox
                                             id={d.id}
                                             checked={declarationChecks[d.id] || false}
-                                            onCheckedChange={(isChecked) => updateDeclarationCheck(d.id, isChecked)}
+                                            onCheckedChange={(isChecked) => updateDeclarationCheck(d.id, Boolean(isChecked))}
                                             className="h-5 w-5 mt-0.5"
                                         />
                                         <Label htmlFor={d.id} className="text-[15px] leading-relaxed text-gray-800 cursor-pointer">
@@ -116,7 +118,7 @@ const DeclarationModal = ({
                         </Button>
                         <Button
                             onClick={handleSubmit}
-                            disabled={!areAllDeclarationsChecked() || isSubmitting}
+                            disabled={!allChecked || isSubmitting}
                             className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
                             {isSubmitting ? (

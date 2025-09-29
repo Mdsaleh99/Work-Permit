@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, Link, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, BarChart3, FileText, Menu, X, Dock, Telescope, PencilRuler, Files, CheckCircle } from "lucide-react";
+import { LayoutDashboard, BarChart3, FileText, Menu, X, Dock, Telescope, PencilRuler, Files, CheckCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { UserDetail } from "./user-detail";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -37,6 +37,7 @@ const navigation = [
 export function DashboardLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const { authUser } = useAuthStore();
+    const [permitsOpen, setPermitsOpen] = useState(false);
     
     // Auto-close sidebar on medium and smaller screens, open on large screens
     useEffect(() => {
@@ -92,26 +93,72 @@ export function DashboardLayout() {
                     </div>
 
                     <nav className="flex-1 p-4 space-y-2">
-                        {allNavigation.map((item) => {
-                            const isActive = location.pathname.startsWith(item.href);
-                            return (
+                        {/* Dashboard */}
+                        <Link
+                            to="/page/app/dashboard"
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                location.pathname.startsWith("/page/app/dashboard")
+                                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                                    : "text-sidebar-foreground",
+                                !sidebarOpen && "justify-center",
+                            )}
+                        >
+                            <LayoutDashboard className="h-5 w-5 flex-shrink-0" />
+                            {sidebarOpen && <span>Dashboard</span>}
+                        </Link>
+
+                        {/* Permits Group (collapsible) */}
+                        <button
+                            type="button"
+                            className={cn(
+                                "w-full flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                (location.pathname.startsWith("/page/app/permit") || location.pathname.startsWith("/page/app/permit-approval"))
+                                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                                    : "text-sidebar-foreground",
+                            )}
+                            onClick={() => setPermitsOpen((v) => !v)}
+                        >
+                            <span className="flex items-center gap-3">
+                                <Dock className="h-5 w-5 flex-shrink-0" />
+                                {sidebarOpen && <span>Permits</span>}
+                            </span>
+                            {sidebarOpen && (permitsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />)}
+                        </button>
+                        {permitsOpen && (
+                            <div className="ml-6 space-y-2">
                                 <Link
-                                    key={item.name}
-                                    to={item.href}
+                                    to="/page/app/permit"
                                     className={cn(
                                         "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                                         "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                                        isActive
+                                        location.pathname.startsWith("/page/app/permit")
                                             ? "bg-sidebar-primary text-sidebar-primary-foreground"
                                             : "text-sidebar-foreground",
-                                        !sidebarOpen && "justify-center",
                                     )}
                                 >
-                                    <item.icon className="h-5 w-5 flex-shrink-0" />
-                                    {sidebarOpen && <span>{item.name}</span>}
+                                    <FileText className="h-5 w-5 flex-shrink-0" />
+                                    <span>Permits</span>
                                 </Link>
-                            );
-                        })}
+                                {authUser?.role === 'SUPER_ADMIN' && (
+                                    <Link
+                                        to="/page/app/permit-approval"
+                                        className={cn(
+                                            "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                                            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                            location.pathname.startsWith("/page/app/permit-approval")
+                                                ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                                                : "text-sidebar-foreground",
+                                        )}
+                                    >
+                                        <CheckCircle className="h-5 w-5 flex-shrink-0" />
+                                        <span>Permit Approval</span>
+                                    </Link>
+                                )}
+                            </div>
+                        )}
                     </nav>
 
                     <UserDetail isCollapsed={!sidebarOpen} />

@@ -1,4 +1,4 @@
-import { PermitsDashboard } from "@/components/permit-dashboard";
+import { MemberPermitsDashboard } from "@/components/member-permit-dashboard";
 import { createLazyFileRoute } from "@tanstack/react-router";
 
 export const Route = createLazyFileRoute(
@@ -10,7 +10,7 @@ export const Route = createLazyFileRoute(
 function RouteComponent() {
     return (
         <div>
-            <PermitsDashboard />
+            <MemberPermitsDashboard />
         </div>
     );
 }

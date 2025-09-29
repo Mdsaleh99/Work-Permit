@@ -4,6 +4,7 @@ import {
     createWorkPermitForm,
     duplicateWorkPermitForm,
     getAllWorkPermitForm,
+    getCompanyWorkPermits,
     getWorkPermitFormById,
     updateWorkPermitForm,
     createWorkPermitSubmission,
@@ -19,6 +20,7 @@ const router = express.Router();
 
 router.route("/:companyId/create").post(verifyJWT, createWorkPermitForm);
 router.route("/get-all").get(verifyJWT, getAllWorkPermitForm);
+router.route("/company/:companyId/all").get(verifyEitherJWT, getCompanyWorkPermits);
 
 // SUPER_ADMIN only actions - MUST come before parameterized routes
 router

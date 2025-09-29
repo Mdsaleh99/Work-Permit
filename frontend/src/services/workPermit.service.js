@@ -11,6 +11,11 @@ export const workPermitService = {
         return response.data.data;
     },
 
+    getCompanyWorkPermits: async (companyId) => {
+        const response = await axiosInstance.get(`/work-permit/company/${companyId}/all`);
+        return response.data.data;
+    },
+
     getWorkPermitById: async (workPermitId) => {
         const response = await axiosInstance.get(`/work-permit/${workPermitId}`);
         return response.data.data;

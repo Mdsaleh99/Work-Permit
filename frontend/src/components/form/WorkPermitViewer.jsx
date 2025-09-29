@@ -56,5 +56,3 @@ const WorkPermitViewer = ({ title, sectionsTemplate, onEdit, workPermitId }) => 
 };
 
 export default WorkPermitViewer;
-
-
