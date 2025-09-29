@@ -13,6 +13,7 @@ import { useCompanyStore } from "@/store/useCompanyStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import AddMemberModal from "@/components/company/AddMemberModal";
 import { SuperAdminCreateInline } from "@/components/auth/super-admin-create-inline";
+import { AdminCreateInline } from "@/components/auth/admin-create-inline";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import {
@@ -96,14 +97,16 @@ function RouteComponent() {
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button
-                            onClick={() => setOpenModal(true)}
-                            size="sm"
-                            className="cursor-pointer"
-                        >
-                            Add Member
-                        </Button>
-                        <SuperAdminCreateInline />
+                        {/* Buttons shown based on role */}
+                        {useAuthStore.getState().authUser?.role === 'SUPER_ADMIN' ? (
+                            <>
+                                <Button onClick={() => setOpenModal(true)} size="sm" className="cursor-pointer">Add Member</Button>
+                                <SuperAdminCreateInline />
+                                <AdminCreateInline />
+                            </>
+                        ) : (
+                            <Button onClick={() => setOpenModal(true)} size="sm" className="cursor-pointer">Add Member</Button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -320,6 +323,7 @@ function RouteComponent() {
                 loading={submitting}
             />
             <SuperAdminsSection />
+            <AdminsSection />
         </div>
     );
 }
@@ -472,6 +476,73 @@ function SuperAdminsSection() {
                             ) : (
                                 superAdmins.map((u, idx) => (
                                     <TableRow key={u.id}>
+                                        <TableCell>{idx + 1}</TableCell>
+                                        <TableCell>{u.name || '-'}</TableCell>
+                                        <TableCell>{u.email}</TableCell>
+                                        <TableCell>{u.role}</TableCell>
+                                        <TableCell>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function AdminsSection() {
+    const { getAdmins, admins } = useAuthStore();
+    const { getCompanyByUser } = useCompanyStore();
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState("");
+
+    const load = React.useCallback(async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const company = await getCompanyByUser().catch(() => null);
+            const companyId = company?.id;
+            if (!companyId) return;
+            await getAdmins(companyId);
+        } catch (e) {
+            setError(e?.message || 'Failed to load admins');
+        } finally {
+            setLoading(false);
+        }
+    }, [getAdmins, getCompanyByUser]);
+
+    React.useEffect(() => { load(); }, [load]);
+
+    return (
+        <div className="max-w-6xl mx-auto p-4">
+            <h2 className="text-base font-semibold mb-2">Admins</h2>
+            {error && (
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+            )}
+            {loading ? (
+                <div className="text-sm text-gray-600">Loading…</div>
+            ) : (
+                <div className="bg-white border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[80px]">#</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Role</TableHead>
+                                <TableHead>Created</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {(admins || []).length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center text-sm text-gray-500 py-8">No admins</TableCell>
+                                </TableRow>
+                            ) : (
+                                (admins || []).map((u, idx) => (
+                                    <TableRow key={u.id || idx}>
                                         <TableCell>{idx + 1}</TableCell>
                                         <TableCell>{u.name || '-'}</TableCell>
                                         <TableCell>{u.email}</TableCell>

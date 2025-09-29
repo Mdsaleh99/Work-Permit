@@ -55,7 +55,7 @@ model User {
   name             String
   email            String    @unique
   password         String
-  role             UserRole  @default(ADMIN)
+  role             UserRole  @default(SUPER_ADMIN)
   loginType LoginType @default(EMAIL_PASSWORD)
   // verifyCode       String?
   // verifyCodeExpiry DateTime?

@@ -202,10 +202,10 @@ export function SignInForm({ className, ...props }) {
                         <div className="mt-2 text-center text-sm text-muted-foreground">
                             <span className="mr-1">Quick switch:</span>
                             <Link
-                                to={"/auth/super-admin/signin"}
+                                to={"/auth/admin/signin"}
                                 className="underline underline-offset-4 mr-2"
                             >
-                                Sign in as Super Admin
+                                Sign in as Admin
                             </Link>
                             <span className="mx-1">|</span>
                             <Link

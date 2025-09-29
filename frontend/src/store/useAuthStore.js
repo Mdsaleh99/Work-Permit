@@ -8,7 +8,9 @@ export const useAuthStore = create((set, get) => ({
     isAuthCheck: false,
     authError: null,
     superAdmins: [], // Store Super Admins list
+    admins: [], // Store Admins list
     isCreatingSuperAdmin: false,
+    isCreatingAdmin: false,
 
     clearAuthError: () => set({ authError: null }),
 
@@ -53,10 +55,11 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
-    signinSuperAdmin: async (companyId, userData) => {
+    // Admin (company-scoped) signin – renamed from signinSuperAdmin
+    signinAdmin: async (companyId, userData) => {
         set({ isSignIn: true, authError: null });
         try {
-            await authService.signinSuperAdmin(companyId, userData);
+            await authService.signinAdmin(companyId, userData);
             const fullUser = await authService.getCurrentUser();
             set({ authUser: fullUser });
         } catch (error) {
@@ -66,6 +69,10 @@ export const useAuthStore = create((set, get) => ({
             set({ isSignIn: false });
         }
     },
+    // Backwards-compatible alias (can be removed later)
+    // signinSuperAdmin: async (companyId, userData) => {
+    //     return await get().signinAdmin(companyId, userData);
+    // },
 
     signout: async () => {
         try {
@@ -160,6 +167,33 @@ export const useAuthStore = create((set, get) => ({
         } catch (error) {
             set({ authError: error });
             throw error;
+        }
+    },
+
+    getAdmins: async (companyId) => {
+        try {
+            const admins = await authService.getCompanyAdmins(companyId);
+            const list = Array.isArray(admins) ? admins : [];
+            set({ admins: list });
+            return list;
+        } catch (error) {
+            set({ authError: error });
+            throw error;
+        }
+    },
+
+    createAdmin: async (companyId, data) => {
+        set({ isCreatingAdmin: true, authError: null });
+        try {
+            const admin = await authService.createAdmin(companyId, data);
+            // Optimistically update admins list
+            set((state) => ({ admins: [admin, ...(state.admins || [])] }));
+            return admin;
+        } catch (error) {
+            set({ authError: error });
+            throw error;
+        } finally {
+            set({ isCreatingAdmin: false });
         }
     },
 

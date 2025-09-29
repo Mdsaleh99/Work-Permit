@@ -9,8 +9,9 @@ import { ChevronLeft, ChevronRight, FileText, ClipboardList, Wrench, Shield, Shi
 import PrintView from "./PrintView";
 
 // Simple member filler that renders input controls for each component type
-// Props: { title, sectionsTemplate, onSubmit, isSubmitting, containerClassName }
-const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, containerClassName, permitNo }) => {
+// Props: { title, sectionsTemplate, onSubmit, isSubmitting, containerClassName, initialAnswers, permitNo }
+const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, containerClassName, initialAnswers: initialAnswersProp, permitNo }) => {
+    const isEditMode = Boolean(initialAnswersProp);
     // Map section titles to icons
     const getSectionIcon = (sectionTitle, className = "w-4 h-4") => {
         const t = (sectionTitle || "").toLowerCase();
@@ -23,6 +24,9 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
         return <FileText className={className} />;
     };
     const initialAnswers = useMemo(() => {
+        if (initialAnswersProp && typeof initialAnswersProp === 'object') {
+            return initialAnswersProp;
+        }
         const map = {};
         (sectionsTemplate || []).forEach(section => {
             const isToolsEquipSection = (section?.title || "").toLowerCase().includes("tools") && (section?.title || "").toLowerCase().includes("equipment");
@@ -47,7 +51,7 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
             }
         }
         return map;
-    }, [sectionsTemplate, permitNo]);
+    }, [sectionsTemplate, permitNo, initialAnswersProp]);
 
     const [answers, setAnswers] = useState(initialAnswers);
     React.useEffect(() => {
@@ -586,7 +590,7 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                 const merged = { ...answers, ...openingLocal };
                                 setAnswers(merged);
                                 onSubmit && onSubmit(merged);
-                            }}>Confirm & Submit</Button>
+                            }}>{isEditMode ? "Confirm & Save" : "Confirm & Submit"}</Button>
                         </div>
                     </DialogContent>
                 </Dialog>
@@ -780,7 +784,7 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                             <Button 
                                 size="sm" 
                                 onClick={() => {
-                                    if (hasOpeningPTW) {
+                                    if (hasOpeningPTW && !isEditMode) {
                                         const seed = {};
                                         (openingSection?.components || []).forEach((c) => {
                                             const existing = answers[c.id];
@@ -795,7 +799,7 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                 disabled={isSubmitting} 
                                 className="px-4 sm:px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs sm:text-sm"
                             >
-                                {isSubmitting ? "Submitting..." : "Submit Form"}
+                                {isSubmitting ? (isEditMode ? "Saving..." : "Submitting...") : (isEditMode ? "Edit Permit" : "Submit Form")}
                             </Button>
                         </div>
                     </div>

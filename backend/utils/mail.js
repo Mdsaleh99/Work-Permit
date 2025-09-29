@@ -97,3 +97,63 @@ export const forgotPasswordMailgenContent = (username, passwordResetUrl) => {
         },
     };
 };
+
+/**
+ *
+ * @param {string} superAdminName
+ * @param {string} memberName
+ * @param {string} permitTitle
+ * @param {string} permitNo
+ * @param {string} permitDetailsUrl
+ * @returns {Mailgen.Content}
+ * @description It designs the permit submission notification email for Super Admins
+ */
+export const permitSubmissionNotificationMailgenContent = (superAdminName, memberName, permitTitle, permitNo, permitDetailsUrl) => {
+    return {
+        body: {
+            name: superAdminName,
+            intro: `A new work permit submission requires your attention!`,
+            table: {
+                data: [
+                    {
+                        item: "Submitted by",
+                        description: memberName,
+                    },
+                    {
+                        item: "Permit Type",
+                        description: permitTitle,
+                    },
+                    {
+                        item: "Permit Number",
+                        description: permitNo || "Not assigned",
+                    },
+                    {
+                        item: "Submission Date",
+                        description: new Date().toLocaleDateString(),
+                    },
+                ],
+                columns: {
+                    // Customize which column is visible
+                    customWidth: {
+                        item: "20%",
+                        description: "80%",
+                    },
+                    // Customize which column is hidden
+                    customAlignment: {
+                        item: "left",
+                    },
+                },
+            },
+            action: {
+                instructions:
+                    "Please review and approve this work permit submission by clicking the button below:",
+                button: {
+                    color: "#007bff",
+                    text: "Review Permit Details",
+                    link: permitDetailsUrl,
+                },
+            },
+            outro: "This permit is pending your approval. Please review the submission and take appropriate action. Contact the submitter if you need additional information.",
+        },
+    };
+};

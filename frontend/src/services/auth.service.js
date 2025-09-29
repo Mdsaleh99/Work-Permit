@@ -14,7 +14,7 @@ export const authService = {
 
         return response.data.data;
     },
-    signinSuperAdmin: async (companyId, credentials) => {
+    signinAdmin: async (companyId, credentials) => {
         const response = await axiosInstance.post(`/auth/signin/${companyId}`, credentials);
         return response.data.data;
     },
@@ -39,6 +39,18 @@ export const authService = {
     },
     getCompanySuperAdmins: async (companyId) => {
         const response = await axiosInstance.get(`/auth/company/${companyId}/super-admins`);
+        return response.data.data;
+    },
+    getCompanyAdmins: async (companyId) => {
+        const response = await axiosInstance.get(`/auth/company/${companyId}/admins`);
+        return response.data.data;
+    },
+    createAdmin: async (companyId, data) => {
+        const response = await axiosInstance.post(`/auth/create-admin/${companyId}`, data);
+        return response.data.data;
+    },
+    signinAdmin: async (companyId, credentials) => {
+        const response = await axiosInstance.post(`/auth/signin/${companyId}`, credentials);
         return response.data.data;
     },
     createSuperAdmin: async (companyId, data) => {

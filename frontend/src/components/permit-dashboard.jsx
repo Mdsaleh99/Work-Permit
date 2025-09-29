@@ -30,103 +30,49 @@ import {
     Plus,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
+import React from "react";
+import { useWorkPermitStore } from "@/store/useWorkPermitStore";
 
-const permitStats = [
-    {
-        label: "New",
-        value: 2,
-        icon: Clock,
-        color: "bg-blue-500",
-        textColor: "text-blue-600",
-    },
-    {
-        label: "Approved",
-        value: 102,
-        icon: CheckCircle,
-        color: "bg-green-500",
-        textColor: "text-green-600",
-    },
-    {
-        label: "Closed",
-        value: 27,
-        icon: XCircle,
-        color: "bg-gray-500",
-        textColor: "text-gray-600",
-    },
-    {
-        label: "Overdue",
-        value: 8,
-        icon: AlertTriangle,
-        color: "bg-orange-500",
-        textColor: "text-orange-600",
-    },
-    {
-        label: "Revoked",
-        value: 15,
-        icon: Ban,
-        color: "bg-red-500",
-        textColor: "text-red-600",
-    },
-    {
-        label: "Rejected",
-        value: 2,
-        icon: XCircle,
-        color: "bg-red-500",
-        textColor: "text-red-600",
-    },
-    {
-        label: "Extended",
-        value: 32,
-        icon: RotateCcw,
-        color: "bg-purple-500",
-        textColor: "text-purple-600",
-    },
-];
+// Cards will be built dynamically from backend data
 
-const kpiData = [
-    {
-        metric: "Permits Approved on Time",
-        target: "100%",
-        actual: "96%",
-        count: "90/100",
-    },
-    {
-        metric: "Permits Closed on Time",
-        target: "100%",
-        actual: "68%",
-        count: "68/100",
-    },
-    {
-        metric: "Permits Pending Closure >2 Days",
-        target: "0",
-        actual: "10%",
-        count: "10/100",
-    },
-    {
-        metric: "Permits Pending Approval",
-        target: "0",
-        actual: "3%",
-        count: "3/100",
-    },
-];
+// Removed KPI static data – dashboard now uses live data only
 
-const permitsByType = [
-    { type: "Hot Work", totalCount: 5, workers: 50, sites: 3 },
-    { type: "Confined Space", totalCount: 2, workers: 20, sites: 2 },
-    { type: "Working at Height", totalCount: 1, workers: 10, sites: 1 },
-    { type: "Excavation", totalCount: 0, workers: 0, sites: 0 },
-];
+// Types aggregated from work permits (by title)
 
-const permitsByLocation = [
-    { location: "Plant 1 / CO-CO2 / Coke Oven", count: 50, progress: 85 },
-    { location: "Plant 1 / CO-CO2 / CCD", count: 20, progress: 60 },
-    { location: "Plant 2 / BF1-6 / Blast Furnace 7", count: 10, progress: 40 },
-    { location: "Plant 3 / Water Treatment Plant", count: 10, progress: 40 },
-    { location: "Plant 2 / Watch Tower 2", count: 5, progress: 20 },
-];
+// Removed location widget – not required
 
 export function PermitsDashboard() {
     const navigate = useNavigate();
+    const { getAllWorkPermits, workPermits, isFetching } = useWorkPermitStore();
+
+    React.useEffect(() => {
+        getAllWorkPermits().catch(() => {});
+    }, [getAllWorkPermits]);
+
+    const statusCounts = React.useMemo(() => {
+        const stats = { PENDING: 0, APPROVED: 0, CLOSED: 0, CANCELLED: 0 };
+        (workPermits || []).forEach(wp => {
+            const s = (wp.status || 'PENDING').toUpperCase();
+            if (stats[s] !== undefined) stats[s] += 1;
+        });
+        return stats;
+    }, [workPermits]);
+
+    const cards = React.useMemo(() => ([
+        { key: 'PENDING', label: 'Pending', value: statusCounts.PENDING, icon: Clock, color: 'bg-blue-500' },
+        { key: 'APPROVED', label: 'Approved', value: statusCounts.APPROVED, icon: CheckCircle, color: 'bg-green-500' },
+        { key: 'CLOSED', label: 'Closed', value: statusCounts.CLOSED, icon: XCircle, color: 'bg-gray-500' },
+        { key: 'CANCELLED', label: 'Rejected', value: statusCounts.CANCELLED, icon: Ban, color: 'bg-red-500' },
+    ]), [statusCounts]);
+
+    const typesAggregated = React.useMemo(() => {
+        const map = new Map();
+        (workPermits || []).forEach(wp => {
+            const type = wp.title || 'Unknown';
+            map.set(type, (map.get(type) || 0) + 1);
+        });
+        return Array.from(map.entries()).map(([type, count]) => ({ type, totalCount: count }));
+    }, [workPermits]);
 
     const handleCreateNewForm = () => {
         navigate({ to: "/page/app/form-builder" });
@@ -162,7 +108,7 @@ export function PermitsDashboard() {
                             <span className="hidden sm:inline">PERMITS</span>
                             <span className="sm:hidden">PERMITS</span>
                         </TabsTrigger>
-                        <TabsTrigger value="observations" className="text-xs lg:text-sm px-2 lg:px-4 py-2">
+                        {/* <TabsTrigger value="observations" className="text-xs lg:text-sm px-2 lg:px-4 py-2">
                             <span className="hidden sm:inline">OBSERVATIONS</span>
                             <span className="sm:hidden">OBS</span>
                         </TabsTrigger>
@@ -173,32 +119,16 @@ export function PermitsDashboard() {
                         <TabsTrigger value="fleet" className="text-xs lg:text-sm px-2 lg:px-4 py-2">
                             <span className="hidden sm:inline">FLEET MGMT</span>
                             <span className="sm:hidden">FLEET</span>
-                        </TabsTrigger>
+                        </TabsTrigger> */}
                     </TabsList>
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
-                        <Button variant="outline" size="sm" className="justify-start sm:justify-center">
-                            <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
-                            <span className="truncate">Site: Overall</span>
-                        </Button>
-                        <Button variant="outline" size="sm" className="justify-start sm:justify-center">
-                            <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-                            <span className="truncate">Select FY: 2022-23</span>
-                        </Button>
-                    </div>
+                    {/* Removed site/financial year selectors as requested */}
                 </div>
 
                 <TabsContent value="permits" className="space-y-6">
                     {/* Permits Overview */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <h2 className="text-xl lg:text-2xl font-bold text-foreground">
-                                178 Permits
-                            </h2>
-                            <p className="text-sm lg:text-base text-muted-foreground">
-                                19 - 23 Mar 2023
-                            </p>
-                        </div>
+                        <div />
                         <div className="flex flex-col sm:flex-row gap-2">
                             <Button 
                                 onClick={handleCreateNewForm}
@@ -224,17 +154,17 @@ export function PermitsDashboard() {
                     </div>
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 lg:gap-4">
-                        {permitStats.map((stat) => (
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 lg:gap-4">
+                        {cards.map((stat) => (
                             <Card
-                                key={stat.label}
+                                key={stat.key}
                                 className="relative overflow-hidden hover:shadow-md transition-shadow"
                             >
                                 <CardContent className="p-3 lg:p-4">
                                     <div className="flex items-center justify-between">
                                         <div className="min-w-0 flex-1">
                                             <p className="text-xl lg:text-2xl font-bold text-card-foreground">
-                                                {stat.value}
+                                                {isFetching ? '-' : stat.value}
                                             </p>
                                             <p className="text-xs lg:text-sm text-muted-foreground truncate">
                                                 {stat.label}
@@ -251,89 +181,7 @@ export function PermitsDashboard() {
                         ))}
                     </div>
 
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                        {/* KPI Summary */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base lg:text-lg font-semibold">
-                                    E-PTW Monthly KPI Summary - Sep 2022
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="text-xs lg:text-sm">
-                                                    Key Performance Indicator
-                                                </TableHead>
-                                                <TableHead className="text-xs lg:text-sm">Target</TableHead>
-                                                <TableHead className="text-xs lg:text-sm">Actual</TableHead>
-                                                <TableHead className="text-xs lg:text-sm">Count</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {kpiData.map((item, index) => (
-                                                <TableRow key={index}>
-                                                    <TableCell className="font-medium text-xs lg:text-sm">
-                                                        {item.metric}
-                                                    </TableCell>
-                                                    <TableCell className="text-xs lg:text-sm">
-                                                        {item.target}
-                                                    </TableCell>
-                                                    <TableCell className="text-xs lg:text-sm">
-                                                        <Badge
-                                                            variant={
-                                                                item.actual ===
-                                                                "100%"
-                                                                    ? "default"
-                                                                    : "secondary"
-                                                            }
-                                                        >
-                                                            {item.actual}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-xs lg:text-sm">
-                                                        {item.count}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Permits by Location */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base lg:text-lg font-semibold">
-                                    Permits by Location
-                                </CardTitle>
-                                <p className="text-xs lg:text-sm text-muted-foreground">
-                                    Site / Division / Plant
-                                </p>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {permitsByLocation.map((location, index) => (
-                                    <div key={index} className="space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-xs lg:text-sm font-medium text-card-foreground truncate pr-2">
-                                                {location.location}
-                                            </span>
-                                            <span className="text-xs lg:text-sm font-bold text-card-foreground flex-shrink-0">
-                                                {location.count}
-                                            </span>
-                                        </div>
-                                        <Progress
-                                            value={location.progress}
-                                            className="h-2"
-                                        />
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-                    </div>
+                    {/* Removed KPI and Location sections as requested */}
 
                     {/* Permits by Type */}
                     <Card>
@@ -349,24 +197,16 @@ export function PermitsDashboard() {
                                         <TableRow>
                                             <TableHead className="text-xs lg:text-sm">Permit Type</TableHead>
                                             <TableHead className="text-xs lg:text-sm">Total Count</TableHead>
-                                            <TableHead className="text-xs lg:text-sm">No. of Workers</TableHead>
-                                            <TableHead className="text-xs lg:text-sm">No. of Sites</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {permitsByType.map((permit, index) => (
+                                        {typesAggregated.map((permit, index) => (
                                             <TableRow key={index}>
                                                 <TableCell className="font-medium text-xs lg:text-sm">
                                                     {permit.type}
                                                 </TableCell>
                                                 <TableCell className="text-xs lg:text-sm">
                                                     {permit.totalCount}
-                                                </TableCell>
-                                                <TableCell className="text-xs lg:text-sm">
-                                                    {permit.workers}
-                                                </TableCell>
-                                                <TableCell className="text-xs lg:text-sm">
-                                                    {permit.sites}
                                                 </TableCell>
                                             </TableRow>
                                         ))}

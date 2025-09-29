@@ -17,21 +17,21 @@ const navigation = [
         href: "/page/app/permit",
         icon: Dock,
     },
-    {
-        name: "Observations",
-        href: "/page/app/observation",
-        icon: FileText,
-    },
-    {
-        name: "Fleet Management",
-        href: "/page/app/fleet-management",
-        icon: PencilRuler,
-    },
-    {
-        name: "Audits",
-        href: "/page/app/audit",
-        icon: Files,
-    }
+    // {
+    //     name: "Observations",
+    //     href: "/page/app/observation",
+    //     icon: FileText,
+    // },
+    // {
+    //     name: "Fleet Management",
+    //     href: "/page/app/fleet-management",
+    //     icon: PencilRuler,
+    // },
+    // {
+    //     name: "Audits",
+    //     href: "/page/app/audit",
+    //     icon: Files,
+    // }
 ];
 
 export function DashboardLayout() {

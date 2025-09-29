@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { db } from "../db/db.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { sendEmail, permitSubmissionNotificationMailgenContent } from "../utils/mail.js";
 
 export const createWorkPermitForm = asyncHandler(async (req, res) => {
     const { title, sections = [], workPermitNo } = req.body;
@@ -189,7 +190,13 @@ export const updateWorkPermitForm = asyncHandler(async (req, res) => {
         return res.status(404).json({ message: "Form not found" });
     }
 
-    if (existingForm.userId !== userId) {
+    // Authorization: Owner OR SUPER_ADMIN for this company
+    const isOwner = existingForm.userId === userId;
+    const superAdminLink = await db.companyAdmin.findFirst({
+        where: { userId, companyId: existingForm.companyId, role: "SUPER_ADMIN" },
+    });
+
+    if (!isOwner && !superAdminLink) {
         return res
             .status(403)
             .json({ message: "Unauthorized to update this form" });
@@ -476,6 +483,162 @@ export const duplicateWorkPermitForm = asyncHandler(async (req, res) => {
     );
 })
 
+// Helper function to send email notification to selected Super Admin
+const sendEmailNotificationToSuperAdmin = async (answers, memberId, form, submissionId) => {
+    try {
+        console.log("🔍 Debugging email notification - Super Admin detection:");
+        console.log(`Looking for Super Admin in company ID: ${form.companyId}`);
+        
+        // Extract Super Admin name from answers
+        let superAdminName = null;
+        
+        // First, try the new structure with opening-ptw section
+        const openingPTW = answers['opening-ptw'];
+        if (openingPTW && typeof openingPTW === 'object') {
+            superAdminName = openingPTW['permit-issuing-authority-name'];
+            console.log("Found Super Admin in opening-ptw section:", superAdminName);
+        }
+        
+        // Fallback: Search through all answers for authority fields
+        if (!superAdminName && answers) {
+            console.log("Searching through all answers for Super Admin...");
+            Object.keys(answers).forEach(key => {
+                console.log(`Checking key: ${key}, value: ${answers[key]}`);
+                // Look for any field that might contain the Super Admin name
+                if (typeof answers[key] === 'string' && answers[key].length > 0) {
+                    // Check if this could be a Super Admin name (not a timestamp, id, etc.)
+                    if (answers[key].includes(' ') || /^[A-Za-z\s]+$/.test(answers[key])) {
+                        console.log(`Potential Super Admin name found in ${key}: ${answers[key]}`);
+                        // For now, let's not auto-assign, we need to be more specific
+                    }
+                }
+            });
+            
+            // Try looking for "permit-issuing-authority" patterns
+            Object.keys(answers).forEach(key => {
+                if (key.toLowerCase().includes('issuing') && key.toLowerCase().includes('authority')) {
+                    superAdminName = answers[key];
+                    console.log(`Found Super Admin in field ${key}: ${superAdminName}`);
+                }
+            });
+            
+            // Try looking for broader patterns
+            Object.keys(answers).forEach(key => {
+                const normalizedKey = key.toLowerCase().replace(/[-_\s]/g, '');
+                if (normalizedKey.includes('issuingauthority') || 
+                    normalizedKey.includes('permitissuingauthority') || 
+                    normalizedKey.includes('ptw') ||
+                    normalizedKey.includes('issuing')) {
+                    const value = answers[key];
+                    if (typeof value === 'string' && value.length > 0 && value.trim() !== '') {
+                        superAdminName = value;
+                        console.log(`Found Super Admin in field ${key} (pattern ${normalizedKey}): ${superAdminName}`);
+                    }
+                }
+            });
+            
+            // Look for Super Admin names by matching against known Super Admins in the company
+            if (!superAdminName) {
+            console.log("No pattern matches found, looking up Super Admins in company...");
+            
+            // Get all Super Admins in the company first
+            const companySuperAdmins = await db.companyAdmin.findMany({
+                where: {
+                    companyId: form.companyId,
+                    role: "SUPER_ADMIN"
+                },
+                include: {
+                    user: true
+                }
+            });
+            
+            console.log("Available Super Admins:", companySuperAdmins.map(sa => sa.user.name));
+            
+            // Check each answer value against Super Admin names
+            Object.keys(answers).forEach(key => {
+                const value = answers[key];
+                if (typeof value === 'string' && value.length > 0 && value.trim() !== '') {
+                    const foundSuperAdmin = companySuperAdmins.find(sa => {
+                        const userName = sa.user.name;
+                        return userName === value || 
+                               userName.includes(value) || 
+                               value.includes(userName);
+                    });
+                    
+                    if (foundSuperAdmin) {
+                        superAdminName = foundSuperAdmin.user.name;
+                        console.log(`✅ Super Admin detected: ${value} → ${superAdminName}`);
+                    }
+                }
+            });
+            }
+        }
+        
+        // If no Super Admin selected, skip email
+        if (!superAdminName) {
+            console.log("No Super Admin selected, skipping email notification");
+            return;
+        }
+        
+        // Find Super Admin by name within the company
+        const companySuperAdmins = await db.companyAdmin.findMany({
+            where: {
+                companyId: form.companyId,
+                role: "SUPER_ADMIN"
+            },
+            include: {
+                user: true
+            }
+        });
+        
+        const targetSuperAdmin = companySuperAdmins.find(ca => 
+            ca.user.name === superAdminName || 
+            ca.user.name.includes(superAdminName) ||
+            superAdminName.includes(ca.user.name)
+        );
+        
+        if (!targetSuperAdmin) {
+            console.log("Super Admin not found:", superAdminName);
+            return;
+        }
+        
+        // Get member information
+        let memberName = "Unknown Member";
+        if (memberId) {
+            const member = await db.companyMember.findUnique({
+                where: { id: memberId },
+                select: { name: true, email: true }
+            });
+            memberName = member?.name || "Unknown Member";
+        }
+        
+        // Generate permit details URL
+        const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        const permitDetailsUrl = `${baseUrl}/page/app/permit-approval`;
+        
+        // Send email
+        const emailContent = permitSubmissionNotificationMailgenContent(
+            targetSuperAdmin.user.name,
+            memberName,
+            form.title,
+            form.workPermitNo,
+            permitDetailsUrl
+        );
+        
+        await sendEmail({
+            email: targetSuperAdmin.user.email,
+            subject: `New Work Permit Submission - ${form.title}`,
+            mailgenContent: emailContent
+        });
+        
+        console.log(`Email notification sent to Super Admin: ${targetSuperAdmin.user.email}`);
+        
+    } catch (error) {
+        console.error("Error in sendEmailNotificationToSuperAdmin:", error);
+        throw error;
+    }
+};
+
 export const createWorkPermitSubmission = asyncHandler(async (req, res) => {
     const { workPermitFormId } = req.params;
     const { answers } = req.body;
@@ -519,6 +682,14 @@ export const createWorkPermitSubmission = asyncHandler(async (req, res) => {
         },
     });
 
+    // Send email notification to selected Super Admin (if applicable)
+    try {
+        await sendEmailNotificationToSuperAdmin(answers, memberId, form, submission.id);
+    } catch (emailError) {
+        console.error("Email notification failed:", emailError);
+        // Don't fail the submission if email fails
+    }
+
     return res.status(201).json(new ApiResponse(201, submission, "submission created"));
 });
 
@@ -533,6 +704,32 @@ export const listWorkPermitSubmissions = asyncHandler(async (req, res) => {
     });
 
     return res.status(200).json(new ApiResponse(200, submissions, "submissions fetched"));
+});
+
+// Company member: Update an existing submission (member can edit after first submit)
+export const updateWorkPermitSubmission = asyncHandler(async (req, res) => {
+    const { workPermitFormId } = req.params;
+    const { answers } = req.body;
+    const memberId = req.member?.id || null;
+
+    if (!workPermitFormId) throw new ApiError(400, "workPermitFormId is required");
+    if (!answers) throw new ApiError(400, "answers are required");
+    if (!memberId) throw new ApiError(401, "Unauthorized");
+
+    const existing = await db.workPermitSubmission.findFirst({
+        where: { workPermitFormId, submittedById: memberId },
+    });
+
+    if (!existing) {
+        throw new ApiError(404, "No existing submission found for this member");
+    }
+
+    const updated = await db.workPermitSubmission.update({
+        where: { id: existing.id },
+        data: { answers },
+    });
+
+    return res.status(200).json(new ApiResponse(200, updated, "submission updated"));
 });
 
 // SUPER_ADMIN only: Approve a work permit form

@@ -7,6 +7,8 @@ import {
     getCurrentUser,
     googleCallback,
     createSuperAdmin,
+    // new controller
+    createAdmin,
     refreshAccessToken,
     resendEmailVerification,
     resetForgottenPassword,
@@ -16,6 +18,7 @@ import {
     verifyEmail,
     getAllSuperAdmins,
     getCompanySuperAdmins,
+    getCompanyAdmins,
 } from "../controllers/user.controllers.js";
 import {
     userAssignRoleValidator,
@@ -45,6 +48,9 @@ router.route("/verify-email/:verificationToken").get(verifyEmail);
 // - If at least one exists: must be called by an authenticated ADMIN or SUPER_ADMIN
 router.route("/create-super-admin/:companyId").post(verifyJWT, createSuperAdmin);
 
+// Create ADMIN under a company (SUPER_ADMIN only)
+router.route("/create-admin/:companyId").post(verifyJWT, createAdmin);
+
 router
     .route("/forgot-password")
     .post(userForgotPasswordValidator(), validate, forgotPasswordRequest);
@@ -69,6 +75,10 @@ router
 router
     .route("/company/:companyId/super-admins")
     .get(verifyEitherJWT, getCompanySuperAdmins);
+
+router
+    .route("/company/:companyId/admins")
+    .get(verifyEitherJWT, getCompanyAdmins);
 router
     .route("/change-password")
     .post(

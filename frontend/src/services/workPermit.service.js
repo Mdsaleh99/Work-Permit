@@ -17,7 +17,7 @@ export const workPermitService = {
     },
 
     updateWorkPermit: async (workPermitData, companyId, workPermitId) => {
-        const response = await axiosInstance.patch(`/work-permit/${companyId}/${workPermitId}`, workPermitData);
+        const response = await axiosInstance.patch(`/work-permit/company/${companyId}/${workPermitId}`, workPermitData);
         return response.data.data;
     },
 
@@ -34,6 +34,10 @@ export const workPermitService = {
     },
     listSubmissions: async (workPermitFormId) => {
         const res = await axiosInstance.get(`/work-permit/${workPermitFormId}/submissions`);
+        return res.data;
+    },
+    updateSubmission: async (workPermitFormId, answers) => {
+        const res = await axiosInstance.patch(`/work-permit/${workPermitFormId}/submissions`, { answers });
         return res.data;
     },
 

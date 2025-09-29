@@ -8,6 +8,7 @@ import {
     updateWorkPermitForm,
     createWorkPermitSubmission,
     listWorkPermitSubmissions,
+    updateWorkPermitSubmission,
     approveWorkPermitForm,
     closeWorkPermitForm,
     getFormsPendingApproval,
@@ -35,14 +36,16 @@ router.route("/:workPermitFormId").get(verifyEitherJWT, getWorkPermitFormById);
 router
     .route("/:workPermitFormId/duplicate")
     .post(verifyJWT, duplicateWorkPermitForm);
-router
-    .route("/:companyId/:workPermitFormId")
-    .patch(verifyJWT, updateWorkPermitForm);
-
+// Place submissions route BEFORE parameterized companyId route to avoid conflicts
 router
     .route("/:workPermitFormId/submissions")
     .get(verifyEitherJWT, listWorkPermitSubmissions)
-    .post(companyMemberVerifyJWT, createWorkPermitSubmission);
+    .post(companyMemberVerifyJWT, createWorkPermitSubmission)
+    .patch(companyMemberVerifyJWT, updateWorkPermitSubmission);
+
+router
+    .route("/company/:companyId/:workPermitFormId")
+    .patch(verifyJWT, updateWorkPermitForm);
 
 // SUPER_ADMIN only actions
 router

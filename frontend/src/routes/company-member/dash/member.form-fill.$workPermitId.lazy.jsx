@@ -1,6 +1,7 @@
 import FormFiller from '@/components/form/FormFiller';
 import { useWorkPermitStore } from '@/store/useWorkPermitStore';
-import { useParams, createLazyFileRoute } from '@tanstack/react-router'
+import { useCompanyStore } from '@/store/useCompanyStore';
+import { useParams, createLazyFileRoute, useSearch } from '@tanstack/react-router'
 import MemberDashboardLayout from '@/components/company/MemberDashboardLayout'
 import { ensureCompanyMemberWithPermit } from '../../../lib/ensureCompanyMember.js'
 import { Loader } from 'lucide-react';
@@ -17,8 +18,11 @@ export const Route = createLazyFileRoute(
 
 function RouteComponent() {
   const { workPermitId } = useParams({ from: "/company-member/dash/member/form-fill/$workPermitId" });
+  const { edit } = useSearch({ from: "/company-member/dash/member/form-fill/$workPermitId" });
     const [isLoading, setIsLoading] = useState(true);
     const [form, setForm] = useState(null);
+    const [existingSubmission, setExistingSubmission] = useState(null);
+    const { currentCompanyMember, getCurrentCompanyMember } = useCompanyStore();
 
     const { getWorkPermitById } = useWorkPermitStore();
     // console.log("work permit id: ", workPermitId);
@@ -27,13 +31,21 @@ function RouteComponent() {
     useEffect(() => {
         (async () => {
             try {
+                if (!currentCompanyMember?.id) {
+                    await getCurrentCompanyMember();
+                }
                 const wp = await getWorkPermitById(workPermitId);
                 setForm(wp?.data || wp);
+                // fetch existing submissions and take latest by this member
+                const list = await workPermitService.listSubmissions(workPermitId);
+                const subs = Array.isArray(list?.data) ? list.data : [];
+                const mine = subs.find(s => s.submittedBy?.id === (currentCompanyMember?.id));
+                setExistingSubmission(mine || null);
             } finally {
                 setIsLoading(false);
             }
         })();
-    }, [workPermitId]);
+    }, [workPermitId, currentCompanyMember?.id]);
 
     const sectionsTemplate = (form?.sections || []).map(s => ({
         id: s.id,
@@ -51,7 +63,11 @@ function RouteComponent() {
 
     const [submitted, setSubmitted] = useState(false);
     const handleSubmit = async (answers) => {
-        await workPermitService.createSubmission(workPermitId, answers);
+        if (existingSubmission) {
+            await workPermitService.updateSubmission(workPermitId, answers);
+        } else {
+            await workPermitService.createSubmission(workPermitId, answers);
+        }
         setSubmitted(true);
     };
 
@@ -81,6 +97,7 @@ function RouteComponent() {
             onSubmit={handleSubmit}
             isSubmitting={false}
             containerClassName="h-full"
+            initialAnswers={edit && existingSubmission ? existingSubmission.answers : undefined}
         />
     );
 }

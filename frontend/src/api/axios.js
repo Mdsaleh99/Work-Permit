@@ -28,12 +28,12 @@ axiosInstance.interceptors.response.use(
         const status = error.response?.status;
 
         const urlPath = (originalRequest?.url || "").toString();
-        const isMemberAPI = /^\/company\//.test(urlPath);
         const isRefreshCall = /\/auth\/refresh-token$/.test(urlPath);
         const hasPrimaryUser = Boolean(useAuthStore.getState()?.authUser);
 
         // Only refresh for primary-user requests when a primary user exists
-        if ((status === 419 || status === 401) && !originalRequest._retry && !isMemberAPI && !isRefreshCall && hasPrimaryUser) {
+        // Refresh only for primary-user sessions; members don't have a refresh flow
+        if ((status === 419 || status === 401) && !originalRequest._retry && !isRefreshCall && hasPrimaryUser) {
             originalRequest._retry = true;
             try {
                 if (!refreshingPromise) {
@@ -53,6 +53,12 @@ axiosInstance.interceptors.response.use(
                 refreshingPromise = null;
                 return Promise.reject(err);
             }
+        }
+
+        // For company members (no primary user), if token expired, don't hard-redirect.
+        // Let calling screens/route guards decide what to do.
+        if ((status === 419 || status === 401) && !hasPrimaryUser && !isRefreshCall) {
+            return Promise.reject(error.response?.data || { message: 'Session expired' });
         }
 
         return Promise.reject(

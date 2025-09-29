@@ -270,7 +270,7 @@ export function PermitApprovalPage() {
                                                     onClick={() => handleViewForm(submission.workPermitForm.id)}
                                                 >
                                                     <Eye className="h-4 w-4 mr-1" />
-                                                    View Form
+                                                    View Permit
                                                 </Button>
                                                 <Button
                                                     variant="secondary"
@@ -279,7 +279,7 @@ export function PermitApprovalPage() {
                                                     disabled={submission.workPermitForm.status === 'CLOSED'}
                                                 >
                                                     <Edit className="h-4 w-4 mr-1" />
-                                                    Edit Form
+                                                    Edit Permit
                                                 </Button>
                                                 {submission.workPermitForm.status === 'PENDING' && (
                                                     <Button
@@ -293,7 +293,7 @@ export function PermitApprovalPage() {
                                                         ) : (
                                                             <CheckCircle className="h-4 w-4 mr-1" />
                                                         )}
-                                                        Approve
+                                                        Approve Permit
                                                     </Button>
                                                 )}
                                                 <Button
@@ -307,7 +307,7 @@ export function PermitApprovalPage() {
                                                     ) : (
                                                         <XCircle className="h-4 w-4 mr-1" />
                                                     )}
-                                                    Close
+                                                    Close Permit
                                                 </Button>
                                             </div>
                                         </TableCell>

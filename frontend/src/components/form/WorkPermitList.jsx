@@ -13,8 +13,7 @@ import {
     Edit, 
     Copy,
     Eye,
-    Calendar,
-    Building2
+    Calendar
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -82,14 +81,14 @@ function WorkPermitList() {
     //     }
     // };
 
-    const handleEditWorkPermit = (workPermitId) => {
-        navigate({ to: `/page/app/form-builder/${workPermitId}` });
-    };
+    // const handleEditWorkPermit = (workPermitId) => {
+    //     navigate({ to: `/page/app/form-builder/${workPermitId}` });
+    // };
 
-    const handleViewWorkPermit = (workPermitId) => {
-        // Open in form builder editor as requested
-        navigate({ to: `/page/app/form-builder/${workPermitId}` });
-    };
+    // const handleViewWorkPermit = (workPermitId) => {
+    //     // Open in form builder editor as requested
+    //     navigate({ to: `/page/app/form-builder/${workPermitId}` });
+    // };
 
     const handleCreateNew = () => {
         navigate({ to: "/page/app/form-builder" });
@@ -101,9 +100,10 @@ function WorkPermitList() {
     const filteredPermits = useMemo(() => {
         const q = search.trim().toLowerCase();
         if (!q) return workPermits;
-        return workPermits.filter(wp =>
-            (wp.title || "").toLowerCase().includes(q) ||
-            (wp.workPermitNo || "").toString().toLowerCase().includes(q)
+        return workPermits.filter(
+            (wp) =>
+                (wp.createdAt || "").toString().toLowerCase().includes(q) ||
+                (wp.workPermitNo || "").toString().toLowerCase().includes(q),
         );
     }, [workPermits, search]);
 
@@ -126,14 +126,13 @@ function WorkPermitList() {
                         Work Permit Forms
                     </h1>
                     <p className="text-gray-600 mt-2">
-                        Manage your work permit forms for{" "}
-                        {companyData?.compName || "your company"}
+                        Manage your work permit
                     </p>
                 </div>
                 <div className="w-64">
                     <input
                         type="text"
-                        placeholder="Search by title or permit no..."
+                        placeholder="Search by permit no or date..."
                         className="w-full border rounded-md px-3 py-2 text-sm"
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -173,12 +172,9 @@ function WorkPermitList() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>ID</TableHead>
                             <TableHead>Permit No</TableHead>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Company</TableHead>
+                            <TableHead>Permit Type</TableHead>
                             <TableHead>Created</TableHead>
-                            <TableHead>Sections</TableHead>
                             <TableHead className="text-right">
                                 Actions
                             </TableHead>
@@ -188,24 +184,15 @@ function WorkPermitList() {
                         {filteredPermits.map((workPermit) => (
                             <TableRow key={workPermit.id}>
                                 <TableCell className="text-gray-600">
-                                    {workPermit.id}
-                                </TableCell>
-                                <TableCell className="text-gray-600">
                                     {workPermit.workPermitNo || "-"}
                                 </TableCell>
                                 <TableCell className="font-medium">
                                     {workPermit.title}
                                 </TableCell>
                                 <TableCell>
-                                    {companyData?.compName || "Your Company"}
-                                </TableCell>
-                                <TableCell>
                                     {new Date(
                                         workPermit.createdAt,
                                     ).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell>
-                                    {workPermit.sections?.length || 0}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">

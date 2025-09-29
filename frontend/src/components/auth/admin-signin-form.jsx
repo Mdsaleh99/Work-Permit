@@ -19,17 +19,17 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "lucide-react";
 
-const SuperAdminSignInSchema = z.object({
+const AdminSignInSchema = z.object({
     companyId: z.string().min(1, { message: "Company ID is required" }),
     email: z.email({ error: "incorrect email or password" }),
     password: z.string(),
 });
 
-export function SuperAdminSignInForm({ className, ...props }) {
-    const { register, handleSubmit, formState: { errors }, setError } = useForm({ resolver: zodResolver(SuperAdminSignInSchema) })
-    const { isSignIn, signinSuperAdmin, authError, clearAuthError } = useAuthStore()
+export function AdminSignInForm({ className, ...props }) {
+    const { register, handleSubmit, formState: { errors }, setError } = useForm({ resolver: zodResolver(AdminSignInSchema) })
+    const { isSignIn, signinAdmin, authError, clearAuthError } = useAuthStore()
     const navigate = useNavigate();
-    const search = useSearch({ from: "/auth/super-admin/signin" })
+    const search = useSearch({ from: "/auth/admin/signin" })
 
     React.useEffect(() => {
         clearAuthError()
@@ -39,7 +39,13 @@ export function SuperAdminSignInForm({ className, ...props }) {
     const onSubmit = async (data) => {
         try {
             const { companyId, email, password } = data;
-            await signinSuperAdmin(companyId, { email, password })
+            await signinAdmin(companyId, { email, password })
+            // Only ADMIN allowed on this page
+            const user = useAuthStore.getState().authUser;
+            if (!user || user.role !== 'ADMIN') {
+                setError('email', { type: 'server', message: 'Only Admin can sign in on this page' });
+                return;
+            }
             navigate({ to: "/page/app/dashboard" })
         } catch (error) {
             if (Array.isArray(error?.errors)) {
@@ -61,12 +67,12 @@ export function SuperAdminSignInForm({ className, ...props }) {
             {...props}
         >
             <Card className="w-full max-w-xl shadow-sm border-border">
-                <CardHeader className="space-y-2">
-                    <CardTitle>Super Admin Sign In</CardTitle>
-                    <CardDescription>
-                        Enter your company ID and credentials to sign in
-                    </CardDescription>
-                </CardHeader>
+            <CardHeader className="space-y-2">
+                <CardTitle>Admin Sign In</CardTitle>
+                <CardDescription>
+                    Enter your company ID and credentials to sign in
+                </CardDescription>
+            </CardHeader>
                 <CardContent className="pt-0">
                     <form
                         className="space-y-6"
@@ -137,7 +143,7 @@ export function SuperAdminSignInForm({ className, ...props }) {
                                     )}
                                 </Button>
                                 <div className="text-center text-sm text-muted-foreground">
-                                    <Link to={"/auth/signin"} className="underline underline-offset-4">Back to Admin sign in</Link>
+                                    <Link to={"/auth/signin"} className="underline underline-offset-4">Back to Super Admin sign in</Link>
                                 </div>
                             </div>
                         </div>

@@ -2,6 +2,7 @@ import { createLazyFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ensureCompanyMember } from "../../../lib/ensureCompanyMember.js";
 import { useCompanyStore } from "@/store/useCompanyStore";
 import { Button } from "@/components/ui/button";
+import { workPermitService } from "@/services/workPermit.service";
 import { useEffect, useState } from "react";
 import {
     Table,
@@ -42,6 +43,30 @@ function RouteComponent() {
         ? currentCompanyMember.allowedWorkPermits
         : [];
 
+    const [memberSubmissions, setMemberSubmissions] = useState({});
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const map = {};
+                const results = await Promise.all(
+                    (permits || []).map(async (p) => {
+                        try {
+                            const resp = await workPermitService.listSubmissions(p.id);
+                            const subs = Array.isArray(resp?.data) ? resp.data : [];
+                            const mine = subs.find((s) => s?.submittedBy?.id === currentCompanyMember?.id);
+                            return { id: p.id, mine };
+                        } catch {
+                            return { id: p.id, mine: null };
+                        }
+                    })
+                );
+                results.forEach(({ id, mine }) => { if (mine) map[id] = mine; });
+                setMemberSubmissions(map);
+            } catch {}
+        })();
+    }, [JSON.stringify(permits), currentCompanyMember?.id]);
+
     if (isLoading) {
         return (
             <div className="max-w-5xl mx-auto p-4">
@@ -64,7 +89,7 @@ function RouteComponent() {
                             <TableHead className="w-[80px]">#</TableHead>
                             <TableHead>Title</TableHead>
                             <TableHead>Permit No</TableHead>
-                            <TableHead className="w-[160px]">Actions</TableHead>
+                            <TableHead className="w-[300px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -85,6 +110,7 @@ function RouteComponent() {
                                             <Button
                                                 size="sm"
                                                 className="cursor-pointer"
+                                                disabled={Boolean(memberSubmissions[p.id])}
                                                 onClick={() =>
                                                     navigate({
                                                         to: "/company-member/dash/member/form-fill/$workPermitId",
@@ -93,6 +119,39 @@ function RouteComponent() {
                                                 }
                                             >
                                                 Fill
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                className="cursor-pointer"
+                                                disabled={!Boolean(memberSubmissions[p.id]) || Boolean(memberSubmissions[p.id]?.answers?.['member-closed'])}
+                                                onClick={() =>
+                                                    navigate({
+                                                        to: "/company-member/dash/member/form-fill/$workPermitId",
+                                                        params: { workPermitId: p.id },
+                                                        search: { edit: true }
+                                                    })
+                                                }
+                                            >
+                                                Edit
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="destructive"
+                                                className="cursor-pointer"
+                                                disabled={!Boolean(memberSubmissions[p.id]) || Boolean(memberSubmissions[p.id]?.answers?.['member-closed'])}
+                                                onClick={async () => {
+                                                    try {
+                                                        const existing = memberSubmissions[p.id];
+                                                        const merged = { ...(existing?.answers || {}), ['member-closed']: true };
+                                                        await workPermitService.updateSubmission(p.id, merged);
+                                                        setMemberSubmissions(prev => ({ ...prev, [p.id]: { ...(existing || {}), answers: merged } }));
+                                                    } catch (e) {
+                                                        console.error(e);
+                                                    }
+                                                }}
+                                            >
+                                                Close
                                             </Button>
                                         </div>
                                     </TableCell>
