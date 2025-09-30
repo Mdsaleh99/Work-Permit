@@ -64,11 +64,13 @@ export function SignInForm({ className, ...props }) {
             // After successful signin, check if user has a company
             try {
                 const company = await getCompanyByUser();
-                if (company) {
+                console.log("company in signin: ", company);
+                const hasCompany = company && typeof company === 'object' && company.id;
+                if (hasCompany) {
                     // User has a company, go to dashboard
                     navigate({to: "/page/app/dashboard"});
                 } else {
-                    // User doesn't have a company, go to create company
+                    // User doesn't have a company, go to create company page
                     navigate({to: "/company/"});
                 }
             } catch (companyError) {
