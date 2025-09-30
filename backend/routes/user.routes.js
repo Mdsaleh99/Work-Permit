@@ -6,9 +6,6 @@ import {
     getAllUsers,
     getCurrentUser,
     googleCallback,
-    createSuperAdmin,
-    // new controller
-    createAdmin,
     refreshAccessToken,
     resendEmailVerification,
     resetForgottenPassword,
@@ -19,8 +16,12 @@ import {
     getAllSuperAdmins,
     getCompanySuperAdmins,
     getCompanyAdmins,
+    createCompanyAdmin,
+    createCompanySuperAdmin,
 } from "../controllers/user.controllers.js";
 import {
+    createCompanyAdminValidator,
+    createCompanySuperAdminValidator,
     userAssignRoleValidator,
     userChangeCurrentPasswordValidator,
     userForgotPasswordValidator,
@@ -29,7 +30,11 @@ import {
     userResetForgottenPasswordValidator,
 } from "../validators/index.js";
 import { validate } from "../middlewares/validate.middlewares.js";
-import { authorizeRoles, verifyEitherJWT, verifyJWT } from "../middlewares/auth.middlewares.js";
+import {
+    authorizeRoles,
+    verifyEitherJWT,
+    verifyJWT,
+} from "../middlewares/auth.middlewares.js";
 import { UserRolesEnum } from "../utils/constants.js";
 import passport from "passport";
 
@@ -43,13 +48,25 @@ router.route("/signin/:companyId").post(userLoginValidator(), validate, signIn);
 router.route("/refresh-token").post(refreshAccessToken);
 router.route("/verify-email/:verificationToken").get(verifyEmail);
 
-// Bootstrap + managed creation of SUPER_ADMIN (scoped to a company)
-// - If no SUPER_ADMIN exists: open (no auth) to create the first one
-// - If at least one exists: must be called by an authenticated ADMIN or SUPER_ADMIN
-router.route("/create-super-admin/:companyId").post(verifyJWT, createSuperAdmin);
+router
+    .route("/create-super-admin/:companyId")
+    .post(
+        createCompanySuperAdminValidator(),
+        validate,
+        verifyJWT,
+        authorizeRoles(UserRolesEnum.SUPER_ADMIN),
+        createCompanySuperAdmin
+    );
 
-// Create ADMIN under a company (SUPER_ADMIN only)
-router.route("/create-admin/:companyId").post(verifyJWT, createAdmin);
+router
+    .route("/create-admin/:companyId")
+    .post(
+        createCompanyAdminValidator(),
+        validate,
+        verifyJWT,
+        authorizeRoles(UserRolesEnum.SUPER_ADMIN),
+        createCompanyAdmin
+    );
 
 router
     .route("/forgot-password")
@@ -66,19 +83,29 @@ router
 // Secured routes
 router.route("/signout").post(verifyJWT, signOut);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
-router
-    .route("/get-all")
-    .get(verifyJWT, authorizeRoles(UserRolesEnum.ADMIN), getAllUsers);
-router
-    .route("/get-all-super-admins")
-    .get(verifyJWT, authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN), getAllSuperAdmins);
+// router
+//     .route("/get-all")
+//     .get(verifyJWT, authorizeRoles(UserRolesEnum.ADMIN), getAllUsers);
+// router
+//     .route("/get-all-super-admins")
+//     .get(verifyJWT, authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN), getAllSuperAdmins);
+
 router
     .route("/company/:companyId/super-admins")
-    .get(verifyEitherJWT, getCompanySuperAdmins);
+    .get(
+        verifyEitherJWT,
+        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
+        getCompanySuperAdmins
+    );
 
 router
     .route("/company/:companyId/admins")
-    .get(verifyEitherJWT, getCompanyAdmins);
+    .get(
+        verifyEitherJWT,
+        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
+        getCompanyAdmins
+    );
+
 router
     .route("/change-password")
     .post(
@@ -94,30 +121,24 @@ router
 
 router
     .route("/assign-role/:userId")
-    .post(
-        verifyJWT,
-        userAssignRoleValidator(),
-        validate,
-        assignRole
-);
-    
+    .post(verifyJWT, userAssignRoleValidator(), validate, assignRole);
+
 // SSO routes
-router.route("/google").get( // this route for frontend to show the emails page to choose the email and when i click any email googleCallback() function triggers
+router.route("/google").get(
+    // this route for frontend to show the emails page to choose the email and when i click any email googleCallback() function triggers
     passport.authenticate("google", {
         scope: ["profile", "email"],
     }),
     (req, res) => {
         res.send("redirecting to google...");
-    },
+    }
 );
 
-router
-    .route("/google/callback")
-    .get(
-        passport.authenticate("google", {
-            failureRedirect: `${process.env.FRONTEND_URL}/auth/signin`,
-        }),
-        googleCallback
-    );
+router.route("/google/callback").get(
+    passport.authenticate("google", {
+        failureRedirect: `${process.env.FRONTEND_URL}/auth/signin`,
+    }),
+    googleCallback
+);
 
 export default router;

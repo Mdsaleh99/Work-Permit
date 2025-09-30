@@ -118,6 +118,26 @@ model CompanyMember {
 }
 
 
+// Join model to associate multiple admins (ADMIN/SUPER_ADMIN) with a company
+// this table is like company members table but for admins
+model CompanyAdmin {
+  id         String   @id @default(uuid())
+  companyId  String
+  userId     String
+  role       UserRole
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId]) // unique in combination not individually
+  @@index([companyId])
+  @@index([userId])
+}
+
+
 model WorkPermitForm {
   id        String              @id @default(uuid())
   title     String
@@ -248,20 +268,3 @@ model WorkPermitDraftComponent {
   @@index([workPermitDraftSectionId])
 }
 
-// Join model to associate multiple admins (ADMIN/SUPER_ADMIN) with a company
-model CompanyAdmin {
-  id         String   @id @default(uuid())
-  companyId  String
-  userId     String
-  role       UserRole
-
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([companyId, userId])
-  @@index([companyId])
-  @@index([userId])
-}

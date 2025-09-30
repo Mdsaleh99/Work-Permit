@@ -129,7 +129,61 @@ const companyMemberSignInValidator = () => {
     ];
 }
 
+const createCompanySuperAdminValidator = () => {
+    return [
+        body("email")
+            .trim()
+            .notEmpty()
+            .withMessage("Email is Required")
+            .isEmail()
+            .withMessage("Email is invalid"),
+        body("name")
+            .trim()
+            .notEmpty()
+            .withMessage("name is Required")
+            .isLength({ min: 3 })
+            .withMessage("name should be at least 3 character")
+            .isLength({ max: 20 })
+            .withMessage("name cannot exceed 20 character"),
+        body("password")
+            .trim()
+            .notEmpty()
+            .isLength({ min: 8 })
+            .withMessage("password should be at least 8 character")
+            .isLength({ max: 16 })
+            .withMessage("password cannot exceed 16 character"),
+    ];
+};
+
+const createCompanyAdminValidator = () => {
+    return [
+        body("email")
+            .trim()
+            .notEmpty()
+            .withMessage("Email is Required")
+            .isEmail()
+            .withMessage("Email is invalid"),
+        body("name")
+            .trim()
+            .notEmpty()
+            .withMessage("name is Required")
+            .isLength({ min: 3 })
+            .withMessage("name should be at least 3 character")
+            .isLength({ max: 20 })
+            .withMessage("name cannot exceed 20 character"),
+        body("password")
+            .trim()
+            .notEmpty()
+            .isLength({ min: 8 })
+            .withMessage("password should be at least 8 character")
+            .isLength({ max: 16 })
+            .withMessage("password cannot exceed 16 character"),
+    ];
+};
+
 export {
+    createCompanyAdminValidator,
+    createCompanySuperAdminValidator,
     userAssignRoleValidator,
     createCompanyValidator,
     companyMemberSignInValidator,

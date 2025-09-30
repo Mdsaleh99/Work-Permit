@@ -348,13 +348,15 @@ function AllowPermitButton({ companyId, member }) {
                 // Reset selected from latest member.allowedWorkPermits when opening
                 setSelected(Array.isArray(member?.allowedWorkPermits) ? member.allowedWorkPermits.map(p => p.id) : []);
                 const companyData = await getCompanyByUser();
-                const store = getAllWorkPermits();
-                const all = await store;
+                // const store = ;
+                const all = await getAllWorkPermits();
                 const filtered = Array.isArray(all)
                     ? all.filter((p) => !companyData?.id || p.companyId === companyData.id)
                     : [];
                 setList(filtered);
-            } catch {}
+            } catch (err) {
+                console.error(err);
+            }
         })();
     }, [open, member]);
 
