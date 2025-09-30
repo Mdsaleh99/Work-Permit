@@ -50,13 +50,19 @@ export default function FormBuilderView({ title, sectionsTemplate, workPermit, w
                 setLoadingSubmissions(true);
                 try {
                     const submissions = await workPermitService.listSubmissions(workPermitId);
+                    console.log('FormBuilderView - Loaded submissions:', submissions);
                     if (submissions?.data && submissions.data.length > 0) {
                         // Get the latest submission
                         const latestSubmission = submissions.data[0];
+                        console.log('FormBuilderView - Latest submission:', latestSubmission);
                         setSubmittedData(latestSubmission.answers);
+                    } else {
+                        console.log('FormBuilderView - No submissions found');
+                        setSubmittedData(null);
                     }
                 } catch (error) {
                     console.error('Error loading submissions:', error);
+                    setSubmittedData(null);
                 } finally {
                     setLoadingSubmissions(false);
                 }
@@ -128,6 +134,7 @@ export default function FormBuilderView({ title, sectionsTemplate, workPermit, w
         })();
         
         console.log('FormBuilderView Print View - Final printFormData:', printFormData);
+        console.log('FormBuilderView Print View - Submitted data:', submittedData);
         
         return (
             <div className="min-h-screen bg-white">

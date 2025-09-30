@@ -104,7 +104,23 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
         const rawAnswer = answers ? answers[component.id] : undefined;
         const answerVal = normalizeAnswer(rawAnswer, component.options);
         const componentVal = (component && (component.value ?? component.text)) || "";
-        const displayVal = answers ? answerVal : componentVal;
+        // Check if this specific component has an answer, not just if answers object exists
+        const hasAnswer = answers && Object.prototype.hasOwnProperty.call(answers, component.id);
+        const displayVal = hasAnswer ? answerVal : componentVal;
+        
+        // Debug logging for troubleshooting
+        if (answers && Object.keys(answers).length > 0) {
+            console.log('PrintView - Component rendering:', {
+                componentId: component.id,
+                componentLabel: component.label,
+                hasAnswer,
+                rawAnswer,
+                answerVal,
+                componentVal,
+                displayVal,
+                allAnswers: answers
+            });
+        }
         
         // Debug Work Permit No specifically
         if (/work\s*permit\s*no/i.test(component?.label || "")) {
@@ -240,7 +256,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                         <div className="ptw-checkbox-grid">
                             {component.options && component.options.map((option, index) => (
                                 <div key={index} className="ptw-checkbox-item">
-                                    <div className="ptw-checkbox">{answers && Array.isArray(answerVal) && answerVal.includes(option) ? '☑' : '☐'}</div>
+                                    <div className="ptw-checkbox">{hasAnswer && Array.isArray(answerVal) && answerVal.includes(option) ? '☑' : '☐'}</div>
                                     <span className="ptw-checkbox-label">{option}</span>
                                 </div>
                             ))}
@@ -254,7 +270,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                         <div className="ptw-radio-group">
                             {component.options && component.options.map((option, index) => (
                                 <div key={index} className="ptw-radio-item">
-                                    <div className="ptw-radio">{answers && answerVal === option ? '■' : '□'}</div>
+                                    <div className="ptw-radio">{hasAnswer && answerVal === option ? '■' : '□'}</div>
                                     <span className="ptw-radio-label">{option}</span>
                                 </div>
                             ))}
@@ -300,7 +316,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                             className="flex items-center space-x-2"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            <span>Back to Builder</span>
+                            <span>Go Back</span>
                         </Button>
                         <h3 className="text-lg font-semibold text-gray-900">
                             Print Preview: {formData.title || "GENERAL WORK PERMIT"}
@@ -338,7 +354,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                         {formData.logoSrc ? (
                             <img src={formData.logoSrc} alt="Company Logo" className="ptw-logo-img" />
                         ) : (
-                            <span className="ptw-logo-text">expertise</span>
+                            <span className="ptw-logo-text">Company Name</span>
                         )}
                     </div>
                 </div>

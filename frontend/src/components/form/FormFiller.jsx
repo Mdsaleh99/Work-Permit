@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -10,7 +11,7 @@ import PrintView from "./PrintView";
 
 // Simple member filler that renders input controls for each component type
 // Props: { title, sectionsTemplate, onSubmit, isSubmitting, containerClassName, initialAnswers, permitNo }
-const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, containerClassName, initialAnswers: initialAnswersProp, permitNo }) => {
+const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, containerClassName, initialAnswers: initialAnswersProp, permitNo, workPermitId }) => {
     const isEditMode = Boolean(initialAnswersProp);
     // Map section titles to icons
     const getSectionIcon = (sectionTitle, className = "w-4 h-4") => {
@@ -54,8 +55,16 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
     }, [sectionsTemplate, permitNo, initialAnswersProp]);
 
     const [answers, setAnswers] = useState(initialAnswers);
+    const answersRef = React.useRef(initialAnswers);
+    // Track modal open state without referencing state before initialization
+    const isOpeningModalOpenRef = React.useRef(false);
     React.useEffect(() => {
-        setAnswers(initialAnswers);
+        // Merge new initial defaults with current answers; don't wipe user input
+        const merged = { ...initialAnswers, ...(answersRef.current || {}) };
+        // Avoid resetting while Opening/PTW modal is open
+        if (isOpeningModalOpenRef.current) return;
+        setAnswers(merged);
+        answersRef.current = merged;
     }, [initialAnswers]);
 
     // Ensure Work Permit No is injected even if user enters Print View immediately
@@ -67,12 +76,19 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
         if (!workPermitComponent) return;
         const current = answers?.[workPermitComponent.id];
         if (current === undefined || current === "") {
-            setAnswers(prev => ({ ...prev, [workPermitComponent.id]: permitNo }));
+            setAnswers(prev => {
+                const next = { ...prev, [workPermitComponent.id]: permitNo };
+                answersRef.current = next;
+                return next;
+            });
         }
     }, [permitNo, sectionsTemplate]);
     const [showPrint, setShowPrint] = useState(false);
     const [showOpeningModal, setShowOpeningModal] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    React.useEffect(() => { isOpeningModalOpenRef.current = showOpeningModal; }, [showOpeningModal]);
     const [openingLocal, setOpeningLocal] = useState({});
+    const answersSnapshotRef = React.useRef(null);
     const [openingSupers, setOpeningSupers] = useState([]);
     const [openingMember, setOpeningMember] = useState(null);
     const [openingCompanyName, setOpeningCompanyName] = useState("");
@@ -131,14 +147,20 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
         }
     }, [sectionsTemplate, selectedSection]);
 
-    const setValue = (id, value) => setAnswers(prev => ({ ...prev, [id]: value }));
+    const setValue = (id, value) => setAnswers(prev => {
+        const next = { ...prev, [id]: value };
+        answersRef.current = next;
+        return next;
+    });
 
     const toggleCheckbox = (id, option) => {
         setAnswers(prev => {
             const arr = Array.isArray(prev[id]) ? prev[id] : [];
             const exists = arr.includes(option);
-            const next = exists ? arr.filter(o => o !== option) : [...arr, option];
-            return { ...prev, [id]: next };
+            const nextArr = exists ? arr.filter(o => o !== option) : [...arr, option];
+            const next = { ...prev, [id]: nextArr };
+            answersRef.current = next;
+            return next;
         });
     };
 
@@ -188,6 +210,8 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
     // When Opening/PTW modal opens, fetch super admins and current member; seed receiving authority name
     React.useEffect(() => {
         if (!showOpeningModal || !hasOpeningPTW) return;
+        // Snapshot current answers to avoid any intermediate state loss while modal is open
+        answersSnapshotRef.current = answersRef.current;
         (async () => {
             try {
                 const storeMod = await import("@/store/useCompanyStore");
@@ -219,6 +243,7 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
 
     // Render component based on type
     const renderComponent = (component) => {
+                                const isWorkPermitNoField = /work\s*permit\s*no/i.test(component?.label || "");
                                 const isToolsEquip = ((currentSection?.title || "").toLowerCase().includes("tools") && (currentSection?.title || "").toLowerCase().includes("equipment"))
                                     || ((component?.label || "").toLowerCase().includes("tools") && (component?.label || "").toLowerCase().includes("equipment"));
                                 switch (component.type) {
@@ -230,7 +255,9 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                                 setAnswers(prev => {
                                                     const arr = Array.isArray(prev[component.id]) ? [...prev[component.id]] : Array(18).fill("");
                                                     arr[idx] = val;
-                                                    return { ...prev, [component.id]: arr };
+                                                    const next = { ...prev, [component.id]: arr };
+                                                    answersRef.current = next;
+                                                    return next;
                                                 });
                                             };
                                             return (
@@ -263,6 +290,8 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                                     value={answers[component.id] || ""}
                                                     onChange={e => setValue(component.id, e.target.value)}
                             required={component.required}
+                            disabled={isWorkPermitNoField}
+                            readOnly={isWorkPermitNoField}
                             className="w-full px-3 sm:px-4 py-3 sm:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-sm sm:text-base"
                                                 />
                                             </div>
@@ -332,7 +361,9 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                                 setAnswers(prev => {
                                                     const arr = Array.isArray(prev[component.id]) ? [...prev[component.id]] : Array(18).fill("");
                                                     arr[idx] = val;
-                                                    return { ...prev, [component.id]: arr };
+                                                    const next = { ...prev, [component.id]: arr };
+                                                    answersRef.current = next;
+                                                    return next;
                                                 });
                                             };
                                             return (
@@ -423,7 +454,9 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                                 setAnswers(prev => {
                                                     const arr = Array.isArray(prev[component.id]) ? [...prev[component.id]] : Array(18).fill("");
                                                     arr[idx] = val;
-                                                    return { ...prev, [component.id]: arr };
+                                                    const next = { ...prev, [component.id]: arr };
+                                                    answersRef.current = next;
+                                                    return next;
                                                 });
                                             };
                                             return (
@@ -587,9 +620,13 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                             <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => setShowOpeningModal(false)}>Cancel</Button>
                             <Button size="sm" className="cursor-pointer" onClick={() => {
                                 setShowOpeningModal(false);
-                                const merged = { ...answers, ...openingLocal };
-                                setAnswers(merged);
-                                onSubmit && onSubmit(merged);
+                                setAnswers(prev => {
+                                    const base = answersSnapshotRef.current || answersRef.current || prev || {};
+                                    const merged = { ...base, ...(answersRef.current || {}), ...(openingLocal || {}) };
+                                    answersRef.current = merged;
+                                    onSubmit && onSubmit(merged);
+                                    return merged;
+                                });
                             }}>{isEditMode ? "Confirm & Save" : "Confirm & Submit"}</Button>
                         </div>
                     </DialogContent>
@@ -787,19 +824,33 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                     if (hasOpeningPTW && !isEditMode) {
                                         const seed = {};
                                         (openingSection?.components || []).forEach((c) => {
-                                            const existing = answers[c.id];
+                                            const existing = (answersRef.current || {})[c.id];
                                             seed[c.id] = existing !== undefined ? existing : (c.type === "checkbox" ? [] : "");
                                         });
                                         setOpeningLocal(seed);
                                         setShowOpeningModal(true);
+                                    } else if (isEditMode && workPermitId) {
+                                        (async () => {
+                                            try {
+                                                setIsSaving(true);
+                                                const mod = await import("@/services/workPermit.service");
+                                                await mod.workPermitService.updateSubmission(workPermitId, answersRef.current);
+                                                toast.success("Permit updated successfully");
+                                            } catch (e) {
+                                                console.error(e);
+                                                toast.error("Failed to update permit");
+                                            } finally {
+                                                setIsSaving(false);
+                                            }
+                                        })();
                                     } else {
-                                        onSubmit && onSubmit(answers);
+                                        onSubmit && onSubmit(answersRef.current);
                                     }
                                 }} 
-                                disabled={isSubmitting} 
+                                disabled={isSubmitting || isSaving} 
                                 className="px-4 sm:px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs sm:text-sm"
                             >
-                                {isSubmitting ? (isEditMode ? "Saving..." : "Submitting...") : (isEditMode ? "Edit Permit" : "Submit Form")}
+                                {(isSubmitting || isSaving) ? (isEditMode ? "Saving..." : "Submitting...") : (isEditMode ? "Edit Permit" : "Submit Form")}
                             </Button>
                         </div>
                     </div>

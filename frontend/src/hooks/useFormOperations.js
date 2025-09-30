@@ -218,35 +218,36 @@ export const useFormOperations = ({
     };
 
     // Default declarations to use if the Declaration section has no components
+    // Must match DeclarationModal.jsx IDs
     const DEFAULT_DECLARATIONS = [
         {
-            id: "decl-terms-1",
+            id: "site-preparation",
             label: "Site Preparation completed and work can commence.",
             required: true,
         },
         {
-            id: "decl-terms-2",
-            label: "Permit Issuing Authority confirms all controls are in place.",
+            id: "permit-issuing-authority",
+            label: "Permit Issuing Authority",
             required: true,
         },
         {
-            id: "decl-terms-3",
-            label: "I fully understand the safety precautions to be taken as described.",
+            id: "permit-issuing-date",
+            label: "Date",
             required: true,
         },
         {
-            id: "decl-terms-4",
-            label: "All workers have been briefed and are competent for the task.",
+            id: "safety-understanding",
+            label: "I fully understand the safety precaution to be taken as described above.",
             required: true,
         },
         {
-            id: "decl-terms-5",
-            label: "Work area has been inspected and made safe.",
+            id: "permit-receiving-authority",
+            label: "Permit Receiving Authority",
             required: true,
         },
         {
-            id: "decl-terms-6",
-            label: "I agree to comply with all conditions of this permit.",
+            id: "permit-receiving-date",
+            label: "Date",
             required: true,
         },
     ];

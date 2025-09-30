@@ -58,6 +58,7 @@ function FormFillPage() {
         <FormFiller
             title={form?.title || "Work Permit"}
             sectionsTemplate={sectionsTemplate}
+            permitNo={form?.workPermitNo}
             onSubmit={handleSubmit}
             isSubmitting={false}
         />

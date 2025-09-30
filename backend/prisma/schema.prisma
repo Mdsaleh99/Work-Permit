@@ -193,6 +193,8 @@ model WorkPermitSubmission {
   @@index([workPermitFormId])
   @@index([companyId])
   @@index([submittedById])
+  // Ensure one submission per member per form
+  @@unique([workPermitFormId, submittedById])
 }
 
 // Draft Models for Work Permit Forms

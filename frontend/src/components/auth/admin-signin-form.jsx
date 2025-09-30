@@ -40,10 +40,10 @@ export function AdminSignInForm({ className, ...props }) {
         try {
             const { companyId, email, password } = data;
             await signinAdmin(companyId, { email, password })
-            // Only ADMIN allowed on this page
+            // Allow ADMIN and SUPER_ADMIN on this page
             const user = useAuthStore.getState().authUser;
-            if (!user || user.role !== 'ADMIN') {
-                setError('email', { type: 'server', message: 'Only Admin can sign in on this page' });
+            if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+                setError('email', { type: 'server', message: 'Only Admin or Super Admin can sign in on this page' });
                 return;
             }
             navigate({ to: "/page/app/dashboard" })

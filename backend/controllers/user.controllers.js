@@ -297,20 +297,22 @@ const signIn = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Email or Password is wrong.");
     }
 
-    // If companyId is provided, enforce SUPER_ADMIN role and membership to that company
+    // If companyId is provided, allow ADMIN or SUPER_ADMIN linked to that company
     if (companyIdParam) {
         const company = await db.company.findUnique({ where: { id: companyIdParam } });
         if (!company) {
             throw new ApiError(404, "Company not found");
         }
-        if (user.role !== "SUPER_ADMIN") {
-            throw new ApiError(403, "Only SUPER_ADMIN can sign in with company scope");
-        }
+        // Require a link in CompanyAdmin for this company
         const link = await db.companyAdmin.findUnique({
             where: { companyId_userId: { companyId: companyIdParam, userId: user.id } },
         });
         if (!link) {
-            throw new ApiError(403, "SUPER_ADMIN is not associated with this company");
+            throw new ApiError(403, "User is not associated with this company");
+        }
+        // Only ADMIN or SUPER_ADMIN can sign in with company scope
+        if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+            throw new ApiError(403, "Only ADMIN can sign in with company scope");
         }
     }
 

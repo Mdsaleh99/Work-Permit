@@ -3,6 +3,7 @@ import { db } from "../db/db.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { sendEmail, permitSubmissionNotificationMailgenContent } from "../utils/mail.js";
+import { generateUniqueWorkPermitNumber, isWorkPermitNumberUnique } from "../utils/workPermitNumberGenerator.js";
 
 export const createWorkPermitForm = asyncHandler(async (req, res) => {
     const { title, sections = [], workPermitNo } = req.body;
@@ -31,6 +32,22 @@ export const createWorkPermitForm = asyncHandler(async (req, res) => {
         throw new ApiError(404, "company not found");
     }
 
+    // Generate unique work permit number if not provided
+    let finalWorkPermitNo = workPermitNo;
+    if (!finalWorkPermitNo) {
+        try {
+            finalWorkPermitNo = await generateUniqueWorkPermitNumber();
+        } catch (error) {
+            throw new ApiError(500, "Failed to generate unique work permit number");
+        }
+    } else {
+        // Validate provided work permit number is unique
+        const isUnique = await isWorkPermitNumberUnique(finalWorkPermitNo);
+        if (!isUnique) {
+            throw new ApiError(400, "Work permit number already exists");
+        }
+    }
+
     /*
         Removed workPermitFormId inside sections.create. Prisma automatically links sections to the parent workPermitForm.
 
@@ -39,7 +56,7 @@ export const createWorkPermitForm = asyncHandler(async (req, res) => {
     const workPermitForm = await db.workPermitForm.create({
         data: {
             title,
-            ...(workPermitNo ? { workPermitNo } : {}),
+            workPermitNo: finalWorkPermitNo,
             userId,
             companyId: company.id,
             sections: {
@@ -187,6 +204,14 @@ export const updateWorkPermitForm = asyncHandler(async (req, res) => {
 
     if (!workPermitFormId) {
         throw new ApiError(401, "work permit id is required");
+    }
+
+    // Validate work permit number uniqueness if provided
+    if (workPermitNo) {
+        const isUnique = await isWorkPermitNumberUnique(workPermitNo, workPermitFormId);
+        if (!isUnique) {
+            throw new ApiError(400, "Work permit number already exists");
+        }
     }
     if (!title) {
         throw new ApiError(401, "Title is required");
@@ -466,23 +491,19 @@ export const duplicateWorkPermitForm = asyncHandler(async (req, res) => {
     }
     
 
-    // Generate a new unique 6-digit permit number
-    const generateSixDigit = () => String(Math.floor(100000 + Math.random() * 900000));
+    // Generate a new unique work permit number
     let newPermitNo = null;
-    for (let i = 0; i < 10; i++) {
-        const candidate = generateSixDigit();
-        const exists = await db.workPermitForm.findFirst({ where: { workPermitNo: candidate } });
-        if (!exists) {
-            newPermitNo = candidate;
-            break;
-        }
+    try {
+        newPermitNo = await generateUniqueWorkPermitNumber();
+    } catch (error) {
+        throw new ApiError(500, "Failed to generate unique work permit number for duplicate");
     }
 
     // Create duplicated work permit (create a new WorkPermitForm, not a Draft)
     const duplicatedWorkPermitForm = await db.workPermitForm.create({
         data: {
             title: `${originalWorkPermitForm.title} (Copy)`,
-            workPermitNo: newPermitNo, // may be null if uniqueness not found in attempts
+            workPermitNo: newPermitNo,
             userId,
             companyId: originalWorkPermitForm.companyId,
             sections: {
@@ -705,24 +726,44 @@ export const createWorkPermitSubmission = asyncHandler(async (req, res) => {
     // Note: submittedById references CompanyMember now. Prefer member id; fallback to form owner mapping is removed.
     // const submittedById = memberId // for primary user submissions, this should be null unless model supports users
 
-    const submission = await db.workPermitSubmission.create({
-        data: {
-            workPermitFormId: form.id,
-            companyId: form.companyId,
-            submittedById: memberId,
-            answers: answers,
-        },
+    // Ensure single submission per member+form: update if exists, else create
+    const existing = await db.workPermitSubmission.findFirst({
+        where: { workPermitFormId: form.id, submittedById: memberId },
     });
 
-    // Send email notification to selected Super Admin (if applicable)
-    try {
-        await sendEmailNotificationToSuperAdmin(answers, memberId, form, submission.id);
-    } catch (emailError) {
-        console.error("Email notification failed:", emailError);
-        // Don't fail the submission if email fails
+    let submission;
+    let created = false;
+    if (existing) {
+        submission = await db.workPermitSubmission.update({
+            where: { id: existing.id },
+            data: { answers },
+        });
+    } else {
+        submission = await db.workPermitSubmission.create({
+            data: {
+                workPermitFormId: form.id,
+                companyId: form.companyId,
+                submittedById: memberId,
+                answers: answers,
+            },
+        });
+        created = true;
     }
 
-    return res.status(201).json(new ApiResponse(201, submission, "submission created"));
+    // Send email notification to selected Super Admin (if applicable)
+    // Only email on first submission, not edits
+    if (created) {
+        try {
+            await sendEmailNotificationToSuperAdmin(answers, memberId, form, submission.id);
+        } catch (emailError) {
+            console.error("Email notification failed:", emailError);
+            // Don't fail the request if email fails
+        }
+    }
+
+    const statusCode = created ? 201 : 200;
+    const message = created ? "submission created" : "submission updated";
+    return res.status(statusCode).json(new ApiResponse(statusCode, submission, message));
 });
 
 export const listWorkPermitSubmissions = asyncHandler(async (req, res) => {
@@ -731,7 +772,7 @@ export const listWorkPermitSubmissions = asyncHandler(async (req, res) => {
 
     const submissions = await db.workPermitSubmission.findMany({
         where: { workPermitFormId },
-        orderBy: { createdAt: "desc" },
+        orderBy: { updatedAt: "desc" },
         include: { submittedBy: { select: { id: true, name: true, email: true } } },
     });
 

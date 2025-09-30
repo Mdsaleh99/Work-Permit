@@ -98,6 +98,7 @@ function RouteComponent() {
             isSubmitting={false}
             containerClassName="h-full"
             initialAnswers={edit && existingSubmission ? existingSubmission.answers : undefined}
+            workPermitId={workPermitId}
         />
     );
 }

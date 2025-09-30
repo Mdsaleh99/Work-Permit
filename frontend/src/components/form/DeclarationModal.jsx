@@ -32,7 +32,7 @@ const DeclarationModal = ({
         }
     };
 
-    // Fixed declarations list (only these, no others)
+    // Fixed declarations list (only these, no others) - must match useFormOperations.js
     const DECLARATIONS = [
         { id: "site-preparation", label: "Site Preparation completed and work can commence.", required: true },
         { id: "permit-issuing-authority", label: "Permit Issuing Authority", required: true },

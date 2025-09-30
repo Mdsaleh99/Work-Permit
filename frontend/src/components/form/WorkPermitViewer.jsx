@@ -22,18 +22,29 @@ const WorkPermitViewer = ({ title, sectionsTemplate, onEdit, workPermitId }) => 
                     const res = await workPermitService.listSubmissions(workPermitId);
                     const list = res?.data || res || [];
                     if (mounted && Array.isArray(list) && list.length > 0) {
-                        setLatestAnswers(list[0].answers || null);
+                        //const sorted = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                        // const getTs = (x) => new Date(x?.updatedAt || x?.createdAt || 0).getTime();
+                        // const sorted = [...list].sort((a, b) => getTs(b) - getTs(a));
+                        setLatestAnswers(list[0]?.answers || null);
+                    } else {
+                        setLatestAnswers(null);
                     }
                 }
-            } catch {}
+            } catch (error) {
+                setLatestAnswers(null);
+            }
         })();
         return () => { mounted = false; };
     }, [workPermitId]);
-    const formData = React.useMemo(() => ({
-        title: title || "GENERAL WORK PERMIT",
-        sections: sectionsTemplate || [],
-        answers: latestAnswers || null,
-    }), [title, sectionsTemplate, latestAnswers]);
+    const formData = React.useMemo(() => {
+        const data = {
+            title: title || "GENERAL WORK PERMIT",
+            sections: sectionsTemplate || [],
+            answers: latestAnswers || null,
+        };
+        console.log('WorkPermitViewer - Form data:', data);
+        return data;
+    }, [title, sectionsTemplate, latestAnswers]);
 
     return (
         <div className="min-h-screen bg-gray-50">

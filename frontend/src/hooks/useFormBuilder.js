@@ -62,7 +62,7 @@ export const useFormBuilder = ({ title, sectionsTemplate, startWithTemplate = tr
     const [isMobile, setIsMobile] = useState(false);
     const [isCreatingNewForm, setIsCreatingNewForm] = useState(false);
     const [lastSavedTime, setLastSavedTime] = useState(null);
-    const [permitNumberGenerated, setPermitNumberGenerated] = useState(false);
+    // Removed permitNumberGenerated state as work permit numbers are now generated on backend
 
     // Draft system state
     const [currentDraftId, setCurrentDraftId] = useState(null);
@@ -117,35 +117,8 @@ export const useFormBuilder = ({ title, sectionsTemplate, startWithTemplate = tr
         });
     }, [workPermitId, currentWorkPermit?.workPermitNo, formData.sections]);
 
-    // Auto-generate 6-digit unique Work Permit No for new forms (once)
-    useEffect(() => {
-        if (workPermitId) return; // don't generate on edit
-        if (permitNumberGenerated) return; // only once
-        if (!formData?.sections?.length) return;
-        // find a component whose label includes 'Work Permit No'
-        const targetSectionIndex = formData.sections.findIndex(sec =>
-            (sec.components || []).some(c => /work\s*permit\s*no/i.test(c.label))
-        );
-        if (targetSectionIndex === -1) return;
-        const section = formData.sections[targetSectionIndex];
-        const componentIndex = (section.components || []).findIndex(c => /work\s*permit\s*no/i.test(c.label));
-        if (componentIndex === -1) return;
-
-        const generateSixDigit = () => Math.floor(100000 + Math.random() * 900000).toString();
-        const newNumber = generateSixDigit();
-
-        setFormData(prev => {
-            const next = { ...prev };
-            const sec = { ...next.sections[targetSectionIndex] };
-            const comps = [...sec.components];
-            comps[componentIndex] = { ...comps[componentIndex], value: newNumber, enabled: false };
-            sec.components = comps;
-            next.sections = [...next.sections];
-            next.sections[targetSectionIndex] = sec;
-            return next;
-        });
-        setPermitNumberGenerated(true);
-    }, [formData.sections, workPermitId, permitNumberGenerated]);
+    // Work permit number is now generated on the backend
+    // No need for frontend generation logic
 
     // Mobile detection
     useEffect(() => {

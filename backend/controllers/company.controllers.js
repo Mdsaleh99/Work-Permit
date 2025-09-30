@@ -79,6 +79,17 @@ export const createCompany = asyncHandler(async (req, res) => {
         },
     });
 
+    // Link the creator (typically SUPER_ADMIN) to the company in CompanyAdmin if not already linked
+    try {
+        await db.companyAdmin.upsert({
+            where: { companyId_userId: { companyId: company.id, userId: user.id } },
+            update: { role: user.role === 'ADMIN' ? 'ADMIN' : 'SUPER_ADMIN' },
+            create: { companyId: company.id, userId: user.id, role: user.role === 'ADMIN' ? 'ADMIN' : 'SUPER_ADMIN' },
+        });
+    } catch (_) {
+        // no-op; linking failure shouldn't block company creation
+    }
+
     return res
         .status(201)
         .json(new ApiResponse(201, company, "company created successfully"));
