@@ -74,6 +74,10 @@ export const companyMemberVerifyJWT = async (req, res, next) => {
 
 export const authorizeRoles = (...roles) => {
     return asyncHandler((req, res, next) => {
+        console.log("Req.user: ", req.user?.id);
+        console.log("Req.member: ", req.member?.id);
+        console.log("Req.member: ", req.member?.role);
+        
         if (!req.user?.id) {
             throw new ApiError(401, "Unauthorized request");
         }

@@ -15,7 +15,7 @@ import {
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { UserRolesEnum } from "../utils/constants.js";
+import { CompanyMemberRolesEnum, UserRolesEnum } from "../utils/constants.js";
 
 const createCompanyAdmin = asyncHandler(async (req, res) => {
     if (req.user.role === UserRolesEnum.SUPER_ADMIN) {
@@ -110,6 +110,7 @@ const createCompanyAdmin = asyncHandler(async (req, res) => {
             );
     }
 });
+
 
 const createCompanySuperAdmin = asyncHandler(async (req, res) => {
     if (req.user.role === UserRolesEnum.SUPER_ADMIN) {
@@ -227,6 +228,7 @@ const createCompanySuperAdmin = asyncHandler(async (req, res) => {
     }
 });
 
+
 const signUp = asyncHandler(async (req, res) => {
     const { email, name, password } = req.body;
 
@@ -307,6 +309,7 @@ const signUp = asyncHandler(async (req, res) => {
         .json(new ApiResponse(201, user, "User registered successfully"));
 });
 
+
 const verifyEmail = asyncHandler(async (req, res) => {
     const { verificationToken } = req.params;
 
@@ -349,6 +352,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
         );
 });
 
+
 const signIn = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     const companyIdParam = req.params?.companyId;
@@ -378,6 +382,7 @@ const signIn = asyncHandler(async (req, res) => {
         const company = await db.company.findUnique({
             where: { id: companyIdParam },
         });
+
         if (!company) {
             throw new ApiError(404, "Company not found");
         }
@@ -390,9 +395,11 @@ const signIn = asyncHandler(async (req, res) => {
                 },
             },
         });
+
         if (!link) {
             throw new ApiError(403, "User is not associated with this company");
         }
+
         // Only ADMIN or SUPER_ADMIN can sign in with company scope
         if (user.role !== UserRolesEnum.ADMIN && user.role !== UserRolesEnum.SUPER_ADMIN) {
             throw new ApiError(
@@ -436,6 +443,7 @@ const signIn = asyncHandler(async (req, res) => {
         );
 });
 
+
 const signOut = asyncHandler(async (req, res) => {
     const { id } = req.user;
 
@@ -457,6 +465,7 @@ const signOut = asyncHandler(async (req, res) => {
         .clearCookie("refreshToken")
         .json(new ApiResponse(200, null, "Logged out successfully"));
 });
+
 
 // This controller is called when user is logged in and he has snackbar that your email is not verified
 // In case he did not get the email or the email verification token is expired
@@ -506,6 +515,7 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
         .status(201)
         .json(new ApiResponse(201, {}, "Mail has been sent to your mail ID"));
 });
+
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req.cookies?.refreshToken;
@@ -578,6 +588,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 });
 
+
 const forgotPasswordRequest = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
@@ -620,6 +631,7 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, null, "Check Your Inbox"));
 });
 
+
 const resetForgottenPassword = asyncHandler(async (req, res) => {
     const { resetToken } = req.params;
     const { newPassword } = req.body;
@@ -660,39 +672,44 @@ const resetForgottenPassword = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, {}, "Password reset successfully"));
 });
 
+
 const changeCurrentPassword = asyncHandler(async (req, res) => {
-    const { oldPassword, newPassword } = req.body;
-    const user = await db.user.findUnique({
-        where: {
-            id: req.user.id,
-        },
-    });
+    if (req.user.role === UserRolesEnum.ADMIN || req.user.role === UserRolesEnum.SUPER_ADMIN) {
+        const { oldPassword, newPassword } = req.body;
+        const user = await db.user.findUnique({
+            where: {
+                id: req.user.id,
+            },
+        });
 
-    if (!user) {
-        throw new ApiError(404, "user not found");
+        if (!user) {
+            throw new ApiError(404, "user not found");
+        }
+
+        const isOldPasswordCorrect = await bcrypt.compare(
+            oldPassword,
+            user.password
+        );
+        
+        if (!isOldPasswordCorrect) {
+            throw new ApiError(400, "Invalid old password");
+        }
+
+        await db.user.update({
+            where: {
+                id: user.id,
+            },
+            data: {
+                password: newPassword,
+            },
+        });
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, {}, "Password changed successfully"));
     }
-
-    const isOldPasswordCorrect = await bcrypt.compare(
-        oldPassword,
-        user.password
-    );
-    if (!isOldPasswordCorrect) {
-        throw new ApiError(400, "Invalid old password");
-    }
-
-    await db.user.update({
-        where: {
-            id: user.id,
-        },
-        data: {
-            password: newPassword,
-        },
-    });
-
-    return res
-        .status(200)
-        .json(new ApiResponse(200, {}, "Password changed successfully"));
 });
+
 
 const getCurrentUser = asyncHandler(async (req, res) => {
     const { id } = req.user;
@@ -723,160 +740,98 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     );
 });
 
-const assignRole = asyncHandler(async (req, res) => {
-    const { userId } = req.params;
-    const { role } = req.body;
 
-    if (!userId) {
-        throw new ApiError(401, "userId is required");
-    }
-
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user) {
-        throw new ApiError(404, "User not found");
-    }
-
-    await db.user.update({
-        where: {
-            id: userId,
-        },
-        data: {
-            role,
-        },
-    });
-
-    return res
-        .status(200)
-        .json(new ApiResponse(200, {}, "Role changed for the user"));
-});
-
-const getAllUsers = asyncHandler(async (req, res) => {
-    const allUsers = await db.user.findMany({
-        select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true,
-            updatedAt: true,
-            isEmailVerified: true,
-        },
-    });
-
-    if (!allUsers || allUsers.length === 0) {
-        throw new ApiError(401, "No user found");
-    }
-
-    res.status(200).json(
-        new ApiResponse(200, allUsers, "all users fetched successfully")
-    );
-});
-
-// Return only SUPER_ADMIN users (optionally could filter by company if needed later)
-const getAllSuperAdmins = asyncHandler(async (req, res) => {
-    const superAdmins = await db.user.findMany({
-        where: { role: "SUPER_ADMIN" },
-        select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true,
-            updatedAt: true,
-            isEmailVerified: true,
-        },
-        orderBy: { createdAt: "desc" },
-    });
-
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(
-                200,
-                superAdmins,
-                "super admins fetched successfully"
-            )
-        );
-});
-
-// Return SUPER_ADMIN users linked to a specific company via CompanyAdmin
 const getCompanySuperAdmins = asyncHandler(async (req, res) => {
-    const { companyId } = req.params;
-    if (!companyId) {
-        throw new ApiError(400, "companyId is required");
-    }
+    // if (req.user.role === UserRolesEnum.ADMIN || req.user.role === UserRolesEnum.SUPER_ADMIN || req.member.role === CompanyMemberRolesEnum.COMPANY_MEMBER) {
+        const { companyId } = req.params;
+        if (!companyId) {
+            throw new ApiError(400, "companyId is required");
+        }
 
-    const links = await db.companyAdmin.findMany({
-        where: { companyId, role: "SUPER_ADMIN" },
-        include: {
-            user: {
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    role: true,
-                    createdAt: true,
+        const links = await db.companyAdmin.findMany({
+            where: { companyId, role: "SUPER_ADMIN" },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                        createdAt: true,
+                    },
                 },
             },
-        },
-        orderBy: { createdAt: "desc" },
-    });
+            orderBy: { createdAt: "desc" },
+        });
 
-    const list = links.map((l) => ({
-        id: l.user.id,
-        name: l.user.name,
-        email: l.user.email,
-        role: l.user.role,
-        createdAt: l.user.createdAt,
-    }));
+        const list = links.map((l) => ({
+            id: l.user.id,
+            name: l.user.name,
+            email: l.user.email,
+            role: l.user.role,
+            createdAt: l.user.createdAt,
+        }));
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(
-                200,
-                list,
-                "company super admins fetched successfully"
-            )
-        );
-});
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    list,
+                    "company super admins fetched successfully"
+                )
+            );
+    }
+// }
+);
 
-// Return ADMIN users linked to a specific company via CompanyAdmin
+
 const getCompanyAdmins = asyncHandler(async (req, res) => {
-    const { companyId } = req.params;
-    if (!companyId) {
-        throw new ApiError(400, "companyId is required");
-    }
+    if (req.user.role === UserRolesEnum.ADMIN || req.user.role === UserRolesEnum.SUPER_ADMIN) {
+        const { companyId } = req.params;
+        if (!companyId) {
+            throw new ApiError(400, "companyId is required");
+        }
 
-    const links = await db.companyAdmin.findMany({
-        where: { companyId, role: "ADMIN" },
-        include: {
-            user: {
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    role: true,
-                    createdAt: true,
+        const links = await db.companyAdmin.findMany({
+            where: {
+                companyId,
+                role: "ADMIN"
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                        createdAt: true,
+                    },
                 },
             },
-        },
-        orderBy: { createdAt: "desc" },
-    });
+            orderBy: {
+                createdAt: "desc"
+            },
+        });
 
-    const list = links.map((l) => ({
-        id: l.user.id,
-        name: l.user.name,
-        email: l.user.email,
-        role: l.user.role,
-        createdAt: l.user.createdAt,
-    }));
+        const list = links.map((l) => ({
+            id: l.user.id,
+            name: l.user.name,
+            email: l.user.email,
+            role: l.user.role,
+            createdAt: l.user.createdAt,
+        }));
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(200, list, "company admins fetched successfully")
-        );
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    list,
+                    "company admins fetched successfully"
+                )
+            );
+    }
 });
 
 const googleCallback = asyncHandler(async (req, res) => {
@@ -908,14 +863,60 @@ const googleCallback = asyncHandler(async (req, res) => {
         );
 });
 
+// const getAllSuperAdmins = asyncHandler(async (req, res) => {
+//     const superAdmins = await db.user.findMany({
+//         where: { role: "SUPER_ADMIN" },
+//         select: {
+//             id: true,
+//             name: true,
+//             email: true,
+//             role: true,
+//             createdAt: true,
+//             updatedAt: true,
+//             isEmailVerified: true,
+//         },
+//         orderBy: { createdAt: "desc" },
+//     });
+
+//     return res
+//         .status(200)
+//         .json(
+//             new ApiResponse(
+//                 200,
+//                 superAdmins,
+//                 "super admins fetched successfully"
+//             )
+//         );
+// });
+
+// const getAllUsers = asyncHandler(async (req, res) => {
+//     const allUsers = await db.user.findMany({
+//         select: {
+//             id: true,
+//             name: true,
+//             email: true,
+//             role: true,
+//             createdAt: true,
+//             updatedAt: true,
+//             isEmailVerified: true,
+//         },
+//     });
+
+//     if (!allUsers || allUsers.length === 0) {
+//         throw new ApiError(401, "No user found");
+//     }
+
+//     res.status(200).json(
+//         new ApiResponse(200, allUsers, "all users fetched successfully")
+//     );
+// });
+
 export {
-    getAllUsers,
     changeCurrentPassword,
     forgotPasswordRequest,
     getCurrentUser,
     googleCallback,
     signIn,
-    assignRole,
     signOut,
     refreshAccessToken,
     signUp,
@@ -924,7 +925,6 @@ export {
     verifyEmail,
     createCompanySuperAdmin,
     createCompanyAdmin,
-    getAllSuperAdmins,
     getCompanySuperAdmins,
     getCompanyAdmins,
 };

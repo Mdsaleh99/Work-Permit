@@ -110,7 +110,7 @@ model CompanyMember {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   // Allowed work permits this member can access
-  allowedWorkPermits WorkPermitForm[]
+  allowedWorkPermits WorkPermitForm[] // many-to-many relation with WorkPermitForm model check allowedMembers field there
   workPermitSubmission WorkPermitSubmission[]
   
 
@@ -150,7 +150,7 @@ model WorkPermitForm {
   sections  WorkPermitSection[]
   submissions WorkPermitSubmission[]
   // Members allowed to access this permit
-  allowedMembers CompanyMember[]
+  allowedMembers CompanyMember[] // many-to-many relation with CompanyMember model check allowedWorkPermits field there
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

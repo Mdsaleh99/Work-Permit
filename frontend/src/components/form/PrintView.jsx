@@ -363,33 +363,41 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
             <div className="ptw-main-content">
                 {formData.sections && formData.sections.length > 0 ? (
                     formData.sections
-                        .map((section) => {
+                        .map((section, idx) => {
                             const sectionKey = getSectionKey(section);
                             // Skip rendering Opening/PTW in print? No, requirement says show in print.
+                            const needsBreakAfter = (
+                                sectionKey === 'ppe-checklist' ||
+                                sectionKey === 'hazard-identification' ||
+                                sectionKey === 'certificate' ||
+                                sectionKey === 'ssow'
+                            );
                             return (
-                            <div key={section.id} className="ptw-section-row" data-section={sectionKey}>
-                                <div className="ptw-sidebar-label-wrapper">
-                                    <div className="ptw-sidebar-label">
-                                        {getSectionDisplayName(section)}
-                                    </div>
-                                </div>
-                                <div className="ptw-content-wrapper">
-                                    {section.components && section.components.length > 0 ? (
-                                        <div className="ptw-component-wrapper">
-                                            {section.components
-                                                .map((component) => (
-                                                    <div key={component.id} className="ptw-component">
-                                                        {renderComponent(component, sectionKey)}
-                                                    </div>
-                                                ))}
+                                <React.Fragment key={section.id}>
+                                    <div className="ptw-section-row" data-section={sectionKey}>
+                                        <div className="ptw-sidebar-label-wrapper">
+                                            <div className="ptw-sidebar-label">
+                                                {getSectionDisplayName(section)}
+                                            </div>
                                         </div>
-                                    ) : (
-                                        <div className="ptw-label text-gray-500">No components configured.</div>
-                                    )}
-                                    {/* Tools & Equipment: do not render an extra long line block here. Lines are rendered per component above. */}
-                                </div>
-                            </div>
-                        );})
+                                        <div className="ptw-content-wrapper">
+                                            {section.components && section.components.length > 0 ? (
+                                                <div className="ptw-component-wrapper">
+                                                    {section.components
+                                                        .map((component) => (
+                                                            <div key={component.id} className="ptw-component">
+                                                                {renderComponent(component, sectionKey)}
+                                                            </div>
+                                                        ))}
+                                                </div>
+                                            ) : (
+                                                <div className="ptw-label text-gray-500">No components configured.</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {needsBreakAfter && <div className="ptw-page-break" />}
+                                </React.Fragment>
+                            );})
                 ) : (
                     <div className="ptw-section-row">
                          <div className="ptw-sidebar-label-wrapper">
@@ -412,7 +420,7 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
             {/* ================================================================
             === CSS UPDATED TO USE BLOCK LAYOUT FOR PRINTING =================
             ================================================================ */}
-            <style jsx>{`
+            <style>{`
                 /* --- Base Form & Header --- */
                 .ptw-form-print {
                     width: 210mm;
@@ -621,16 +629,31 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                    html, body {
                        margin: 0;
                        padding: 0;
+                       height: auto !important;
+                       overflow: visible !important;
                        background: #fff; /* Ensure background is white */
                    }
+                   /* Neutralize transforms and sticky/fixed positions which can cause duplicate first page */
+                   body *, html * { transform: none !important; filter: none !important; }
+                   .sticky { position: static !important; top: auto !important; }
+                   .fixed { position: static !important; }
+                   .overflow-hidden, .overflow-y-auto, .overflow-x-auto { overflow: visible !important; }
+                   #root, body > div, .min-h-screen, .h-screen { height: auto !important; }
+                   /* Unconstrain common app containers that may clip content */
+                   #root, body > div, .min-h-screen, .h-screen, .overflow-hidden {
+                       height: auto !important;
+                       overflow: visible !important;
+                   }
                    .ptw-form-print {
-                       width: 100%;
+                       width: auto;
                        min-height: auto;
                        margin: 0;
                        padding: 0;
                        border: none;
                        box-shadow: none;
                    }
+                   /* Force intentional page breaks after heavy sections */
+                   .ptw-page-break { page-break-after: always; break-after: page; }
                    .no-print {
                        display: none !important;
                    }
@@ -641,6 +664,12 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
                    .ptw-component-wrapper {
                        page-break-inside: auto;
                    }
+                   /* Allow sections to split across pages to prevent cloning/duplication */
+                   .ptw-section-row { break-inside: auto; page-break-inside: auto; }
+                   /* Keep the narrow vertical label from splitting mid-page */
+                   .ptw-sidebar-label-wrapper { break-inside: avoid; page-break-inside: avoid; }
+                   /* Avoid repeating headers/footers by ensuring they are not fixed */
+                   .ptw-header, .ptw-footer { position: static !important; }
                 }
             `}</style>
             </div>

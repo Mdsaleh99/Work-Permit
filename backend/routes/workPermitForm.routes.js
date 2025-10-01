@@ -1,5 +1,10 @@
 import express from "express";
-import { verifyJWT, verifyEitherJWT, companyMemberVerifyJWT, authorizeRoles } from "../middlewares/auth.middlewares.js";
+import {
+    verifyJWT,
+    verifyEitherJWT,
+    companyMemberVerifyJWT,
+    authorizeRoles,
+} from "../middlewares/auth.middlewares.js";
 import {
     createWorkPermitForm,
     duplicateWorkPermitForm,
@@ -15,12 +20,29 @@ import {
     getFormsPendingApproval,
     resetFormsToPending,
 } from "../controllers/workPermitForm.controllers.js";
+import { UserRolesEnum } from "../utils/constants.js";
 
 const router = express.Router();
 
-router.route("/:companyId/create").post(verifyJWT, createWorkPermitForm);
-router.route("/get-all").get(verifyJWT, getAllWorkPermitForm);
-router.route("/company/:companyId/all").get(verifyEitherJWT, getCompanyWorkPermits);
+router
+    .route("/:companyId/create")
+    .post(
+        verifyJWT,
+        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
+        createWorkPermitForm
+    );
+
+router
+    .route("/get-all")
+    .get(
+        verifyJWT,
+        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
+        getAllWorkPermitForm
+    );
+
+router
+    .route("/company/:companyId/all")
+    .get(verifyEitherJWT, getCompanyWorkPermits);
 
 // SUPER_ADMIN only actions - MUST come before parameterized routes
 router

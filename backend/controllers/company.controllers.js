@@ -7,350 +7,454 @@ import {
     generateAccessToken,
     generateRefreshToken,
 } from "../utils/generateToken.js";
+import { UserRolesEnum } from "../utils/constants.js";
 
 export const createCompany = asyncHandler(async (req, res) => {
-    const { compName, description, email, mobileNo } = req.body;
-    const userId = req.user.id;
+    if (req.user.role === UserRolesEnum.SUPER_ADMIN) {
+        const { compName, description, email, mobileNo } = req.body;
+        const userId = req.user.id;
 
-    if (!userId) {
-        throw new ApiError(401, "user id is required");
-    }
+        if (!userId) {
+            throw new ApiError(401, "user id is required");
+        }
 
-    const user = await db.user.findUnique({
-        where: {
-            id: userId,
-        },
-    });
-
-    if (!user) {
-        throw new ApiError(404, "User not found");
-    }
-
-    // Check if user already has a company
-    const existingUserCompany = await db.company.findFirst({
-        where: {
-            userId: user.id,
-        },
-    });
-
-    if (existingUserCompany) {
-        throw new ApiError(409, "You can only create one company per account");
-    }
-
-    // Check if company name already exists
-    const existingCompany = await db.company.findFirst({
-        where: {
-            compName,
-        },
-    });
-
-    if (existingCompany) {
-        throw new ApiError(409, "Company name already exists");
-    }
-
-    // Check if email already exists
-    const existingEmail = await db.company.findFirst({
-        where: {
-            email,
-        },
-    });
-
-    if (existingEmail) {
-        throw new ApiError(409, "Email already exists");
-    }
-
-    const existingMobileNo = await db.company.findFirst({
-        where: {
-            mobileNo,
-        },
-    });
-
-    if (existingMobileNo) {
-        throw new ApiError(409, "Mobile No already exists");
-    }
-
-    const company = await db.company.create({
-        data: {
-            compName,
-            email,
-            mobileNo,
-            description,
-            userId: user.id,
-        },
-    });
-
-    // Link the creator (typically SUPER_ADMIN) to the company in CompanyAdmin if not already linked
-    try {
-        await db.companyAdmin.upsert({
-            where: { companyId_userId: { companyId: company.id, userId: user.id } },
-            update: { role: user.role === 'ADMIN' ? 'ADMIN' : 'SUPER_ADMIN' },
-            create: { companyId: company.id, userId: user.id, role: user.role === 'ADMIN' ? 'ADMIN' : 'SUPER_ADMIN' },
+        const user = await db.user.findUnique({
+            where: {
+                id: userId,
+            },
         });
-    } catch (_) {
-        // no-op; linking failure shouldn't block company creation
-    }
 
-    return res
-        .status(201)
-        .json(new ApiResponse(201, company, "company created successfully"));
+        if (!user) {
+            throw new ApiError(404, "User not found");
+        }
+
+        // Check if user already has a company
+        const existingUserCompany = await db.company.findFirst({
+            where: {
+                userId: user.id,
+            },
+        });
+
+        if (existingUserCompany) {
+            throw new ApiError(
+                409,
+                "You can only create one company per account"
+            );
+        }
+
+        // Check if company name already exists
+        const existingCompany = await db.company.findFirst({
+            where: {
+                compName,
+            },
+        });
+
+        if (existingCompany) {
+            throw new ApiError(409, "Company name already exists");
+        }
+
+        // Check if email already exists
+        const existingEmail = await db.company.findFirst({
+            where: {
+                email,
+            },
+        });
+
+        if (existingEmail) {
+            throw new ApiError(409, "Email already exists");
+        }
+
+        const existingMobileNo = await db.company.findFirst({
+            where: {
+                mobileNo,
+            },
+        });
+
+        if (existingMobileNo) {
+            throw new ApiError(409, "Mobile No already exists");
+        }
+
+        const company = await db.company.create({
+            data: {
+                compName,
+                email,
+                mobileNo,
+                description,
+                userId: user.id,
+            },
+        });
+
+        // Link the creator (typically SUPER_ADMIN) to the company in CompanyAdmin if not already linked
+
+        await db.companyAdmin.upsert({
+            where: {
+                companyId_userId: {
+                    companyId: company.id,
+                    userId: user.id,
+                },
+            },
+            update: {
+                role: user.role === "ADMIN" ? "ADMIN" : "SUPER_ADMIN",
+            },
+            create: {
+                companyId: company.id,
+                userId: user.id,
+                role: user.role === "ADMIN" ? "ADMIN" : "SUPER_ADMIN",
+            },
+        });
+
+        return res
+            .status(201)
+            .json(
+                new ApiResponse(201, company, "company created successfully")
+            );
+    }
 });
 
 export const getCompanyByUser = asyncHandler(async (req, res) => {
-    const userId = req.user.id;
-    if (!userId) {
-        throw new ApiError(401, "User id is required");
-    }
+    if (req.user.role === UserRolesEnum.ADMIN || req.user.role === UserRolesEnum.SUPER_ADMIN) {
+        const userId = req.user.id;
+        if (!userId) {
+            throw new ApiError(401, "User id is required");
+        }
 
-    const user = await db.user.findUnique({
-        where: {
-            id: userId,
-        },
-    });
-
-    if (!user) {
-        throw new ApiError(404, "user not found");
-    }
-
-    // First, try the direct owner relationship (creator of the company)
-    let company = await db.company.findFirst({
-        where: {
-            userId: user.id,
-        },
-    });
-
-    // If not found, resolve via CompanyAdmin association (for SUPER_ADMIN/ADMIN linked to a company)
-    if (!company) {
-        const link = await db.companyAdmin.findFirst({
-            where: { userId },
-            include: { company: true },
+        const user = await db.user.findUnique({
+            where: {
+                id: userId,
+            },
         });
-        company = link?.company || null;
-    }
 
-    if (!company) {
-        throw new ApiError(404, "No company found");
-    }
+        if (!user) {
+            throw new ApiError(404, "user not found");
+        }
 
-    return res
-        .status(200)
-        .json(new ApiResponse(200, company, "company fetched successfully"));
+        // First, try the direct owner relationship (creator of the company)
+        let company = await db.company.findFirst({
+            where: {
+                userId: user.id,
+            },
+        });
+
+        // If not found, resolve via CompanyAdmin association (for SUPER_ADMIN/ADMIN linked to a company)
+        if (!company) {
+            const link = await db.companyAdmin.findFirst({
+                where: {
+                    userId,
+                },
+                include: {
+                    company: true,
+                },
+            });
+            company = link?.company || null;
+        }
+
+        if (!company) {
+            throw new ApiError(404, "No company found");
+        }
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, company, "company fetched successfully")
+            );
+    }
 });
 
 export const createCompanyMember = asyncHandler(async (req, res) => {
-    const { companyId } = req.params;
-    const { name, email, password, allowedWorkPermitIds } = req.body;
+    if (
+        req.user.role === UserRolesEnum.ADMIN ||
+        req.user.role === UserRolesEnum.SUPER_ADMIN
+    ) {
+        const { companyId } = req.params;
+        const { name, email, password, allowedWorkPermitIds } = req.body;
 
-    if (!companyId) {
-        throw new ApiError(400, "companyId is required");
+        if (!companyId) {
+            throw new ApiError(400, "companyId is required");
+        }
+
+        const existingMemberEmail = await db.companyMember.findUnique({
+            where: {
+                email,
+            },
+        });
+
+        if (existingMemberEmail) {
+            throw new ApiError(400, "member already exists with this email");
+        }
+
+        const company = await db.company.findUnique({
+            where: {
+                id: companyId,
+            },
+        });
+
+        if (!company) {
+            throw new ApiError(404, "Company not found");
+        }
+
+        const member = await db.companyMember.create({
+            data: {
+                companyId,
+                name,
+                email,
+                password,
+                ...(
+                    Array.isArray(allowedWorkPermitIds) && allowedWorkPermitIds.length // If the condition is true, spread the resulting object (which is allowedWorkPermits) into the parent object; if not, spread an empty object (which adds nothing).
+                    ?   {
+                            allowedWorkPermits: {
+                                connect: allowedWorkPermitIds.map((id) => ({id})), // connect -> Adds new relations without touching existing ones.Think of it as “append”.
+                            },
+                        }
+                    : {}
+                ),
+            },
+            include: {
+                allowedWorkPermits: {
+                    select: {
+                        id: true,
+                        title: true,
+                        workPermitNo: true,
+                    },
+                },
+            },
+        });
+
+        if (!member) {
+            throw new ApiError(400, "Failed to add member");
+        }
+
+        const createdMember = await db.companyMember.findUnique({
+            where: {
+                id: member.id,
+            },
+            include: {
+                allowedWorkPermits: {
+                    select: {
+                        id: true,
+                        title: true,
+                        workPermitNo: true,
+                    },
+                },
+            },
+            omit: {
+                password: true,
+                refreshToken: true,
+            },
+        });
+
+        return res
+            .status(201)
+            .json(
+                new ApiResponse(201, createdMember, "Member added to company")
+            );
     }
-
-    const existingMemberEmail = await db.companyMember.findUnique({
-        where: {
-            email,
-        },
-    });
-
-    if (existingMemberEmail) {
-        throw new ApiError(400, "member already exists with this email");
-    }
-
-    const company = await db.company.findUnique({
-        where: {
-            id: companyId,
-        },
-    });
-
-    if (!company) {
-        throw new ApiError(404, "Company not found");
-    }
-
-    // const user = await db.user.findUnique({ where: { id: userId } });
-    // if (!user) {
-    //     throw new ApiError(404, "User not found");
-    // }
-
-    const member = await db.companyMember.create({
-        data: {
-            companyId,
-            name,
-            email,
-            password,
-            ...(Array.isArray(allowedWorkPermitIds) && allowedWorkPermitIds.length
-                ? {
-                      allowedWorkPermits: {
-                          connect: allowedWorkPermitIds.map((id) => ({ id })),
-                      },
-                  }
-                : {}),
-        },
-        include: {
-            allowedWorkPermits: { select: { id: true, title: true, workPermitNo: true } },
-        },
-    });
-
-    if (!member) {
-        throw new ApiError(400, "Failed to add member");
-    }
-
-    const createdMember = await db.companyMember.findUnique({
-        where: {
-            id: member.id,
-        },
-        include: {
-            allowedWorkPermits: { select: { id: true, title: true, workPermitNo: true } },
-        },
-        omit: {
-            password: true,
-            refreshToken: true,
-        },
-    });
-
-    return res
-        .status(201)
-        .json(new ApiResponse(201, createdMember, "Member added to company"));
 });
 
 export const getAllCompanyMembers = asyncHandler(async (req, res) => {
-    const { companyId } = req.params;
-    if (!companyId) throw new ApiError(400, "companyId is required");
+    if (
+        req.user.role === UserRolesEnum.ADMIN ||
+        req.user.role === UserRolesEnum.SUPER_ADMIN
+    ) {
+        const { companyId } = req.params;
+        if (!companyId) throw new ApiError(400, "companyId is required");
 
-    const members = await db.companyMember.findMany({
-        where: {
-            companyId,
-        },
-        include: {
-            allowedWorkPermits: { select: { id: true, title: true, workPermitNo: true } },
-        },
-        omit: {
-            password: true,
-            refreshToken: true,
-        },
-        orderBy: { createdAt: "desc" },
-    });
+        const members = await db.companyMember.findMany({
+            where: {
+                companyId,
+            },
+            include: {
+                allowedWorkPermits: {
+                    select: {
+                        id: true,
+                        title: true,
+                        workPermitNo: true,
+                    },
+                },
+            },
+            omit: {
+                password: true,
+                refreshToken: true,
+            },
+            orderBy: { createdAt: "desc" },
+        });
 
-    if (!members) {
-        throw new ApiError(404, "No members found for this company");
+        if (!members || members.length === 0) {
+            throw new ApiError(404, "No members found for this company");
+        }
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, members, "Company members fetched"));
     }
-
-    return res
-        .status(200)
-        .json(new ApiResponse(200, members, "Company members fetched"));
 });
 
 export const deleteCompanyMember = asyncHandler(async (req, res) => {
-    const { companyId, memberId } = req.params;
-    if (!companyId || !memberId) {
-        throw new ApiError(400, "companyId and memberId are required");
+    if (
+        req.user.role === UserRolesEnum.ADMIN ||
+        req.user.role === UserRolesEnum.SUPER_ADMIN
+    ) {
+        const { companyId, memberId } = req.params;
+
+        if (!companyId || !memberId) {
+            throw new ApiError(400, "companyId and memberId are required");
+        }
+
+        const company = await db.company.findUnique({
+            where: {
+                id: companyId,
+            },
+        });
+
+        if (!company) {
+            throw new ApiError(404, "Company not found");
+        }
+
+        const member = await db.companyMember.findUnique({
+            where: {
+                id: memberId,
+            },
+        });
+
+        if (!member) {
+            throw new ApiError(404, "Member not found");
+        }
+
+        await db.companyMember.delete({
+            where: {
+                id: memberId,
+            },
+        });
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, {}, "Member deleted successfully"));
     }
-
-    const company = await db.company.findUnique({
-        where: { id: companyId },
-    });
-
-    if (!company) {
-        throw new ApiError(404, "Company not found");
-    }
-
-    const member = await db.companyMember.findUnique({
-        where: { id: memberId },
-    });
-    if (!member) {
-        throw new ApiError(404, "Member not found");
-    }
-
-    await db.companyMember.delete({
-        where: { id: memberId },
-    });
-
-    return res
-        .status(200)
-        .json(new ApiResponse(200, {}, "Member deleted successfully"));
 });
 
 export const updateCompanyMemberRole = asyncHandler(async (req, res) => {
-    const { companyId, memberId } = req.params;
-    const { role } = req.body;
+    if (
+        req.user.role === UserRolesEnum.ADMIN ||
+        req.user.role === UserRolesEnum.SUPER_ADMIN
+    ) {
+        const { companyId, memberId } = req.params;
+        const { role } = req.body;
 
-    if (!companyId || !memberId) {
-        throw new ApiError(400, "companyId and memberId are required");
+        if (!companyId || !memberId) {
+            throw new ApiError(400, "companyId and memberId are required");
+        }
+
+        if (!role) {
+            throw new ApiError(400, "role is required");
+        }
+
+        const company = await db.company.findUnique({
+            where: {
+                id: companyId,
+            },
+        });
+
+        if (!company) {
+            throw new ApiError(404, "Company not found");
+        }
+
+        const member = await db.companyMember.findUnique({
+            where: {
+                id: memberId,
+            },
+        });
+
+        if (!member) {
+            throw new ApiError(404, "Member not found");
+        }
+
+        const updatedMemberRole = await db.companyMember.update({
+            where: {
+                id: memberId,
+            },
+            data: {
+                role,
+            },
+            omit: {
+                password: true,
+                refreshToken: true,
+            },
+        });
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    updatedMemberRole,
+                    "Member role updated successfully"
+                )
+            );
     }
-
-    if (!role) {
-        throw new ApiError(400, "role is required");
-    }
-
-    const company = await db.company.findUnique({
-        where: { id: companyId },
-    });
-
-    if (!company) {
-        throw new ApiError(404, "Company not found");
-    }
-
-    const member = await db.companyMember.findUnique({
-        where: { id: memberId },
-    });
-
-    if (!member) {
-        throw new ApiError(404, "Member not found");
-    }
-
-    const updatedMemberRole = await db.companyMember.update({
-        where: { id: memberId },
-        data: {
-            role,
-        },
-        omit: {
-            password: true,
-            refreshToken: true,
-        },
-    });
-
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(
-                200,
-                updatedMemberRole,
-                "Member role updated successfully"
-            )
-        );
 });
 
 export const updateCompanyMemberAllowedPermits = asyncHandler(async (req, res) => {
-    const { companyId, memberId } = req.params;
-    const { allowedWorkPermitIds } = req.body;
+    if (req.user.role === UserRolesEnum.ADMIN || req.user.role === UserRolesEnum.SUPER_ADMIN) {
+        const { companyId, memberId } = req.params;
+        const { allowedWorkPermitIds } = req.body;
 
-    if (!companyId || !memberId) {
-        throw new ApiError(400, "companyId and memberId are required");
-    }
+        if (!companyId || !memberId) {
+            throw new ApiError(400, "companyId and memberId are required");
+        }
 
-    const company = await db.company.findUnique({ where: { id: companyId } });
-    if (!company) throw new ApiError(404, "Company not found");
-
-    const member = await db.companyMember.findUnique({ where: { id: memberId } });
-    if (!member) throw new ApiError(404, "Member not found");
-
-    if (!Array.isArray(allowedWorkPermitIds)) {
-        throw new ApiError(400, "allowedWorkPermitIds must be an array");
-    }
-
-    const updated = await db.companyMember.update({
-        where: { id: memberId },
-        data: {
-            allowedWorkPermits: {
-                set: allowedWorkPermitIds.map((id) => ({ id })),
+        const company = await db.company.findUnique({
+            where: {
+                id: companyId
             },
-        },
-        include: {
-            allowedWorkPermits: { select: { id: true, title: true, workPermitNo: true } },
-        },
-        omit: { password: true, refreshToken: true },
-    });
+        });
 
-    return res
-        .status(200)
-        .json(new ApiResponse(200, updated, "Allowed permits updated successfully"));
+        if (!company) throw new ApiError(404, "Company not found");
+
+        const member = await db.companyMember.findUnique({
+            where: {
+                id: memberId
+            },
+        });
+
+        if (!member) throw new ApiError(404, "Member not found");
+
+        if (!Array.isArray(allowedWorkPermitIds)) {
+            throw new ApiError(400, "allowedWorkPermitIds must be an array");
+        }
+
+        const updated = await db.companyMember.update({
+            where: {
+                id: memberId
+            },
+            data: {
+                allowedWorkPermits: {
+                    set: allowedWorkPermitIds.map((id) => ({ id })), // set -> Replaces all existing relations with the new ones. Think of it as “overwrite”.
+                },
+            },
+            include: {
+                allowedWorkPermits: {
+                    select: {
+                        id: true,
+                        title: true,
+                        workPermitNo: true
+                    },
+                },
+            },
+            omit: {
+                password: true,
+                refreshToken: true
+            },
+        });
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    updated,
+                    "Allowed permits updated successfully"
+                )
+            );
+    }
 });
 
 export const companyMemberSignIn = asyncHandler(async (req, res) => {
@@ -372,6 +476,7 @@ export const companyMemberSignIn = asyncHandler(async (req, res) => {
     }
 
     const isPasswordCorrect = await bcrypt.compare(password, member.password);
+
     if (!isPasswordCorrect) {
         throw new ApiError(400, "email or password is incorrect");
     }
@@ -409,7 +514,6 @@ export const companyMemberSignIn = asyncHandler(async (req, res) => {
         );
 });
 
-
 export const companyMemberSignOut = asyncHandler(async (req, res) => {
     const { id } = req.member;
 
@@ -430,8 +534,7 @@ export const companyMemberSignOut = asyncHandler(async (req, res) => {
         .clearCookie("accessToken")
         .clearCookie("refreshToken")
         .json(new ApiResponse(200, null, "Logged out successfully"));
-})
-
+});
 
 export const getCurrentCompanyMember = asyncHandler(async (req, res) => {
     const { id } = req.member;
@@ -444,12 +547,19 @@ export const getCurrentCompanyMember = asyncHandler(async (req, res) => {
             id,
         },
         include: {
-            allowedWorkPermits: { select: { id: true, title: true, workPermitNo: true, companyId: true } },
+            allowedWorkPermits: {
+                select: {
+                    id: true,
+                    title: true,
+                    workPermitNo: true,
+                    companyId: true,
+                },
+            },
             company: {
                 select: {
-                    compName: true
-                }
-            }
+                    compName: true,
+                },
+            },
         },
         omit: {
             password: true,
@@ -465,7 +575,6 @@ export const getCurrentCompanyMember = asyncHandler(async (req, res) => {
         new ApiResponse(200, member, "fetched current member successfully")
     );
 });
-
 
 // export const deleteCompany = asyncHandler(async (req, res) => {
 //     const { id } = req.params;

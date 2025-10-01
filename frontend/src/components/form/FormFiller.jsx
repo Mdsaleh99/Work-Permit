@@ -25,6 +25,32 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
         return <FileText className={className} />;
     };
     const initialAnswers = useMemo(() => {
+        const getTodayDateStr = () => {
+            try {
+                const d = new Date();
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            } catch {
+                return "";
+            }
+        };
+        const getCurrentTimeAmPm = () => {
+            try {
+                const d = new Date();
+                let hours = d.getHours();
+                const minutes = d.getMinutes();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                if (hours === 0) hours = 12;
+                const hh = String(hours).padStart(2, '0');
+                const mm = String(minutes).padStart(2, '0');
+                return `${hh}:${mm} ${ampm}`;
+            } catch {
+                return "";
+            }
+        };
         if (initialAnswersProp && typeof initialAnswersProp === 'object') {
             return initialAnswersProp;
         }
@@ -38,7 +64,13 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                     // For Tools & Equipment, always use 18 blanks regardless of component type
                     map[component.id] = Array(18).fill("");
                 } else {
-                    map[component.id] = "";
+                    if (component.type === "date") {
+                        map[component.id] = getTodayDateStr();
+                    } else if (component.type === "time") {
+                        map[component.id] = getCurrentTimeAmPm();
+                    } else {
+                        map[component.id] = "";
+                    }
                 }
             });
         });
@@ -96,7 +128,8 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const timeLocalRef = React.useRef({});
-    
+    const openingFetchOnceRef = React.useRef(false);
+
     // Filter out declaration, opening-ptw and closure sections for initial selection (still shown in PrintView)
     const initialVisibleSections = sectionsTemplate?.filter(s => 
         s.enabled !== false && 
@@ -210,6 +243,8 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
     // When Opening/PTW modal opens, fetch super admins and current member; seed receiving authority name
     React.useEffect(() => {
         if (!showOpeningModal || !hasOpeningPTW) return;
+        if (openingFetchOnceRef.current) return;
+        openingFetchOnceRef.current = true;
         // Snapshot current answers to avoid any intermediate state loss while modal is open
         answersSnapshotRef.current = answersRef.current;
         (async () => {
@@ -221,12 +256,19 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                 const authStore = authStoreMod.useAuthStore.getState();
                 const member = await companyStore.getCurrentCompanyMember().catch(() => null);
                 setOpeningMember(member);
-                // Only use member's companyId; do not fallback to primary user's company
-                const companyId = member?.companyId || null;
+                // Prefer member's companyId; fallback to user's primary company if not present
+                let companyId = member?.companyId || null;
+                let companyName = "";
+                if (!companyId) {
+                    const company = await companyStore.getCompanyByUser().catch(() => null);
+                    companyId = company?.id || null;
+                    companyName = company?.compName || company?.name || "";
+                }
                 if (companyId) {
                     const list = await svcMod.authService.getCompanySuperAdmins(companyId);
                     setOpeningSupers(Array.isArray(list) ? list : []);
                     setOpeningSupersError(Array.isArray(list) && list.length > 0 ? "" : "No super admins found for this company");
+                    if (companyName) setOpeningCompanyName(companyName);
                 } else {
                     setOpeningSupers([]);
                     setOpeningSupersError("No super admins found for this company");
@@ -239,7 +281,14 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                 }
             } catch {}
         })();
-    }, [showOpeningModal, hasOpeningPTW, openingSection]);
+    }, [showOpeningModal, hasOpeningPTW, openingSection?.id]);
+
+    // Reset one-time guard when modal closes so it can fetch again next open
+    React.useEffect(() => {
+        if (!showOpeningModal) {
+            openingFetchOnceRef.current = false;
+        }
+    }, [showOpeningModal]);
 
     // Render component based on type
     const renderComponent = (component) => {
@@ -822,10 +871,32 @@ const FormFiller = ({ title, sectionsTemplate, onSubmit, isSubmitting, container
                                 size="sm" 
                                 onClick={() => {
                                     if (hasOpeningPTW && !isEditMode) {
+                                        const now = new Date();
+                                        const yyyy = now.getFullYear();
+                                        const mm = String(now.getMonth() + 1).padStart(2, '0');
+                                        const dd = String(now.getDate()).padStart(2, '0');
+                                        const todayStr = `${yyyy}-${mm}-${dd}`;
+                                        let hrs = now.getHours();
+                                        const mins = now.getMinutes();
+                                        const ap = hrs >= 12 ? 'PM' : 'AM';
+                                        hrs = hrs % 12; if (hrs === 0) hrs = 12;
+                                        const hh = String(hrs).padStart(2, '0');
+                                        const mms = String(mins).padStart(2, '0');
+                                        const timeStr = `${hh}:${mms} ${ap}`;
                                         const seed = {};
                                         (openingSection?.components || []).forEach((c) => {
                                             const existing = (answersRef.current || {})[c.id];
-                                            seed[c.id] = existing !== undefined ? existing : (c.type === "checkbox" ? [] : "");
+                                            if (existing !== undefined) {
+                                                seed[c.id] = existing;
+                                            } else if (c.type === 'checkbox') {
+                                                seed[c.id] = [];
+                                            } else if (c.type === 'date') {
+                                                seed[c.id] = todayStr;
+                                            } else if (c.type === 'time') {
+                                                seed[c.id] = timeStr;
+                                            } else {
+                                                seed[c.id] = "";
+                                            }
                                         });
                                         setOpeningLocal(seed);
                                         setShowOpeningModal(true);

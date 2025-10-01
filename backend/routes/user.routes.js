@@ -1,9 +1,7 @@
 import express from "express";
 import {
-    assignRole,
     changeCurrentPassword,
     forgotPasswordRequest,
-    getAllUsers,
     getCurrentUser,
     googleCallback,
     refreshAccessToken,
@@ -13,7 +11,6 @@ import {
     signOut,
     signUp,
     verifyEmail,
-    getAllSuperAdmins,
     getCompanySuperAdmins,
     getCompanyAdmins,
     createCompanyAdmin,
@@ -35,19 +32,37 @@ import {
     verifyEitherJWT,
     verifyJWT,
 } from "../middlewares/auth.middlewares.js";
-import { UserRolesEnum } from "../utils/constants.js";
+import { CompanyMemberRolesEnum, UserRolesEnum } from "../utils/constants.js";
 import passport from "passport";
 
 const router = express.Router();
 
 // Unsecured route
 router.route("/signup").post(userRegisterValidator(), validate, signUp);
-router.route("/signin").post(userLoginValidator(), validate, signIn);
+// router.route("/signin").post(userLoginValidator(), validate, signIn);
 // Super Admin scoped signin (companyId in params) -> reuses same controller
 router.route("/signin/:companyId").post(userLoginValidator(), validate, signIn);
 router.route("/refresh-token").post(refreshAccessToken);
 router.route("/verify-email/:verificationToken").get(verifyEmail);
+router
+    .route("/forgot-password")
+    .post(userForgotPasswordValidator(), validate, forgotPasswordRequest);
 
+router
+    .route("/reset-password/:resetToken")
+    .post(
+        userResetForgottenPasswordValidator(),
+        validate,
+        resetForgottenPassword
+    );
+
+// Secured routes
+router.route("/signout").post(verifyJWT, signOut);
+router.route("/current-user").get(verifyJWT, getCurrentUser);
+router
+    .route("/resend-email-verification")
+    .post(verifyJWT, resendEmailVerification);
+    
 router
     .route("/create-super-admin/:companyId")
     .post(
@@ -69,39 +84,18 @@ router
     );
 
 router
-    .route("/forgot-password")
-    .post(userForgotPasswordValidator(), validate, forgotPasswordRequest);
-
-router
-    .route("/reset-password/:resetToken")
-    .post(
-        userResetForgottenPasswordValidator(),
-        validate,
-        resetForgottenPassword
-    );
-
-// Secured routes
-router.route("/signout").post(verifyJWT, signOut);
-router.route("/current-user").get(verifyJWT, getCurrentUser);
-// router
-//     .route("/get-all")
-//     .get(verifyJWT, authorizeRoles(UserRolesEnum.ADMIN), getAllUsers);
-// router
-//     .route("/get-all-super-admins")
-//     .get(verifyJWT, authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN), getAllSuperAdmins);
-
-router
     .route("/company/:companyId/super-admins")
     .get(
         verifyEitherJWT,
-        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
+        // authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
+        // authorizeRoles(CompanyMemberRolesEnum.COMPANY_MEMBER),
         getCompanySuperAdmins
     );
 
 router
     .route("/company/:companyId/admins")
     .get(
-        verifyEitherJWT,
+        verifyJWT,
         authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
         getCompanyAdmins
     );
@@ -109,19 +103,13 @@ router
 router
     .route("/change-password")
     .post(
-        verifyJWT,
         userChangeCurrentPasswordValidator(),
         validate,
+        verifyJWT,
+        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
         changeCurrentPassword
     );
 
-router
-    .route("/resend-email-verification")
-    .post(verifyJWT, resendEmailVerification);
-
-router
-    .route("/assign-role/:userId")
-    .post(verifyJWT, userAssignRoleValidator(), validate, assignRole);
 
 // SSO routes
 router.route("/google").get(
@@ -140,5 +128,13 @@ router.route("/google/callback").get(
     }),
     googleCallback
 );
+
+
+// router
+//     .route("/get-all")
+//     .get(verifyJWT, authorizeRoles(UserRolesEnum.ADMIN), getAllUsers);
+// router
+//     .route("/get-all-super-admins")
+//     .get(verifyJWT, authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN), getAllSuperAdmins);
 
 export default router;
