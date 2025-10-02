@@ -1,0 +1,40 @@
+name: zero1
+
+services:
+    backend:
+        build:
+            dockerfile: Dockerfile
+            context: ./backend
+        container_name: backend
+        ports:
+            - PORT=${PORT}
+        env_file:
+            - .env
+        networks:
+            - zero1-network
+
+    frontend:
+        build:
+            dockerfile: Dockerfile
+            context: ./frontend
+        container_name: frontend
+        ports:
+            - "80:80"
+            - "443:443"
+        env_file:
+            - .env
+        depends_on:
+            - backend
+        volumes:
+            - ./Caddyfile:/etc/caddy/Caddyfile
+            - caddy_data:/data
+            - caddy_config:/config
+        networks:
+            - zero1-network
+
+volumes:
+    caddy_data:
+    caddy_config:
+
+networks:
+    zero1-network:

@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log
+README.md
+vercel.json
+docs/
+.vscode/
+.idea/
+.prettierrc

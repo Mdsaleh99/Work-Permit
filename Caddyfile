@@ -1,0 +1,38 @@
+{
+    email mdsalehm23@gmail.com
+}
+
+zeros1.com {
+    root * /usr/share/caddy
+    file_server
+}
+
+api.zeros1.com {
+    reverse_proxy backend:8000
+}
+
+
+/*
+    reverse_proxy means: 
+        reverse_proxy tells Caddy to forward all incoming traffic to another service.
+    backend:8000 means:
+        backend = the Docker service name (from docker-compose.yaml). Docker’s internal DNS resolves this name to the container’s internal IP.
+        8000 = the port your Node.js backend is listening on inside the container.
+
+*/
+
+/*
+    root * /usr/share/caddy
+        root: root sets the directory where your static files (your built React app) are located.
+        (*) means "for all request paths".
+        /usr/share/caddy is the default web root inside the Caddy container where you copied your Vite build output (/dist).
+
+    file_server
+        Tells Caddy to serve static files from the root directory.
+        It automatically handles things like:
+            Serving index.html for React single-page apps
+            Setting MIME types
+            Directory listing (disabled by default for security)
+            Caching headers
+
+*/
