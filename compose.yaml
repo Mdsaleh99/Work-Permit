@@ -9,7 +9,7 @@ services:
         ports:
             - PORT=${PORT}
         env_file:
-            - .env
+            - ./backend/.env
         networks:
             - zero1-network
 
@@ -22,7 +22,7 @@ services:
             - "80:80"
             - "443:443"
         env_file:
-            - .env
+            - ./frontend/.env
         depends_on:
             - backend
         volumes:
