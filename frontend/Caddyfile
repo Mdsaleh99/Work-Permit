@@ -5,6 +5,7 @@
 zeros1.com {
     root * /usr/share/caddy
     file_server
+    try_files {path} /index.html
 }
 
 api.zeros1.com {
