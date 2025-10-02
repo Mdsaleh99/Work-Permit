@@ -7,7 +7,7 @@ services:
             context: ./backend
         container_name: backend
         ports:
-            - PORT=${PORT}
+            - "${PORT}:${PORT}"
         env_file:
             - ./backend/.env
         networks:
