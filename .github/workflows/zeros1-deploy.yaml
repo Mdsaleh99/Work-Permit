@@ -25,5 +25,5 @@ jobs:
           script: |
             cd Work-Permit   # 🔁 Replace with actual project path
             git pull origin main  # 📥 Pull latest code
-            docker compose build  # 🐳 Build new images on the server
-            docker compose up -d  # 🚀 Restart containers
+            PORT=${{secrets.PORT}} docker compose build  # 🐳 Build new images on the server
+            PORT=${{secrets.PORT}} docker compose up -d  # 🚀 Restart containers
