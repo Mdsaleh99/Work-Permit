@@ -20,7 +20,7 @@ jobs:
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.ZEROS_CI_CD_SECRET }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             cd Work-Permit   # 🔁 Replace with actual project path
             git pull origin main  # 📥 Pull latest code
