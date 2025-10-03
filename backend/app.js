@@ -5,7 +5,9 @@ import cors from "cors"
 import { ApiError } from "./utils/ApiError.js"
 import session from "express-session"
 import passport from "./passport/index.js"
-
+import helmet from "helmet"
+import requestIp from "request-ip"
+import { rateLimit } from "express-rate-limit";
 
 // * routes
 import userRouters from "./routes/user.routes.js";
@@ -15,8 +17,28 @@ import { workPermitDraftRouters } from "./routes/workPermitDraft.routes.js"
 
 dotenv.config()
 
-export const app = express()
+const app = express()
+app.use(requestIp.mw())
 
+const limiter = rateLimit({
+    windowMs: 2 * 60 * 1000, // 2 mnt
+    max: 110,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req, res) => {
+        return req.clientIp;
+    },
+    handler: (_, __, ___, options) => {
+        throw new ApiError(
+            options.statusCode || 500,
+            `There are too many requests. You are only allowed ${
+                options.limit
+            } requests per ${options.windowMs / 60000} minutes`
+        );
+    },
+});
+
+app.use(limiter)
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
@@ -36,6 +58,7 @@ app.use(
 ); // session secret
 app.use(passport.initialize());
 app.use(passport.session()); // persistent login sessions
+app.use(helmet())
 
 // * user Routes
 app.use("/api/v1/auth", userRouters)
@@ -48,6 +71,12 @@ app.use("/api/v1/work-permit", workPermitFormRouters);
 
 // * work Permit Draft routes
 app.use("/api/v1/work-permit-draft", workPermitDraftRouters);
+
+
+// * basic route
+app.get("/", (req, res) => {
+    res.send("Server is Running")
+})
 
 // * 404 handler
 app.use((req, res, next) => {
@@ -75,3 +104,5 @@ app.use((err, req, res, next) => {
         ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
     })
 })
+
+export { app }
