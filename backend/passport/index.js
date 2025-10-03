@@ -86,7 +86,7 @@ try {
                             password: profile._json.sub, // Set user's password as sub (coming from the google)
                             name: profile._json.email?.split("@")[0], // as email is unique, this username will be unique
                             isEmailVerified: true, // email will be already verified
-                            role: UserRolesEnum.ADMIN,
+                            role: UserRolesEnum.SUPER_ADMIN,
                             loginType: UserLoginType.GOOGLE,
                         },
                     });
