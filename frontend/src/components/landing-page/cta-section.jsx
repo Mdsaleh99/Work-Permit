@@ -22,12 +22,12 @@ export function CtaSection() {
                                 size="lg"
                                 className="bg-background text-primary hover:bg-background/90 text-lg px-8 py-4"
                             >
-                                Sign up
+                                Sign Up
                             </Button>
                         </Link>
                     </div>
 
-                    <div className="pt-8">
+                    {/* <div className="pt-8">
                         <p className="text-primary-foreground/80">
                             Looking for a customized safety solution?{" "}
                             <Button
@@ -37,7 +37,7 @@ export function CtaSection() {
                                 Get in touch.
                             </Button>
                         </p>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 
