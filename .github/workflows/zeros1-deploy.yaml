@@ -24,8 +24,8 @@ jobs:
           port: 22
           script: |
             cd Work-Permit   # 🔁 Replace with actual project path
-            git reset --hard
-            git clean -fd
+            # git reset --hard
+            # git clean -fd
             git pull origin main  # 📥 Pull latest code
             # PORT=${{secrets.PORT}} docker compose build  # 🐳 Build new images on the server
             # PORT=${{secrets.PORT}} docker compose up -d  # 🚀 Restart containers
