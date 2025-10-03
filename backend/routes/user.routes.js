@@ -39,7 +39,7 @@ const router = express.Router();
 
 // Unsecured route
 router.route("/signup").post(userRegisterValidator(), validate, signUp);
-// router.route("/signin").post(userLoginValidator(), validate, signIn);
+router.route("/signin").post(userLoginValidator(), validate, signIn);
 // Super Admin scoped signin (companyId in params) -> reuses same controller
 router.route("/signin/:companyId").post(userLoginValidator(), validate, signIn);
 router.route("/refresh-token").post(refreshAccessToken);
