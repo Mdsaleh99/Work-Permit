@@ -21,6 +21,7 @@ jobs:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
+          port: 22
           script: |
             cd Work-Permit   # 🔁 Replace with actual project path
             git pull origin main  # 📥 Pull latest code
