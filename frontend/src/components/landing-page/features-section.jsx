@@ -19,7 +19,7 @@ const features = [
         icon: Shield,
         title: "Smart Permit Management",
         description:
-            "AI-powered permit workflows with automated approvals, real-time tracking, and intelligent risk assessment for seamless operations.",
+            "permit workflows with automated approvals, real-time tracking, and intelligent risk assessment for seamless operations.",
         color: "text-primary",
         gradient: "from-primary/10 to-primary/5",
     },
@@ -71,7 +71,7 @@ export function FeaturesSection() {
                     </h2>
 
                     <p className="text-xl lg:text-2xl text-muted-foreground text-pretty max-w-4xl mx-auto leading-relaxed font-light">
-                        Transform your safety operations with SecureFlow's
+                        Transform your safety operations with Zeros1
                         integrated suite of intelligent tools designed for the
                         modern workplace.
                     </p>

@@ -16,7 +16,7 @@ export function HeroSection() {
                         <div className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-medium">
                             <Shield className="w-4 h-4 text-white" />
                             <span className="text-white font-semibold">
-                                Next-Gen Safety Intelligence
+                                Safety Intelligence
                             </span>
                         </div>
 
@@ -26,11 +26,10 @@ export function HeroSection() {
                                 <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                                     safety operations
                                 </span>{" "}
-                                with AI
                             </h1>
 
                             <p className="text-xl lg:text-2xl text-muted-foreground text-pretty leading-relaxed max-w-2xl font-light">
-                                SecureFlow revolutionizes workplace safety with
+                                Zeros1 revolutionizes workplace safety with
                                 intelligent automation, real-time insights, and
                                 seamless collaboration across your entire
                                 organization.
@@ -39,12 +38,12 @@ export function HeroSection() {
 
                         <div className="flex flex-col sm:flex-row gap-6">
                             {/* ✅ Use TanStack Router Link */}
-                            <Link to="/start-trial">
+                            <Link to="/auth/signup">
                                 <Button
                                     size="lg"
                                     className="group bg-primary hover:bg-primary/90 text-white text-lg px-10 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                                 >
-                                    Start Free Trial
+                                    Sign Up
                                     <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                                 </Button>
                             </Link>
@@ -61,7 +60,7 @@ export function HeroSection() {
                             </Link>
                         </div>
 
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                        {/* <div className="flex items-center gap-6 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                                 <span>No credit card required</span>
@@ -70,7 +69,7 @@ export function HeroSection() {
                                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                                 <span>14-day free trial</span>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Right Content */}

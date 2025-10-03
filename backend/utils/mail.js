@@ -10,33 +10,33 @@ export const sendEmail = async (options) => {
     const mailGenrator = new Mailgen({
         theme: "default",
         product: {
-            name: "Work Permit System",
-            link: "https://workpermit-system.com",
+            name: "Zero1",
+            link: "https://zeros1.com",
         }
     })
 
     const emailTextual = mailGenrator.generatePlaintext(options.mailgenContent)
     const emailHTML = mailGenrator.generate(options.mailgenContent)
 
-    const transporter = nodemailer.createTransport({
-        host: process.env.MAILTRAP_SMTP_HOST,
-        port: process.env.MAILTRAP_SMTP_PORT,
-        auth: {
-            user: process.env.MAILTRAP_SMTP_USER,
-            pass: process.env.MAILTRAP_SMTP_PASS,
-        }
-    });
+    // const transporter = nodemailer.createTransport({
+    //     host: process.env.MAILTRAP_SMTP_HOST,
+    //     port: process.env.MAILTRAP_SMTP_PORT,
+    //     auth: {
+    //         user: process.env.MAILTRAP_SMTP_USER,
+    //         pass: process.env.MAILTRAP_SMTP_PASS,
+    //     }
+    // });
 
-    const mail = {
-        from: process.env.MAILTRAP_SMTP_MAIL,
-        to: options.email,
-        subject: options.subject,
-        text: emailTextual,
-        html: emailHTML,
-    }
+    // const mail = {
+    //     from: process.env.MAILTRAP_SMTP_MAIL,
+    //     to: options.email,
+    //     subject: options.subject,
+    //     text: emailTextual,
+    //     html: emailHTML,
+    // }
 
     try {
-        await transporter.sendMail(mail)
+        // await transporter.sendMail(mail)
     } catch (error) {
         console.error("Email service failed silently.", error);
         throw new ApiError(500, "Email service failed silently.", error)

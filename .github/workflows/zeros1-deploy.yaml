@@ -1,0 +1,28 @@
+name: Zeros1 CI/CD Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout the latest code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2️⃣ SSH into your server and deploy
+      - name: SSH and Deploy
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.ZEROS_CI_CD_SECRET }}
+          script: |
+            cd Work-Permit   # 🔁 Replace with actual project path
+            git pull origin main  # 📥 Pull latest code
+            docker compose build  # 🐳 Build new images on the server
+            docker compose up -d  # 🚀 Restart containers

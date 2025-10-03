@@ -9,11 +9,11 @@ export function Footer() {
                         <div className="flex items-center space-x-2">
                             <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                                 <span className="text-primary-foreground font-bold text-sm">
-                                    SF
+                                    Z
                                 </span>
                             </div>
                             <span className="font-bold text-xl">
-                                SecureFlow
+                                Zeros1
                             </span>
                         </div>
                         <p className="text-muted-foreground text-sm leading-relaxed">
@@ -97,7 +97,7 @@ export function Footer() {
 
                 <div className="border-t mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
                     <p className="text-muted-foreground text-sm">
-                        © 2024 SafetyMint. All rights reserved.
+                        © 2025 Zeros1. All rights reserved.
                     </p>
                     <div className="flex space-x-6 mt-4 md:mt-0">
                         <Link

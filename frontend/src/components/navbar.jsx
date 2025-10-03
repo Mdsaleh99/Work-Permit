@@ -23,7 +23,7 @@ export function Navbar() {
                             </div>
                             <div className="flex flex-col">
                                 <span className="font-bold text-2xl text-foreground tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text">
-                                    SecureFlow
+                                    Zeros1
                                 </span>
                                 <span className="text-xs text-muted-foreground font-medium tracking-wider uppercase">
                                     Safety Intelligence
