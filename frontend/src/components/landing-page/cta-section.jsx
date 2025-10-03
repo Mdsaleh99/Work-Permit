@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "@tanstack/react-router";
 
 export function CtaSection() {
     return (
@@ -16,12 +17,14 @@ export function CtaSection() {
                     </p>
 
                     <div className="pt-4">
-                        <Button
-                            size="lg"
-                            className="bg-background text-primary hover:bg-background/90 text-lg px-8 py-4"
-                        >
-                            Request free trial
-                        </Button>
+                        <Link to={"/auth/signup"}>
+                            <Button
+                                size="lg"
+                                className="bg-background text-primary hover:bg-background/90 text-lg px-8 py-4"
+                            >
+                                Sign Up
+                            </Button>
+                        </Link>
                     </div>
 
                     <div className="pt-8">
