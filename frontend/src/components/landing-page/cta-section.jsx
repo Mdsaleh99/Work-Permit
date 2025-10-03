@@ -22,7 +22,7 @@ export function CtaSection() {
                                 size="lg"
                                 className="bg-background text-primary hover:bg-background/90 text-lg px-8 py-4"
                             >
-                                Signup
+                                Sign up
                             </Button>
                         </Link>
                     </div>

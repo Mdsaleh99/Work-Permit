@@ -1,6 +1,9 @@
 import Mailgen from "mailgen"
 import nodemailer from "nodemailer"
 import { ApiError } from "./ApiError.js"
+import { Resend } from "resend"
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 
 /**
@@ -26,17 +29,29 @@ export const sendEmail = async (options) => {
     //         pass: process.env.MAILTRAP_SMTP_PASS,
     //     }
     // });
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT),
+        secure: false,
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+        logger: process.env.NODE_ENV === "production",
+        debug: process.env.NODE_ENV === "production",
+    });
 
-    // const mail = {
-    //     from: process.env.MAILTRAP_SMTP_MAIL,
-    //     to: options.email,
-    //     subject: options.subject,
-    //     text: emailTextual,
-    //     html: emailHTML,
-    // }
+    const mail = {
+        from: process.env.SMTP_MAIL,
+        to: options.email,
+        subject: options.subject,
+        text: emailTextual,
+        html: emailHTML,
+    }
 
     try {
-        // await transporter.sendMail(mail)
+        await transporter.sendMail(mail)
+        // await resend.emails.send(mail)
     } catch (error) {
         console.error("Email service failed silently.", error);
         throw new ApiError(500, "Email service failed silently.", error)
