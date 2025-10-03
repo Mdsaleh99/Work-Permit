@@ -86,7 +86,7 @@ const createCompanyValidator = () => {
             .notEmpty()
             .withMessage("please provide your company mobile no")
             //  TODO: later change to saudi arbia to check mobile no
-            .isMobilePhone(["any"])
+            .isMobilePhone(["ar-SA", "en-IN"])
             .withMessage("please provide valid mobile no")
     ];
 }
