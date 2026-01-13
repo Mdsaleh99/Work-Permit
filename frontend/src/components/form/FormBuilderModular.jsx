@@ -4,7 +4,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { cn } from "../../lib/utils";
 import { X } from "lucide-react";
 import { workPermitService } from "../../services/workPermit.service";
-
 // Custom hooks
 import { useFormBuilder } from "../../hooks/useFormBuilder";
 import { useDraftOperations } from "../../hooks/useDraftOperations";
