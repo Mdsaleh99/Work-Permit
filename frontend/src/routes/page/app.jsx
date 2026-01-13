@@ -16,9 +16,25 @@ export const Route = createFileRoute("/page/app")({
 
         const user = useAuthStore.getState().authUser;
         const role = user?.role;
-        const isAllowed = role === 'ADMIN' || role === 'SUPER_ADMIN';
+        const isAllowed = role === "ADMIN" || role === "SUPER_ADMIN";
         if (!user || !isAllowed) {
             throw redirect({ to: "/auth/signin" });
+        }
+
+        // Check if user has a company - force them to create one first
+        const { companyData, getCompanyByUser } = useCompanyStore.getState();
+        if (!companyData) {
+            try {
+                await getCompanyByUser();
+            } catch {
+                // Company fetch failed - likely no company exists
+                console.log("No company found, redirecting to create-company");
+            }
+        }
+
+        const company = useCompanyStore.getState().companyData;
+        if (!company) {
+            throw redirect({ to: "/auth/create-company" });
         }
     },
     component: RouteComponent,

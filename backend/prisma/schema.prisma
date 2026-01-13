@@ -56,7 +56,7 @@ model User {
   name             String
   email            String    @unique
   password         String
-  role             UserRole  @default(SUPER_ADMIN)
+  role             UserRole  @default(ADMIN)
   loginType LoginType @default(EMAIL_PASSWORD)
   // verifyCode       String?
   // verifyCodeExpiry DateTime?
@@ -74,11 +74,12 @@ model User {
   workPermitForm WorkPermitForm[]
   workPermitDraft WorkPermitDraft[]
   companyAdmins  CompanyAdmin[]
+  workPermitSubmissions WorkPermitSubmission[]
 }
 
 model Company {
   id             String           @id @default(uuid())
-  userId         String           @unique
+  userId         String           @unique // foriegn key
   compName       String           @unique
   description    String?
   email          String           @unique
@@ -112,7 +113,6 @@ model CompanyMember {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   // Allowed work permits this member can access
   allowedWorkPermits WorkPermitForm[] // many-to-many relation with WorkPermitForm model check allowedMembers field there
-  workPermitSubmission WorkPermitSubmission[]
   
 
   @@index([companyId])
@@ -121,10 +121,12 @@ model CompanyMember {
 
 // Join model to associate multiple admins (ADMIN/SUPER_ADMIN) with a company
 // this table is like company members table but for admins
+// Pivot table for many-to-many relation between User (ADMIN/SUPER_ADMIN) and Company
+// for getting the data we use joins
 model CompanyAdmin {
   id         String   @id @default(uuid())
   companyId  String
-  userId     String
+  userId     String // foriegn key
   role       UserRole
 
   createdAt  DateTime @default(now())
@@ -143,7 +145,7 @@ model WorkPermitForm {
   id        String              @id @default(uuid())
   title     String
   workPermitNo String? @unique @db.VarChar(12)
-  userId    String
+  userId    String // foriegn key
   companyId String
   status  WorkPermitFormStatus @default(PENDING)
   formUrl   String?
@@ -196,26 +198,26 @@ model WorkPermitSectionComponent {
 }
 
 
-// A submission filled by a member against a WorkPermitForm
+// A submission filled by an ADMIN/SUPER_ADMIN against a WorkPermitForm
 model WorkPermitSubmission {
   id               String          @id @default(uuid())
   workPermitFormId String
   companyId        String
-  submittedById    String
+  submittedByUserId String          // Stores User ID (ADMIN/SUPER_ADMIN)
   answers          Json
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  workPermitForm WorkPermitForm @relation(fields: [workPermitFormId], references: [id], onDelete: Cascade)
-  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  submittedBy    CompanyMember  @relation(fields: [submittedById], references: [id])
+  workPermitForm  WorkPermitForm @relation(fields: [workPermitFormId], references: [id], onDelete: Cascade)
+  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  submittedByUser User           @relation(fields: [submittedByUserId], references: [id])
 
   @@index([workPermitFormId])
   @@index([companyId])
-  @@index([submittedById])
-  // Ensure one submission per member per form
-  @@unique([workPermitFormId, submittedById])
+  @@index([submittedByUserId])
+  // Ensure one submission per user per form
+  @@unique([workPermitFormId, submittedByUserId])
 }
 
 // Draft Models for Work Permit Forms

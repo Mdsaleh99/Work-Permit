@@ -31,7 +31,9 @@ router
     .route("/member-signin/:companyId")
     .post(companyMemberSignInValidator(), validate, companyMemberSignIn);
 
-router.route("/member-signout").post(companyMemberVerifyJWT, companyMemberSignOut);
+router
+    .route("/member-signout")
+    .post(companyMemberVerifyJWT, companyMemberSignOut);
 
 router.route("/member").get(companyMemberVerifyJWT, getCurrentCompanyMember);
 
@@ -41,7 +43,7 @@ router
         createCompanyValidator(),
         validate,
         verifyJWT,
-        authorizeRoles(UserRolesEnum.SUPER_ADMIN),
+        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
         createCompany
     );
 

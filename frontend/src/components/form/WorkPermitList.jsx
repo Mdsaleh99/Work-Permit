@@ -2,20 +2,32 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 import { useWorkPermitStore } from "@/store/useWorkPermitStore";
 import { useCompanyStore } from "@/store/useCompanyStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useNavigate } from "@tanstack/react-router";
-import { 
-    Loader, 
-    FileText, 
-    Plus, 
-    Edit, 
+import {
+    Loader,
+    FileText,
+    Plus,
+    Edit,
     Copy,
     Eye,
-    Calendar
+    Calendar,
+    ClipboardEdit,
+    Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
+import { workPermitService } from "@/services/workPermit.service";
 
 function WorkPermitList() {
     const {
@@ -26,16 +38,48 @@ function WorkPermitList() {
         duplicateWorkPermit,
         clearError,
     } = useWorkPermitStore();
-    
+
     const { companyData, getCompanyByUser } = useCompanyStore();
+    const { authUser } = useAuthStore();
     const navigate = useNavigate();
     const [search, setSearch] = useState("");
+    // Track which permits have submissions by current user
+    const [submittedPermits, setSubmittedPermits] = useState(new Set());
 
     useEffect(() => {
         fetchWorkPermits();
-        getCompanyByUser()
+        getCompanyByUser();
         return () => clearError();
     }, []);
+
+    // Fetch submission status for each permit after permits are loaded
+    useEffect(() => {
+        const checkSubmissions = async () => {
+            if (!workPermits.length || !authUser?.id) return;
+
+            const submitted = new Set();
+            for (const permit of workPermits) {
+                try {
+                    const list = await workPermitService.listSubmissions(
+                        permit.id,
+                    );
+                    const subs = Array.isArray(list?.data) ? list.data : [];
+                    const mine = subs.find(
+                        (s) =>
+                            s.submittedByUserId === authUser.id ||
+                            s.submittedByUser?.id === authUser.id,
+                    );
+                    if (mine) {
+                        submitted.add(permit.id);
+                    }
+                } catch {
+                    // Ignore errors for individual permits
+                }
+            }
+            setSubmittedPermits(submitted);
+        };
+        checkSubmissions();
+    }, [workPermits, authUser?.id]);
 
     const fetchWorkPermits = async () => {
         try {
@@ -47,15 +91,15 @@ function WorkPermitList() {
     };
 
     const handleDuplicateWorkPermit = async (workPermitFormId) => {
-            try {
-                await duplicateWorkPermit(workPermitFormId);
-                toast.success("work permit duplicated successfully");
-                await getAllWorkPermits();
-            } catch (error) {
-                console.error("Error duplicating work permit:", error);
-                toast.error("Failed to duplicate work permit");
-            }
-        };
+        try {
+            await duplicateWorkPermit(workPermitFormId);
+            toast.success("work permit duplicated successfully");
+            await getAllWorkPermits();
+        } catch (error) {
+            console.error("Error duplicating work permit:", error);
+            toast.error("Failed to duplicate work permit");
+        }
+    };
     // const handleDuplicate = async (workPermit) => {
     //     try {
     //         const copyData = {
@@ -96,7 +140,7 @@ function WorkPermitList() {
 
     // console.log(workPermits);
     console.log(companyData);
-    
+
     const filteredPermits = useMemo(() => {
         const q = search.trim().toLowerCase();
         if (!q) return workPermits;
@@ -197,18 +241,57 @@ function WorkPermitList() {
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">
                                         <Button
-                                            variant="outline"
                                             size="sm"
-                                            onClick={() => navigate({ to: `/page/app/form-builder/view/${workPermit.id}` })}
+                                            className={
+                                                submittedPermits.has(
+                                                    workPermit.id,
+                                                )
+                                                    ? "bg-amber-600 hover:bg-amber-700 text-white"
+                                                    : "bg-green-600 hover:bg-green-700 text-white"
+                                            }
+                                            onClick={() =>
+                                                navigate({
+                                                    to: `/page/app/form-fill/${workPermit.id}`,
+                                                })
+                                            }
                                         >
-                                            <Eye className="mr-1 h-3 w-3" /> View
+                                            {submittedPermits.has(
+                                                workPermit.id,
+                                            ) ? (
+                                                <>
+                                                    <Pencil className="mr-1 h-3 w-3" />{" "}
+                                                    Edit Fill
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ClipboardEdit className="mr-1 h-3 w-3" />{" "}
+                                                    Fill
+                                                </>
+                                            )}
                                         </Button>
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            onClick={() => navigate({ to: `/page/app/form-builder/${workPermit.id}` })}
+                                            onClick={() =>
+                                                navigate({
+                                                    to: `/page/app/form-builder/view/${workPermit.id}`,
+                                                })
+                                            }
                                         >
-                                            <Edit className="mr-1 h-3 w-3" /> Edit
+                                            <Eye className="mr-1 h-3 w-3" />{" "}
+                                            View
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                navigate({
+                                                    to: `/page/app/form-builder/${workPermit.id}`,
+                                                })
+                                            }
+                                        >
+                                            <Edit className="mr-1 h-3 w-3" />{" "}
+                                            Edit
                                         </Button>
                                         <Button
                                             variant="outline"

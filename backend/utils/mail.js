@@ -21,28 +21,29 @@ export const sendEmail = async (options) => {
     const emailTextual = mailGenrator.generatePlaintext(options.mailgenContent)
     const emailHTML = mailGenrator.generate(options.mailgenContent)
 
-    // const transporter = nodemailer.createTransport({
-    //     host: process.env.MAILTRAP_SMTP_HOST,
-    //     port: process.env.MAILTRAP_SMTP_PORT,
-    //     auth: {
-    //         user: process.env.MAILTRAP_SMTP_USER,
-    //         pass: process.env.MAILTRAP_SMTP_PASS,
-    //     }
-    // });
     const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT),
-        secure: false,
+        host: process.env.MAILTRAP_SMTP_HOST,
+        port: process.env.MAILTRAP_SMTP_PORT,
         auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-        logger: process.env.NODE_ENV === "production",
-        debug: process.env.NODE_ENV === "production",
+            user: process.env.MAILTRAP_SMTP_USER,
+            pass: process.env.MAILTRAP_SMTP_PASS,
+        }
     });
+    // const transporter = nodemailer.createTransport({
+    //     host: process.env.SMTP_HOST,
+    //     port: Number(process.env.SMTP_PORT),
+    //     secure: false,
+    //     auth: {
+    //         user: process.env.SMTP_USER,
+    //         pass: process.env.SMTP_PASS,
+    //     },
+    //     logger: process.env.NODE_ENV === "production",
+    //     debug: process.env.NODE_ENV === "production",
+    // });
 
     const mail = {
-        from: process.env.SMTP_MAIL,
+        // from: process.env.SMTP_MAIL,
+        from: process.env.MAILTRAP_SMTP_MAIL,
         to: options.email,
         subject: options.subject,
         text: emailTextual,

@@ -63,9 +63,21 @@ router
 // Place submissions route BEFORE parameterized companyId route to avoid conflicts
 router
     .route("/:workPermitFormId/submissions")
-    .get(verifyEitherJWT, listWorkPermitSubmissions)
-    .post(companyMemberVerifyJWT, createWorkPermitSubmission)
-    .patch(companyMemberVerifyJWT, updateWorkPermitSubmission);
+    .get(
+        verifyJWT,
+        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
+        listWorkPermitSubmissions
+    )
+    .post(
+        verifyJWT,
+        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
+        createWorkPermitSubmission
+    )
+    .patch(
+        verifyJWT,
+        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
+        updateWorkPermitSubmission
+    );
 
 router
     .route("/company/:companyId/:workPermitFormId")

@@ -1,18 +1,20 @@
 import React from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { 
-    Flame, 
-    Save, 
-    FileCheck, 
-    Printer, 
+import {
+    Flame,
+    Save,
+    FileCheck,
+    Printer,
     Menu,
     Plus,
     Edit,
     Trash2,
     Settings,
-    Image as ImageIcon
+    Image as ImageIcon,
+    ClipboardEdit,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 /**
  * Header component for the form builder
@@ -37,6 +39,7 @@ const FormBuilderHeader = ({
     // drafts,
     isMobile,
     isEditingMode,
+    workPermitId,
 }) => {
     const fileInputRef = React.useRef(null);
 
@@ -46,7 +49,7 @@ const FormBuilderHeader = ({
         const reader = new FileReader();
         reader.onload = () => {
             const dataUrl = reader.result;
-            setFormData(prev => ({ ...prev, logoSrc: dataUrl }));
+            setFormData((prev) => ({ ...prev, logoSrc: dataUrl }));
         };
         reader.readAsDataURL(file);
     };
@@ -100,52 +103,71 @@ const FormBuilderHeader = ({
                         {/* Reset Form removed */}
 
                         <>
-                                <Button
-                                    size="sm"
-                                    className="rounded-lg shadow-sm bg-gray-600 hover:bg-gray-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                    onClick={onSave}
-                                    disabled={Boolean(isEditingMode)}
-                                >
-                                    <Save className="w-4 h-4 mr-2" />
-                                    <span className="hidden sm:inline">Save</span>
-                                    {isAutoSaving && (
-                                        <div className="ml-2 flex items-center">
-                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                                        </div>
-                                    )}
-                                </Button>
+                            <Button
+                                size="sm"
+                                className="rounded-lg shadow-sm bg-gray-600 hover:bg-gray-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={onSave}
+                                disabled={Boolean(isEditingMode)}
+                            >
+                                <Save className="w-4 h-4 mr-2" />
+                                <span className="hidden sm:inline">Save</span>
+                                {isAutoSaving && (
+                                    <div className="ml-2 flex items-center">
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                    </div>
+                                )}
+                            </Button>
 
-                                {/* Upload Logo (for print header) */}
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleLogoUpload}
-                                    className="hidden"
-                                />
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="rounded-lg cursor-pointer shadow-sm border-gray-300 hover:border-gray-400"
-                                    onClick={() =>
-                                        fileInputRef.current &&
-                                        fileInputRef.current.click()
-                                    }
-                                >
-                                    <ImageIcon className="w-4 h-4 mr-2" />
-                                    <span className="hidden sm:inline">Logo</span>
-                                </Button>
+                            {/* Upload Logo (for print header) */}
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleLogoUpload}
+                                className="hidden"
+                            />
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-lg cursor-pointer shadow-sm border-gray-300 hover:border-gray-400"
+                                onClick={() =>
+                                    fileInputRef.current &&
+                                    fileInputRef.current.click()
+                                }
+                            >
+                                <ImageIcon className="w-4 h-4 mr-2" />
+                                <span className="hidden sm:inline">Logo</span>
+                            </Button>
 
-                                {/* Auto-save toggle removed; autosave runs automatically in edit */}
+                            {/* Auto-save toggle removed; autosave runs automatically in edit */}
 
-                                <Button
-                                    size="sm"
-                                    className="rounded-lg cursor-pointer shadow-sm bg-blue-600 hover:bg-blue-700 text-white font-medium"
-                                    onClick={onSubmit}
+                            <Button
+                                size="sm"
+                                className="rounded-lg cursor-pointer shadow-sm bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                                onClick={onSubmit}
+                            >
+                                <FileCheck className="w-4 h-4 mr-2" />
+                                <span className="hidden sm:inline">
+                                    {isEditingMode ? "Edit" : "Submit"}
+                                </span>
+                            </Button>
+
+                            {/* Fill Form button - navigate to form filler */}
+                            {workPermitId && (
+                                <Link
+                                    to={`/page/app/form-fill/${workPermitId}`}
                                 >
-                                    <FileCheck className="w-4 h-4 mr-2" />
-                                    <span className="hidden sm:inline">{isEditingMode ? 'Edit' : 'Submit'}</span>
-                                </Button>
+                                    <Button
+                                        size="sm"
+                                        className="rounded-lg cursor-pointer shadow-sm bg-green-600 hover:bg-green-700 text-white font-medium"
+                                    >
+                                        <ClipboardEdit className="w-4 h-4 mr-2" />
+                                        <span className="hidden sm:inline">
+                                            Fill Form
+                                        </span>
+                                    </Button>
+                                </Link>
+                            )}
                         </>
 
                         {/* Drafts button removed */}

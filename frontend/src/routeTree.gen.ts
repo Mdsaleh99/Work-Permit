@@ -17,6 +17,7 @@ import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthSigninRouteImport } from './routes/auth/signin'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as AuthCreateCompanyRouteImport } from './routes/auth/create-company'
 import { Route as CompanyMemberDashMemberRouteImport } from './routes/company-member/dash/member'
 import { Route as AuthVerifyEmailSuccessVerificationTokenRouteImport } from './routes/auth/verify-email-success.$verificationToken'
 import { Route as AuthResetPasswordResetTokenRouteImport } from './routes/auth/reset-password.$resetToken'
@@ -29,9 +30,6 @@ const CompanyMemberSigninLazyRouteImport = createFileRoute(
   '/company-member/signin',
 )()
 const AuthSsoCallbackLazyRouteImport = createFileRoute('/auth/sso-callback')()
-const AuthCreateCompanyLazyRouteImport = createFileRoute(
-  '/auth/create-company',
-)()
 const PageAppWorkPermitsLazyRouteImport = createFileRoute(
   '/page/app/work-permits',
 )()
@@ -107,13 +105,6 @@ const AuthSsoCallbackLazyRoute = AuthSsoCallbackLazyRouteImport.update({
 } as any).lazy(() =>
   import('./routes/auth/sso-callback.lazy').then((d) => d.Route),
 )
-const AuthCreateCompanyLazyRoute = AuthCreateCompanyLazyRouteImport.update({
-  id: '/auth/create-company',
-  path: '/auth/create-company',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() =>
-  import('./routes/auth/create-company.lazy').then((d) => d.Route),
-)
 const PageAppRoute = PageAppRouteImport.update({
   id: '/page/app',
   path: '/page/app',
@@ -139,6 +130,13 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCreateCompanyRoute = AuthCreateCompanyRouteImport.update({
+  id: '/auth/create-company',
+  path: '/auth/create-company',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/auth/create-company.lazy').then((d) => d.Route),
+)
 const PageAppWorkPermitsLazyRoute = PageAppWorkPermitsLazyRouteImport.update({
   id: '/work-permits',
   path: '/work-permits',
@@ -332,12 +330,12 @@ const CompanyMemberDashMemberFormFillWorkPermitIdLazyRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth/create-company': typeof AuthCreateCompanyRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
-  '/auth/create-company': typeof AuthCreateCompanyLazyRoute
   '/auth/sso-callback': typeof AuthSsoCallbackLazyRoute
   '/company-member/signin': typeof CompanyMemberSigninLazyRoute
   '/company': typeof CompanyIndexLazyRoute
@@ -369,12 +367,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth/create-company': typeof AuthCreateCompanyRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
-  '/auth/create-company': typeof AuthCreateCompanyLazyRoute
   '/auth/sso-callback': typeof AuthSsoCallbackLazyRoute
   '/company-member/signin': typeof CompanyMemberSigninLazyRoute
   '/company': typeof CompanyIndexLazyRoute
@@ -406,12 +404,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth/create-company': typeof AuthCreateCompanyRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/page/app': typeof PageAppRouteWithChildren
-  '/auth/create-company': typeof AuthCreateCompanyLazyRoute
   '/auth/sso-callback': typeof AuthSsoCallbackLazyRoute
   '/company-member/signin': typeof CompanyMemberSigninLazyRoute
   '/company/': typeof CompanyIndexLazyRoute
@@ -445,12 +443,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth/create-company'
     | '/auth/forgot-password'
     | '/auth/signin'
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
-    | '/auth/create-company'
     | '/auth/sso-callback'
     | '/company-member/signin'
     | '/company'
@@ -482,12 +480,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth/create-company'
     | '/auth/forgot-password'
     | '/auth/signin'
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
-    | '/auth/create-company'
     | '/auth/sso-callback'
     | '/company-member/signin'
     | '/company'
@@ -518,12 +516,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth/create-company'
     | '/auth/forgot-password'
     | '/auth/signin'
     | '/auth/signup'
     | '/auth/verify-email'
     | '/page/app'
-    | '/auth/create-company'
     | '/auth/sso-callback'
     | '/company-member/signin'
     | '/company/'
@@ -556,12 +554,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthCreateCompanyRoute: typeof AuthCreateCompanyRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthSigninRoute: typeof AuthSigninRoute
   AuthSignupRoute: typeof AuthSignupRoute
   AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
   PageAppRoute: typeof PageAppRouteWithChildren
-  AuthCreateCompanyLazyRoute: typeof AuthCreateCompanyLazyRoute
   AuthSsoCallbackLazyRoute: typeof AuthSsoCallbackLazyRoute
   CompanyMemberSigninLazyRoute: typeof CompanyMemberSigninLazyRoute
   CompanyIndexLazyRoute: typeof CompanyIndexLazyRoute
@@ -601,13 +599,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSsoCallbackLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/create-company': {
-      id: '/auth/create-company'
-      path: '/auth/create-company'
-      fullPath: '/auth/create-company'
-      preLoaderRoute: typeof AuthCreateCompanyLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/page/app': {
       id: '/page/app'
       path: '/page/app'
@@ -641,6 +632,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/forgot-password'
       fullPath: '/auth/forgot-password'
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/create-company': {
+      id: '/auth/create-company'
+      path: '/auth/create-company'
+      fullPath: '/auth/create-company'
+      preLoaderRoute: typeof AuthCreateCompanyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/page/app/work-permits': {
@@ -903,12 +901,12 @@ const CompanyMemberDashMemberRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthCreateCompanyRoute: AuthCreateCompanyRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthSigninRoute: AuthSigninRoute,
   AuthSignupRoute: AuthSignupRoute,
   AuthVerifyEmailRoute: AuthVerifyEmailRoute,
   PageAppRoute: PageAppRouteWithChildren,
-  AuthCreateCompanyLazyRoute: AuthCreateCompanyLazyRoute,
   AuthSsoCallbackLazyRoute: AuthSsoCallbackLazyRoute,
   CompanyMemberSigninLazyRoute: CompanyMemberSigninLazyRoute,
   CompanyIndexLazyRoute: CompanyIndexLazyRoute,

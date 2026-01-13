@@ -18,7 +18,10 @@ import crypto from "crypto";
 import { CompanyMemberRolesEnum, UserRolesEnum } from "../utils/constants.js";
 
 const createCompanyAdmin = asyncHandler(async (req, res) => {
-    if (req.user.role === UserRolesEnum.SUPER_ADMIN) {
+    if (
+        req.user.role === UserRolesEnum.ADMIN ||
+        req.user.role === UserRolesEnum.SUPER_ADMIN
+    ) {
         const { name, email, password } = req.body;
         const { companyId } = req.params;
         const superAdminId = req.user?.id;
@@ -37,8 +40,15 @@ const createCompanyAdmin = asyncHandler(async (req, res) => {
             },
         });
 
-        if (!requester || requester.role !== UserRolesEnum.SUPER_ADMIN) {
-            throw new ApiError(401, "Only SUPER_ADMIN can create ADMIN");
+        if (
+            !requester ||
+            (requester.role !== UserRolesEnum.ADMIN &&
+                requester.role !== UserRolesEnum.SUPER_ADMIN)
+        ) {
+            throw new ApiError(
+                401,
+                "Only ADMIN or SUPER_ADMIN can create ADMIN"
+            );
         }
 
         const company = await db.company.findUnique({
@@ -76,22 +86,22 @@ const createCompanyAdmin = asyncHandler(async (req, res) => {
             where: {
                 companyId_userId: {
                     companyId,
-                    userId: created.id
-                }
+                    userId: created.id,
+                },
             },
             update: {
-                role: "ADMIN"
+                role: "ADMIN",
             },
             create: {
                 companyId,
                 userId: created.id,
-                role: "ADMIN"
+                role: "ADMIN",
             },
         });
 
         const responseUser = await db.user.findUnique({
             where: {
-                id: created.id
+                id: created.id,
             },
             omit: {
                 password: true,
@@ -111,9 +121,11 @@ const createCompanyAdmin = asyncHandler(async (req, res) => {
     }
 });
 
-
 const createCompanySuperAdmin = asyncHandler(async (req, res) => {
-    if (req.user.role === UserRolesEnum.SUPER_ADMIN) {
+    if (
+        req.user.role === UserRolesEnum.ADMIN ||
+        req.user.role === UserRolesEnum.SUPER_ADMIN
+    ) {
         const { name, email, password } = req.body;
         const { companyId } = req.params;
         const superAdminId = req.user?.id;
@@ -131,32 +143,35 @@ const createCompanySuperAdmin = asyncHandler(async (req, res) => {
 
         const company = await db.company.findUnique({
             where: {
-                id: companyId
+                id: companyId,
             },
         });
 
         if (!company) {
             throw new ApiError(404, "Company not found");
         }
-        
+
         const requester = await db.user.findUnique({
             where: {
-                id: superAdminId
+                id: superAdminId,
             },
         });
 
-
-        if (!requester || requester.role !== UserRolesEnum.SUPER_ADMIN) {
+        if (
+            !requester ||
+            (requester.role !== UserRolesEnum.ADMIN &&
+                requester.role !== UserRolesEnum.SUPER_ADMIN)
+        ) {
             throw new ApiError(
                 401,
-                "Only SUPER_ADMIN can create a SUPER_ADMIN"
+                "Only ADMIN or SUPER_ADMIN can create a SUPER_ADMIN"
             );
         }
 
         const existing = await db.user.findUnique({
             where: {
-                email
-            }
+                email,
+            },
         });
 
         if (existing) {
@@ -178,22 +193,22 @@ const createCompanySuperAdmin = asyncHandler(async (req, res) => {
             where: {
                 companyId_userId: {
                     companyId,
-                    userId: created.id
-                }
+                    userId: created.id,
+                },
             },
             update: {
-                role: "SUPER_ADMIN"
+                role: "SUPER_ADMIN",
             },
             create: {
                 companyId,
                 userId: created.id,
-                role: "SUPER_ADMIN"
+                role: "SUPER_ADMIN",
             },
         });
 
         const responseUser = await db.user.findUnique({
             where: {
-                id: created.id
+                id: created.id,
             },
             omit: {
                 password: true,
@@ -206,11 +221,11 @@ const createCompanySuperAdmin = asyncHandler(async (req, res) => {
             include: {
                 companyAdmins: {
                     where: {
-                        companyId
+                        companyId,
                     },
                     select: {
                         companyId: true,
-                        role: true
+                        role: true,
                     },
                 },
             },
@@ -227,7 +242,6 @@ const createCompanySuperAdmin = asyncHandler(async (req, res) => {
             );
     }
 });
-
 
 const signUp = asyncHandler(async (req, res) => {
     const { email, name, password } = req.body;
@@ -292,7 +306,7 @@ const signUp = asyncHandler(async (req, res) => {
     const verifyBase =
         process.env.EMAIL_VERIFICATION_REDIRECT_URL ||
         `${process.env.FRONTEND_URL}/auth/verify-email-success`;
-    
+
     const emailVerificationUrl = `${verifyBase}/${unHashedToken}`;
 
     await sendEmail({
@@ -308,7 +322,6 @@ const signUp = asyncHandler(async (req, res) => {
         .status(201)
         .json(new ApiResponse(201, user, "User registered successfully"));
 });
-
 
 const verifyEmail = asyncHandler(async (req, res) => {
     const { verificationToken } = req.params;
@@ -351,7 +364,6 @@ const verifyEmail = asyncHandler(async (req, res) => {
             new ApiResponse(200, { isEmailVerified: true }, "Email is verified")
         );
 });
-
 
 const signIn = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
@@ -401,7 +413,10 @@ const signIn = asyncHandler(async (req, res) => {
         }
 
         // Only ADMIN or SUPER_ADMIN can sign in with company scope
-        if (user.role !== UserRolesEnum.ADMIN && user.role !== UserRolesEnum.SUPER_ADMIN) {
+        if (
+            user.role !== UserRolesEnum.ADMIN &&
+            user.role !== UserRolesEnum.SUPER_ADMIN
+        ) {
             throw new ApiError(
                 403,
                 "Only ADMIN and SUPER_ADMIN can sign in with company scope"
@@ -443,7 +458,6 @@ const signIn = asyncHandler(async (req, res) => {
         );
 });
 
-
 const signOut = asyncHandler(async (req, res) => {
     const { id } = req.user;
 
@@ -465,7 +479,6 @@ const signOut = asyncHandler(async (req, res) => {
         .clearCookie("refreshToken")
         .json(new ApiResponse(200, null, "Logged out successfully"));
 });
-
 
 // This controller is called when user is logged in and he has snackbar that your email is not verified
 // In case he did not get the email or the email verification token is expired
@@ -515,7 +528,6 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
         .status(201)
         .json(new ApiResponse(201, {}, "Mail has been sent to your mail ID"));
 });
-
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req.cookies?.refreshToken;
@@ -588,7 +600,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 });
 
-
 const forgotPasswordRequest = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
@@ -631,7 +642,6 @@ const forgotPasswordRequest = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, null, "Check Your Inbox"));
 });
 
-
 const resetForgottenPassword = asyncHandler(async (req, res) => {
     const { resetToken } = req.params;
     const { newPassword } = req.body;
@@ -672,9 +682,11 @@ const resetForgottenPassword = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, {}, "Password reset successfully"));
 });
 
-
 const changeCurrentPassword = asyncHandler(async (req, res) => {
-    if (req.user.role === UserRolesEnum.ADMIN || req.user.role === UserRolesEnum.SUPER_ADMIN) {
+    if (
+        req.user.role === UserRolesEnum.ADMIN ||
+        req.user.role === UserRolesEnum.SUPER_ADMIN
+    ) {
         const { oldPassword, newPassword } = req.body;
         const user = await db.user.findUnique({
             where: {
@@ -690,7 +702,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
             oldPassword,
             user.password
         );
-        
+
         if (!isOldPasswordCorrect) {
             throw new ApiError(400, "Invalid old password");
         }
@@ -709,7 +721,6 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
             .json(new ApiResponse(200, {}, "Password changed successfully"));
     }
 });
-
 
 const getCurrentUser = asyncHandler(async (req, res) => {
     const { id } = req.user;
@@ -740,9 +751,9 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     );
 });
 
-
-const getCompanySuperAdmins = asyncHandler(async (req, res) => {
-    // if (req.user.role === UserRolesEnum.ADMIN || req.user.role === UserRolesEnum.SUPER_ADMIN || req.member.role === CompanyMemberRolesEnum.COMPANY_MEMBER) {
+const getCompanySuperAdmins = asyncHandler(
+    async (req, res) => {
+        // if (req.user.role === UserRolesEnum.ADMIN || req.user.role === UserRolesEnum.SUPER_ADMIN || req.member.role === CompanyMemberRolesEnum.COMPANY_MEMBER) {
         const { companyId } = req.params;
         if (!companyId) {
             throw new ApiError(400, "companyId is required");
@@ -782,12 +793,14 @@ const getCompanySuperAdmins = asyncHandler(async (req, res) => {
                 )
             );
     }
-// }
+    // }
 );
 
-
 const getCompanyAdmins = asyncHandler(async (req, res) => {
-    if (req.user.role === UserRolesEnum.ADMIN || req.user.role === UserRolesEnum.SUPER_ADMIN) {
+    if (
+        req.user.role === UserRolesEnum.ADMIN ||
+        req.user.role === UserRolesEnum.SUPER_ADMIN
+    ) {
         const { companyId } = req.params;
         if (!companyId) {
             throw new ApiError(400, "companyId is required");
@@ -796,7 +809,7 @@ const getCompanyAdmins = asyncHandler(async (req, res) => {
         const links = await db.companyAdmin.findMany({
             where: {
                 companyId,
-                role: "ADMIN"
+                role: "ADMIN",
             },
             include: {
                 user: {
@@ -810,7 +823,7 @@ const getCompanyAdmins = asyncHandler(async (req, res) => {
                 },
             },
             orderBy: {
-                createdAt: "desc"
+                createdAt: "desc",
             },
         });
 

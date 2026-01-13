@@ -4,9 +4,881 @@ import { format } from "date-fns";
 import { Button } from "../ui/button";
 import { Printer, ArrowLeft } from "lucide-react";
 
-// COMPONENT JSX (No changes, this logic is stable)
-const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app/form-builder", onToggleView, closureData }) => {
+// Printable Content Component
+const PrintableContent = React.forwardRef(
+    ({ formData, customSectionNames = {}, closureData }, ref) => {
+        const getSectionDisplayName = (section) => {
+            const sectionId = section?.id;
+            if (sectionId && customSectionNames[sectionId]) {
+                return customSectionNames[sectionId].toUpperCase();
+            }
+            const defaultDisplayNames = {
+                "work-description": "WORK DESCRIPTION",
+                "tools-equipment": "TOOLS & EQUIPMENT",
+                "ppe-checklist": "PPE",
+                "hazard-identification": "HAZARD IDENTIFICATION",
+                certificate: "CERTIFICATE",
+                "safe-system-work": "SSOW",
+                ssow: "SSOW",
+                "last-minute-risk": "LMRA",
+                declaration: "DECLARATION",
+                "opening-ptw": "OPENING PTW",
+                closure: "CLOSURE",
+            };
+            const key = getSectionKey(section);
+            if (defaultDisplayNames[key]) return defaultDisplayNames[key];
+            if (section?.title) return String(section.title).toUpperCase();
+            return String(sectionId || "").toUpperCase();
+        };
+
+        const getSectionKey = (section) => {
+            const known = new Set([
+                "work-description",
+                "tools-equipment",
+                "ppe-checklist",
+                "hazard-identification",
+                "certificate",
+                "safe-system-work",
+                "ssow",
+                "last-minute-risk",
+                "declaration",
+                "opening-ptw",
+                "closure",
+            ]);
+            if (section?.id && known.has(section.id)) return section.id;
+            const title = (section?.title || "").toLowerCase().trim();
+            if (title.includes("work") && title.includes("description"))
+                return "work-description";
+            if (title.includes("tool") || title.includes("equipment"))
+                return "tools-equipment";
+            if (title.includes("ppe") || title.includes("protective"))
+                return "ppe-checklist";
+            if (title.includes("hazard")) return "hazard-identification";
+            if (title.includes("certificate")) return "certificate";
+            if (title.includes("safe system") || title === "ssow")
+                return "ssow";
+            if (
+                title.includes("risk") ||
+                title.includes("lmra") ||
+                title.includes("last minute")
+            )
+                return "last-minute-risk";
+            if (title.includes("declaration")) return "declaration";
+            if (
+                title.includes("opening") ||
+                (title.includes("ptw") && !title.includes("closure"))
+            )
+                return "opening-ptw";
+            if (title.includes("closure") || title.includes("handback"))
+                return "closure";
+            return section.id || "";
+        };
+
+        const normalizeAnswer = (val, options) => {
+            if (val == null) return val;
+            if (typeof val === "number" && options && options[val])
+                return options[val];
+            return val;
+        };
+
+        const cleanDisplayText = (text) => {
+            if (!text) return "";
+            return text
+                .replace(/\(CROSS WITH AN X\):?/gi, "")
+                .replace(/:$/, "")
+                .trim();
+        };
+
+        const renderComponent = (component, sectionKey) => {
+            const answers = formData?.answers || null;
+            const rawAnswer = answers ? answers[component.id] : undefined;
+            const answerVal = normalizeAnswer(rawAnswer, component.options);
+            const componentVal =
+                (component && (component.value ?? component.text)) || "";
+            const hasAnswer =
+                answers &&
+                Object.prototype.hasOwnProperty.call(answers, component.id);
+            const displayVal = hasAnswer ? answerVal : componentVal;
+
+            // TOOLS & EQUIPMENT - Numbered Grid
+            if (sectionKey === "tools-equipment") {
+                let items = [];
+                if (typeof displayVal === "string") {
+                    items = displayVal.split(",").map((s) => s.trim());
+                    // Removed .filter(Boolean) so empty slots (double commas) are preserved as blank numbered items
+                } else if (Array.isArray(displayVal)) {
+                    items = displayVal;
+                }
+                return (
+                    <div className="tools-container">
+                        <div className="tools-header">
+                            LISTING OF IDENTIFIED TOOLS AND/OR EQUIPMENT TO BE
+                            USED FOR THE ACTIVITY.
+                        </div>
+                        <div className="tools-grid">
+                            {Array.from({ length: 18 }).map((_, idx) => (
+                                <div key={idx} className="tool-item">
+                                    <span className="tool-num">{idx + 1}.</span>
+                                    <span className="tool-value">
+                                        {items[idx] || ""}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            // OPENING PTW - inject closure data
+            if (sectionKey === "opening-ptw" && closureData?.openingPTW) {
+                const openingPTW = closureData.openingPTW;
+                const labelLower = (component.label || "").toLowerCase();
+                let val = displayVal;
+                if (labelLower.includes("issuing authority name"))
+                    val = openingPTW["permit-issuing-authority-name"];
+                else if (
+                    labelLower.includes("date") &&
+                    labelLower.includes("issuing")
+                )
+                    val = openingPTW["permit-issuing-authority-date"];
+                if (labelLower.includes("receiving authority name"))
+                    val = openingPTW["permit-receiving-authority-name"];
+                else if (
+                    labelLower.includes("date") &&
+                    labelLower.includes("receiving")
+                )
+                    val = openingPTW["permit-receiving-authority-date"];
+                if (val !== displayVal && val) {
+                    return (
+                        <div className="field-row">
+                            <span className="field-label">
+                                {component.label}:
+                            </span>
+                            <span className="field-value">{String(val)}</span>
+                        </div>
+                    );
+                }
+            }
+
+            // CLOSURE - inject closure data
+            if (sectionKey === "closure" && closureData) {
+                const labelLower = (component.label || "").toLowerCase();
+                let val = displayVal;
+                if (
+                    labelLower.includes("issuing authority") ||
+                    labelLower.includes("closed by")
+                )
+                    val = closureData.closedBy;
+                else if (labelLower.includes("date"))
+                    val = closureData.closedAt
+                        ? String(closureData.closedAt).split("T")[0]
+                        : "";
+                if (val !== displayVal && val) {
+                    return (
+                        <div className="field-row">
+                            <span className="field-label">
+                                {component.label}:
+                            </span>
+                            <span className="field-value">{String(val)}</span>
+                        </div>
+                    );
+                }
+            }
+
+            // STANDARD COMPONENTS
+            switch (component.type) {
+                case "text":
+                case "time":
+                case "date":
+                    // LMRA sometimes includes a text label that duplicates the title. Filter it out.
+                    if (
+                        sectionKey === "last-minute-risk" &&
+                        cleanDisplayText(
+                            component.label || "",
+                        ).toUpperCase() === "LAST MINUTE RISK ASSESSMENT"
+                    ) {
+                        return null;
+                    }
+
+                    return (
+                        <div className="field-row">
+                            <span className="field-label">
+                                {component.label}:
+                            </span>
+                            <span className="field-value">
+                                {String(displayVal || "")}
+                            </span>
+                        </div>
+                    );
+                case "textarea":
+                    return (
+                        <div className="field-block">
+                            <div className="field-label">
+                                {component.label}:
+                            </div>
+                            <div className="field-textarea">
+                                {String(displayVal || "")}
+                            </div>
+                        </div>
+                    );
+                case "checkbox":
+                    // Yes/No style for Certificate, SSOW, LMRA
+                    if (
+                        [
+                            "certificate",
+                            "ssow",
+                            "safe-system-work",
+                            "last-minute-risk",
+                        ].includes(sectionKey)
+                    ) {
+                        const isChecked = (opt) => {
+                            if (hasAnswer && Array.isArray(answerVal))
+                                return answerVal.includes(opt);
+                            if (hasAnswer && answerVal === opt) return true;
+                            return false;
+                        };
+                        return (
+                            <div className="yn-row">
+                                <span className="yn-label">
+                                    {component.label}
+                                </span>
+                                <div className="yn-options">
+                                    {(
+                                        component.options || [
+                                            "Yes",
+                                            "No",
+                                            "N/A",
+                                        ]
+                                    ).map((opt) => (
+                                        <label key={opt} className="yn-option">
+                                            <span
+                                                className={`checkbox-box ${isChecked(opt) ? "checked" : ""}`}
+                                            >
+                                                {isChecked(opt) ? "✓" : ""}
+                                            </span>
+                                            <span className="yn-text">
+                                                {opt}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    }
+                    // Grid checkboxes for PPE, Hazards
+                    {
+                        const isItemChecked = (opt) =>
+                            hasAnswer &&
+                            Array.isArray(answerVal) &&
+                            answerVal.includes(opt);
+                        return (
+                            <div className="checkbox-block">
+                                {component.label && (
+                                    <div className="checkbox-header">
+                                        {cleanDisplayText(component.label)}
+                                    </div>
+                                )}
+                                <div className="checkbox-grid">
+                                    {component.options?.map((option, index) => (
+                                        <label
+                                            key={index}
+                                            className="checkbox-item"
+                                        >
+                                            <span
+                                                className={`checkbox-box ${isItemChecked(option) ? "checked" : ""}`}
+                                            >
+                                                {isItemChecked(option)
+                                                    ? "✓"
+                                                    : ""}
+                                            </span>
+                                            <span className="checkbox-label">
+                                                {option}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    }
+                case "radio": {
+                    const isRadioChecked = (opt) =>
+                        hasAnswer && answerVal === opt;
+                    return (
+                        <div className="yn-row">
+                            <span className="yn-label">{component.label}</span>
+                            <div className="yn-options">
+                                {(component.options || []).map((opt) => (
+                                    <label key={opt} className="yn-option">
+                                        <span
+                                            className={`checkbox-box ${isRadioChecked(opt) ? "checked" : ""}`}
+                                        >
+                                            {isRadioChecked(opt) ? "✓" : ""}
+                                        </span>
+                                        <span className="yn-text">{opt}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                }
+                case "header":
+                    // We WANT the header to render in LMRA now (inside grid)
+                    return (
+                        <div className="subsection-header">
+                            {cleanDisplayText(component.label)}
+                        </div>
+                    );
+                case "signature":
+                    return (
+                        <div className="field-row">
+                            <span className="field-label">
+                                {component.label}:
+                            </span>
+                            <span className="field-value signature-line"></span>
+                        </div>
+                    );
+                default:
+                    return null;
+            }
+        };
+
+        return (
+            <div ref={ref} className="permit-document">
+                <style>{`
+                /* ========== DOCUMENT STYLES ========== */
+                .permit-document {
+                    width: 210mm;
+                    min-height: 297mm;
+                    background: #fff;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    font-size: 9px;
+                    line-height: 1.3;
+                    color: #000;
+                    padding: 8mm;
+                    box-sizing: border-box;
+                }
+
+                @media print {
+                    .permit-document {
+                        width: 100%;
+                        height: auto;
+                        min-height: auto;
+                        padding: 8mm;
+                        box-shadow: none;
+                        border: none;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                }
+
+                /* ========== HEADER ========== */
+                .doc-header {
+                    display: flex;
+                    border: 2px solid #000;
+                    margin-bottom: 0;
+                }
+                .doc-meta {
+                    width: 100px;
+                    padding: 6px;
+                    font-size: 8px;
+                    border-right: 1px solid #000;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                }
+                .doc-title {
+                    flex: 1;
+                    background: #000;
+                    color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 18px;
+                    font-weight: 700;
+                    letter-spacing: 1px;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .doc-logo {
+                    width: 100px;
+                    padding: 6px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-left: 1px solid #000;
+                }
+                .doc-logo img { max-height: 35px; }
+                .logo-text { font-size: 16px; font-weight: 700; color: #1e40af; font-style: italic; }
+
+                /* ========== SECTIONS CONTAINER ========== */
+                .sections-container {
+                    border: 2px solid #000;
+                    border-top: none;
+                }
+
+                /* ========== SECTION ROW ========== */
+                .section-row {
+                    display: flex;
+                    border-bottom: 1px solid #000;
+                }
+                .section-row:last-child { border-bottom: none; }
+
+                .section-sidebar {
+                    width: 24px;
+                    min-width: 24px;
+                    background: #000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .sidebar-text {
+                    writing-mode: vertical-rl;
+                    transform: rotate(180deg);
+                    color: #fff;
+                    font-size: 8px;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                    white-space: nowrap;
+                }
+
+                .section-content {
+                    flex: 1;
+                    padding: 4px 8px;
+                    border-left: 1px solid #000;
+                }
+
+                /* ========== FIELD STYLES ========== */
+                .field-row {
+                    display: flex;
+                    align-items: baseline;
+                    margin-bottom: 3px;
+                    gap: 6px;
+                }
+                .field-label {
+                    font-weight: 600;
+                    color: #000;
+                    /* Removed white-space: nowrap to allow wrapping for long text */
+                }
+                .field-value {
+                    flex: 1;
+                    border-bottom: 1px solid #666;
+                    min-height: 14px;
+                    padding-left: 4px;
+                    color: #1e40af;
+                }
+                .signature-line { min-width: 120px; }
+
+                .field-block { margin-bottom: 4px; }
+                .field-textarea {
+                    border-bottom: 1px solid #666;
+                    min-height: 16px;
+                    padding: 2px 4px;
+                    color: #1e40af;
+                }
+
+                /* ========== TOOLS GRID ========== */
+                .tools-container { width: 100%; }
+                .tools-header {
+                    font-weight: 700;
+                    text-align: center;
+                    font-size: 9px;
+                    margin-bottom: 6px;
+                    text-decoration: underline;
+                }
+                .tools-grid {
+                    display: grid;
+                    grid-template-columns: repeat(6, 1fr);
+                    gap: 4px 12px;
+                }
+                .tool-item {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 4px;
+                }
+                .tool-num { font-weight: 700; }
+                .tool-value {
+                    flex: 1;
+                    border-bottom: 1px solid #000;
+                    min-height: 12px;
+                    color: #1e40af;
+                }
+
+                /* ========== CHECKBOX GRID (PPE, Hazards) ========== */
+                .checkbox-block { margin-bottom: 4px; }
+                .checkbox-header {
+                    font-weight: 700;
+                    text-align: center;
+                    font-size: 9px;
+                    margin-bottom: 4px;
+                    text-decoration: underline;
+                    text-transform: uppercase;
+                }
+                .checkbox-grid {
+                    display: grid;
+                    grid-template-columns: repeat(5, 1fr);
+                    gap: 3px 8px;
+                }
+                .checkbox-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    cursor: default;
+                }
+                .checkbox-box {
+                    width: 12px;
+                    height: 12px;
+                    border: 1.5px solid #000;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 10px;
+                    font-weight: 700;
+                    flex-shrink: 0;
+                }
+                .checkbox-box.checked {
+                    background: #1e40af;
+                    color: #fff;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .checkbox-label { font-size: 8px; }
+
+                /* ========== YES/NO ROWS (Certificate, SSOW, LMRA) ========== */
+                .yn-row {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 3px 0;
+                    border-bottom: 1px dotted #ccc;
+                }
+                .yn-row:last-child { border-bottom: none; }
+                .yn-label { font-weight: 600; flex: 1; }
+                .yn-options { display: flex; gap: 12px; }
+                .yn-option {
+                    display: flex;
+                    align-items: center;
+                    gap: 3px;
+                    cursor: default;
+                }
+                .yn-text { font-size: 9px; }
+
+                /* ========== SUBSECTION HEADER ========== */
+                .subsection-header {
+                    font-weight: 700;
+                    text-align: center;
+                    font-size: 9px;
+                    text-decoration: underline;
+                    margin: 2px 0 1px;
+                    text-transform: uppercase;
+                    width: 100%; /* Force full width in flex/grid containers */
+                }
+
+                /* ========== SECTION-SPECIFIC LAYOUTS ========== */
+                /* Work Description - 2 column grid */
+                .section-row[data-key="work-description"] .section-content {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 4px 20px;
+                }
+                .section-row[data-key="work-description"] .field-block {
+                    grid-column: 1 / -1;
+                }
+
+                /* Hazard Identification - 5 column checkbox grid + certificate rows */
+                .section-row[data-key="hazard-identification"] .section-content {
+                    display: block;
+                }
+                .section-row[data-key="hazard-identification"] .checkbox-header {
+                    font-weight: 700;
+                    text-align: center;
+                    font-size: 9px;
+                    margin-bottom: 4px;
+                    text-decoration: underline;
+                }
+                .section-row[data-key="hazard-identification"] .checkbox-grid {
+                    display: grid;
+                    grid-template-columns: repeat(5, 1fr);
+                    gap: 2px 6px;
+                    margin-bottom: 6px;
+                }
+                .section-row[data-key="hazard-identification"] .field-row {
+                    border-bottom: 1px solid #999;
+                    padding: 2px 0;
+                }
+                .section-row[data-key="hazard-identification"] .yn-row {
+                    display: flex;
+                    align-items: center;
+                    border-bottom: none; /* Removed border to prevent double lines with field-row */
+                    padding: 3px 0;
+                }
+                .section-row[data-key="hazard-identification"] .yn-label {
+                    min-width: 180px;
+                    font-weight: 600;
+                }
+                .section-row[data-key="hazard-identification"] .yn-options {
+                    display: flex;
+                    gap: 8px;
+                    margin-right: 20px;
+                }
+                .section-row[data-key="hazard-identification"] .field-value {
+                    flex: 1;
+                    border-bottom: 1px solid #666;
+                    margin-left: 8px;
+                }
+
+                /* SSOW - 2 column for Y/N questions */
+                .section-row[data-key="ssow"] .section-content,
+                .section-row[data-key="safe-system-work"] .section-content {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 4px 20px;
+                }
+                .section-row[data-key="ssow"] .subsection-header,
+                .section-row[data-key="safe-system-work"] .subsection-header {
+                    grid-column: 1 / -1;
+                }
+
+                /* LMRA - Grid layout for items */
+                /* LMRA - Custom Grid Layout */
+                .lmra-custom-grid {
+                    display: flex;
+                    flex-direction: column;
+                    border: none !important; /* Force remove border */
+                    padding: 0;
+                }
+                .lmra-items-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 8px 12px;
+                    border: none !important;
+                }
+                /* Ensure children rendered by renderComponent take full width of grid cell */
+                .lmra-items-grid > * {
+                    width: 100%;
+                }
+
+                /* Declaration - 2 column with full-width headers */
+                .section-row[data-key="declaration"] .section-content {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 2px 24px;
+                }
+                .section-row[data-key="declaration"] .field-block,
+                .section-row[data-key="declaration"] .subsection-header {
+                    grid-column: 1 / -1;
+                }
+
+                /* Opening PTW - 2 column with full-width disclaimer */
+                .section-row[data-key="opening-ptw"] .section-content {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 2px 24px;
+                }
+                .section-row[data-key="opening-ptw"] .field-label {
+                    white-space: normal; /* Ensure long text wraps */
+                }
+                .section-row[data-key="opening-ptw"] .field-block,
+                .section-row[data-key="opening-ptw"] .subsection-header {
+                    grid-column: 1 / -1;
+                }
+
+                /* Closure - 2 column with full-width headers */
+                .section-row[data-key="closure"] .section-content {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 2px 24px;
+                }
+                .section-row[data-key="closure"] .field-block,
+                .section-row[data-key="closure"] .subsection-header {
+                    grid-column: 1 / -1;
+                }
+
+                /* Certificate - Inline rows: Question | Yes/No/NA | Cert Number */
+                .section-row[data-key="certificate"] .section-content {
+                    display: block;
+                }
+                .section-row[data-key="certificate"] .yn-row {
+                    display: flex;
+                    align-items: center;
+                    border-bottom: 1px solid #000;
+                    padding: 4px 0;
+                }
+                .section-row[data-key="certificate"] .yn-label {
+                    min-width: 200px;
+                    font-weight: 600;
+                }
+                .section-row[data-key="certificate"] .yn-options {
+                    display: flex;
+                    gap: 8px;
+                    margin-right: 15px;
+                }
+                .section-row[data-key="certificate"] .field-row {
+                    margin-top: 2px;
+                    margin-left: 10px;
+                }
+            `}</style>
+
+                {/* HEADER */}
+                <div className="doc-header">
+                    <div className="doc-meta">
+                        <div>
+                            Issue Date: {format(new Date(), "dd/MM/yyyy")}
+                        </div>
+                    </div>
+                    <div className="doc-title">GENERAL WORK PERMIT</div>
+                    <div className="doc-logo">
+                        {formData.logoSrc ? (
+                            <img src={formData.logoSrc} alt="Logo" />
+                        ) : (
+                            <span className="logo-text">expertise</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* SECTIONS */}
+                <div className="sections-container">
+                    {formData.sections?.map((section) => {
+                        const sectionKey = getSectionKey(section);
+                        return (
+                            <div
+                                key={section.id}
+                                className="section-row"
+                                data-key={sectionKey}
+                            >
+                                <div className="section-sidebar">
+                                    <span className="sidebar-text">
+                                        {getSectionDisplayName(section)}
+                                    </span>
+                                </div>
+                                <div className="section-content">
+                                    {![
+                                        "hazard-identification",
+                                        "tools-equipment",
+                                        "ppe-checklist",
+                                    ].includes(sectionKey) && (
+                                        <div className="subsection-header">
+                                            {cleanDisplayText(
+                                                String(
+                                                    section.title || section.id,
+                                                ),
+                                            ).toUpperCase()}
+                                        </div>
+                                    )}
+                                    {sectionKey === "last-minute-risk" ? (
+                                        <div className="lmra-items-grid">
+                                            {section.components.map((comp) => {
+                                                // The LMRA section component is a single "checkbox" type
+                                                // with the label "LAST MINUTE RISK ASSESSMENT".
+                                                // The "Questions" are actually OPTIONS of this single component.
+                                                // So we render the OPTIONS as grid items and IGNORE the component label.
+
+                                                const isOptionChecked = (
+                                                    opt,
+                                                ) => {
+                                                    // Use formData.answers like renderComponent does
+                                                    const answers =
+                                                        formData?.answers || {};
+                                                    const answer =
+                                                        answers[comp.id];
+
+                                                    if (!answer) return false;
+
+                                                    if (Array.isArray(answer)) {
+                                                        return answer.includes(
+                                                            opt,
+                                                        );
+                                                    }
+                                                    return answer === opt;
+                                                };
+
+                                                return (
+                                                    <React.Fragment
+                                                        key={comp.id}
+                                                    >
+                                                        {(
+                                                            comp.options || []
+                                                        ).map((opt, index) => (
+                                                            <div
+                                                                key={index}
+                                                                className="lmra-item"
+                                                                style={{
+                                                                    display:
+                                                                        "flex",
+                                                                    alignItems:
+                                                                        "center",
+                                                                    justifyContent:
+                                                                        "space-between",
+                                                                }}
+                                                            >
+                                                                <span
+                                                                    className="lmra-label"
+                                                                    style={{
+                                                                        fontSize:
+                                                                            "8px",
+                                                                        marginRight:
+                                                                            "8px",
+                                                                        flex: 1,
+                                                                    }}
+                                                                >
+                                                                    {opt}
+                                                                </span>
+                                                                <div className="lmra-options">
+                                                                    <label className="yn-option">
+                                                                        <span
+                                                                            className={`checkbox-box ${isOptionChecked(opt) ? "checked" : ""}`}
+                                                                        >
+                                                                            {isOptionChecked(
+                                                                                opt,
+                                                                            )
+                                                                                ? "✓"
+                                                                                : ""}
+                                                                        </span>
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </React.Fragment>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        section.components?.map((comp) => (
+                                            <React.Fragment key={comp.id}>
+                                                {renderComponent(
+                                                    comp,
+                                                    sectionKey,
+                                                )}
+                                            </React.Fragment>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    },
+);
+
+PrintableContent.displayName = "PrintableContent";
+
+// Main PrintView Component
+const PrintView = ({
+    formData,
+    customSectionNames = {},
+    builderPath = "/page/app/form-builder",
+    onToggleView,
+    closureData,
+}) => {
     const navigate = useNavigate();
+    const handlePrint = () => {
+        window.print();
+    };
+
     if (!formData) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -14,664 +886,93 @@ const PrintView = ({ formData, customSectionNames = {}, builderPath = "/page/app
             </div>
         );
     }
-    
-    const getSectionDisplayName = (section) => {
-        const sectionId = section?.id;
-        if (sectionId && customSectionNames[sectionId]) {
-            return customSectionNames[sectionId].toUpperCase();
-        }
-        const defaultDisplayNames = {
-            'work-description': 'WORK DESCRIPTION',
-            'tools-equipment': 'TOOLS & EQUIPMENT',
-            'ppe-checklist': 'PPE',
-            'hazard-identification': 'HAZARD IDENTIFICATION',
-            'certificate': 'CERTIFICATE',
-            'safe-system-work': 'SSOW',
-            'last-minute-risk': 'LMRA',
-            'declaration': 'DECLARATION',
-            'opening-ptw': 'OPENING/PTW',
-            'closure': 'CLOSURE'
-        };
-        if (sectionId && defaultDisplayNames[sectionId]) return defaultDisplayNames[sectionId];
-        // Fallback to section title from data (prettier than UUID)
-        if (section?.title) return String(section.title).toUpperCase();
-        return String(sectionId || '').toUpperCase();
-    };
-
-    const getSectionKey = (section) => {
-        const known = new Set([
-            'work-description',
-            'tools-equipment',
-            'ppe-checklist',
-            'hazard-identification',
-            'certificate',
-            'safe-system-work',
-            'ssow',
-            'last-minute-risk',
-            'declaration',
-            'opening-ptw',
-            'closure',
-        ]);
-        if (section?.id && known.has(section.id)) return section.id;
-        const title = (section?.title || '').toLowerCase().trim();
-        const mapByTitle = {
-            'work description': 'work-description',
-            'tools & equipment': 'tools-equipment',
-            'tools and equipment': 'tools-equipment',
-            'ppe checklist': 'ppe-checklist',
-            'personal protective equipment': 'ppe-checklist',
-            'hazard identification': 'hazard-identification',
-            'certificate': 'certificate',
-            'safe system of work': 'ssow',
-            'last minute risk assessment': 'last-minute-risk',
-            'declaration': 'declaration',
-            'opening ptw': 'opening-ptw',
-            'opening-ptw': 'opening-ptw',
-            'closure': 'closure',
-        };
-        if (title && mapByTitle[title]) return mapByTitle[title];
-        // Heuristic normalize
-        const normalized = title
-            .replace(/&/g, 'and')
-            .replace(/[^a-z\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .trim();
-        if (normalized.includes('work-description')) return 'work-description';
-        if (normalized.includes('tools') && normalized.includes('equipment')) return 'tools-equipment';
-        if (normalized.includes('ppe') || normalized.includes('personal-protective')) return 'ppe-checklist';
-        if (normalized.includes('hazard')) return 'hazard-identification';
-        if (normalized.includes('safe-system') || normalized === 'ssow') return 'ssow';
-        if (normalized.includes('last-minute') || normalized.includes('risk-assessment')) return 'last-minute-risk';
-        if (normalized.includes('opening') && normalized.includes('ptw')) return 'opening-ptw';
-        return normalized || (section?.id || '');
-    };
-
-    const normalizeAnswer = (val, options) => {
-        if (val == null) return val;
-        if (!options || options.length === 0) return val;
-        // If backend stores indices, convert to labels
-        if (Array.isArray(val)) {
-            return val.map(v => typeof v === 'number' ? options[v] ?? v : v);
-        }
-        if (typeof val === 'number') {
-            return options[val] ?? val;
-        }
-        return val;
-    };
-
-    const renderComponent = (component, sectionKey) => {
-        const answers = formData?.answers || null;
-        const rawAnswer = answers ? answers[component.id] : undefined;
-        const answerVal = normalizeAnswer(rawAnswer, component.options);
-        const componentVal = (component && (component.value ?? component.text)) || "";
-        // Check if this specific component has an answer, not just if answers object exists
-        const hasAnswer = answers && Object.prototype.hasOwnProperty.call(answers, component.id);
-        const displayVal = hasAnswer ? answerVal : componentVal;
-        
-        // Debug logging for troubleshooting
-        if (answers && Object.keys(answers).length > 0) {
-            console.log('PrintView - Component rendering:', {
-                componentId: component.id,
-                componentLabel: component.label,
-                hasAnswer,
-                rawAnswer,
-                answerVal,
-                componentVal,
-                displayVal,
-                allAnswers: answers
-            });
-        }
-        
-        // Debug Work Permit No specifically
-        if (/work\s*permit\s*no/i.test(component?.label || "")) {
-            console.log('PrintView - Work Permit No component:', {
-                label: component.label,
-                componentVal: componentVal,
-                answerVal: answerVal,
-                answers: answers,
-                displayVal: displayVal
-            });
-        }
-        // Special handling: Tools & Equipment prints dashed lines with inline values, no long line
-        // Always render the dashed grid even if there are no answers yet (builder/new form case)
-        if (sectionKey === 'tools-equipment') {
-            const arr = Array.isArray(displayVal) ? displayVal : [];
-            return (
-                <div className="ptw-component-inner">
-                    <div className="ptw-label">{component.label}:</div>
-                    <div className="ptw-multi-lines-12">
-                        {Array.from({ length: 18 }).map((_, idx) => (
-                            <div key={idx} className="ptw-input-line ptw-list-line">
-                                <span style={{visibility:'visible'}}>{String(arr[idx] || '')}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        }
-        
-        // Special handling for Opening PTW section with closure data
-        if (sectionKey === 'opening-ptw' && closureData?.openingPTW) {
-            const openingPTW = closureData.openingPTW;
-            const fieldName = component.label?.toLowerCase().replace(/\s+/g, '-');
-            
-            // Map component labels to closure data fields
-            let closureValue = '';
-            if (fieldName?.includes('issuing-authority-name')) {
-                closureValue = openingPTW['permit-issuing-authority-name'] || '';
-            } else if (fieldName?.includes('issuing-authority-date') || fieldName?.includes('issuing-date')) {
-                closureValue = openingPTW['permit-issuing-authority-date'] || '';
-            } else if (fieldName?.includes('receiving-authority-name')) {
-                closureValue = openingPTW['permit-receiving-authority-name'] || '';
-            } else if (fieldName?.includes('receiving-authority-date') || fieldName?.includes('receiving-date')) {
-                closureValue = openingPTW['permit-receiving-authority-date'] || '';
-            }
-            
-            if (closureValue) {
-                return (
-                    <div className={`ptw-component-inner ${['work-description', 'certificate', 'opening-ptw'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
-                        <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(closureValue)}</span></div>
-                    </div>
-                );
-            }
-        }
-
-        // Special handling for Closure section to display closureData values
-        if (sectionKey === 'closure' && closureData) {
-            const fieldName = (component.label || '').toLowerCase();
-            let closureValue = '';
-
-            if (
-                fieldName.includes('work clearance') ||
-                fieldName.includes('work is completed') ||
-                fieldName.includes('working area cleared') ||
-                fieldName.includes('area cleared') ||
-                fieldName.includes('completion')
-            ) {
-                closureValue = closureData.workClearanceDescription || '';
-            } else if (fieldName.includes('closed by') || fieldName.includes('issuing authority')) {
-                // Some templates might label this differently
-                closureValue = closureData.closedBy || '';
-            } else if (fieldName.includes('closed at')) {
-                const dateStr = closureData.closedAt || '';
-                closureValue = dateStr ? String(dateStr).split('T')[0] : '';
-            } else if (fieldName.includes('permit receiving authority') || fieldName.includes('receiving authority')) {
-                // Show the receiving authority captured in Opening PTW
-                const openingPTW = closureData.openingPTW || {};
-                closureValue = openingPTW['permit-receiving-authority-name'] || '';
-            } else if (fieldName.includes('receiving date')) {
-                const openingPTW = closureData.openingPTW || {};
-                closureValue = openingPTW['permit-receiving-authority-date'] || '';
-            } else if (fieldName === 'date' || fieldName.endsWith(': date')) {
-                // Generic Date label on left column — prefer Opening PTW issuing/receiving dates if present
-                const openingPTW = closureData.openingPTW || {};
-                closureValue = openingPTW['permit-issuing-authority-date'] || openingPTW['permit-receiving-authority-date'] || '';
-            }
-
-            if (closureValue) {
-                return (
-                    <div className={`ptw-component-inner ${['closure', 'opening-ptw'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
-                        <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(closureValue)}</span></div>
-                    </div>
-                );
-            }
-        }
-        
-        // This entire function is stable and correct. No changes.
-        switch (component.type) {
-            case 'text':
-                return (
-                    <div className={`ptw-component-inner ${['work-description', 'certificate', 'opening-ptw'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
-                        <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(displayVal || '')}</span></div>
-                    </div>
-                );
-            case 'textarea':
-                return (
-                    <div className="ptw-component-inner">
-                        <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-textarea"><span style={{visibility:'visible'}}>{String(displayVal || '')}</span></div>
-                    </div>
-                );
-            case 'date':
-                return (
-                    <div className={`ptw-component-inner ${['work-description', 'declaration', 'opening-ptw', 'closure'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
-                        <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(displayVal || '')}</span></div>
-                    </div>
-                );
-            case 'time':
-                 return (
-                    <div className={`ptw-component-inner ${['work-description', 'opening-ptw', 'closure'].includes(sectionKey) ? 'ptw-field-horizontal' : ''}`}>
-                        <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(displayVal || '')}</span></div>
-                    </div>
-                );
-            case 'checkbox':
-                return (
-                    <div className="ptw-component-inner">
-                        <div className="ptw-label mb-2">{component.label}:</div>
-                        <div className="ptw-checkbox-grid">
-                            {component.options && component.options.map((option, index) => (
-                                <div key={index} className="ptw-checkbox-item">
-                                    <div className="ptw-checkbox">{hasAnswer && Array.isArray(answerVal) && answerVal.includes(option) ? '☑' : '☐'}</div>
-                                    <span className="ptw-checkbox-label">{option}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            case 'radio':
-                return (
-                    <div className="ptw-component-inner">
-                        <div className="ptw-label mb-2">{component.label}:</div>
-                        <div className="ptw-radio-group">
-                            {component.options && component.options.map((option, index) => (
-                                <div key={index} className="ptw-radio-item">
-                                    <div className="ptw-radio">{hasAnswer && answerVal === option ? '■' : '□'}</div>
-                                    <span className="ptw-radio-label">{option}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            case 'signature':
-                 return (
-                    <div className={`ptw-component-inner ptw-field-horizontal`}>
-                        <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-signature-line"></div>
-                    </div>
-                );
-            case 'header':
-                return (
-                    <div className="ptw-component-inner">
-                        <div className="ptw-section-subtitle">{component.label}</div>
-                    </div>
-                );
-            default:
-                return (
-                    <div className="ptw-component-inner">
-                        <div className="ptw-label">{component.label}:</div>
-                        <div className="ptw-input-line"><span style={{visibility:'visible'}}>{String(displayVal || '')}</span></div>
-                    </div>
-                );
-        }
-    };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Print Controls - Only visible on screen, hidden when printing */}
-            <div className="no-print bg-white border-b border-gray-200 p-4 sticky top-0 z-50">
-                <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                                if (onToggleView) { onToggleView(); return; }
-                                try { navigate({ to: builderPath }); } catch (_) { window.history.back(); }
-                            }}
-                            className="flex items-center space-x-2"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            <span>Go Back</span>
-                        </Button>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                            Print Preview: {formData.title || "GENERAL WORK PERMIT"}
-                        </h3>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                        <Button
-                            size="sm"
-                            onClick={() => window.print()}
-                            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center space-x-2"
-                        >
-                            <Printer className="w-4 h-4" />
-                            <span>Print</span>
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Print Form */}
-            <div className="ptw-form-print no-print:w-[210mm] no-print:mx-auto no-print:bg-white no-print:shadow no-print:p-2">
-            {/* Header, Main Content, and Footer will now stack as simple blocks */ }
-            <div className="ptw-header">
-                <div className="ptw-header-left">
-                    <div className="ptw-doc-info">
-                        <div>Doc Ref No: xxxxxxxxxxx</div>
-                        <div>Issue Date: {format(new Date(), "dd/MM/yyyy")}</div>
-                        <div>Rev No: 01</div>
-                    </div>
-                </div>
-                <div className="ptw-header-center">
-                    <div className="ptw-title">{formData.title || "GENERAL WORK PERMIT"}</div>
-                </div>
-                <div className="ptw-header-right">
-                    <div className="ptw-logo">
-                        {formData.logoSrc ? (
-                            <img src={formData.logoSrc} alt="Company Logo" className="ptw-logo-img" />
-                        ) : (
-                            <span className="ptw-logo-text">Company Name</span>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <div className="ptw-main-content">
-                {formData.sections && formData.sections.length > 0 ? (
-                    formData.sections
-                        .map((section, idx) => {
-                            const sectionKey = getSectionKey(section);
-                            // Skip rendering Opening/PTW in print? No, requirement says show in print.
-                            const needsBreakAfter = (
-                                sectionKey === 'ppe-checklist' ||
-                                sectionKey === 'hazard-identification' ||
-                                sectionKey === 'certificate' ||
-                                sectionKey === 'ssow'
-                            );
-                            return (
-                                <React.Fragment key={section.id}>
-                                    <div className="ptw-section-row" data-section={sectionKey}>
-                                        <div className="ptw-sidebar-label-wrapper">
-                                            <div className="ptw-sidebar-label">
-                                                {getSectionDisplayName(section)}
-                                            </div>
-                                        </div>
-                                        <div className="ptw-content-wrapper">
-                                            {section.components && section.components.length > 0 ? (
-                                                <div className="ptw-component-wrapper">
-                                                    {section.components
-                                                        .map((component) => (
-                                                            <div key={component.id} className="ptw-component">
-                                                                {renderComponent(component, sectionKey)}
-                                                            </div>
-                                                        ))}
-                                                </div>
-                                            ) : (
-                                                <div className="ptw-label text-gray-500">No components configured.</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    {needsBreakAfter && <div className="ptw-page-break" />}
-                                </React.Fragment>
-                            );})
-                ) : (
-                    <div className="ptw-section-row">
-                         <div className="ptw-sidebar-label-wrapper">
-                             <div className="ptw-sidebar-label">NO SECTIONS</div>
-                         </div>
-                         <div className="ptw-content-wrapper">
-                             <div className="ptw-label text-gray-500">No sections have been configured.</div>
-                         </div>
-                    </div>
-                )}
-            </div>
-
-            <div className="ptw-footer">
-                <div className="ptw-footer-content">
-                    <div>The permit content fits on one A4 page.</div>
-                    <div>Page 1 of X</div>
-                </div>
-            </div>
-
-            {/* ================================================================
-            === CSS UPDATED TO USE BLOCK LAYOUT FOR PRINTING =================
-            ================================================================ */}
+        <div className="min-h-screen bg-slate-200 flex flex-col items-center py-8">
             <style>{`
-                /* --- Base Form & Header --- */
-                .ptw-form-print {
-                    width: 210mm;
-                    min-height: 297mm; /* Set a min-height for screen, but allow it to grow */
-                    margin: 0 auto;
-                    background: white;
-                    font-family: Arial, sans-serif;
-                    font-size: 10px;
-                    line-height: 1.2;
-                    color: #000;
-                    border: 2px solid #000;
-                    box-sizing: border-box;
-                    /* REMOVED: display: flex and flex-direction. Let it be a simple block. */
-                }
-                .ptw-header {
-                    display: flex; /* Flex is fine INSIDE the header */
-                    justify-content: space-between;
-                    align-items: center;
-                    border-bottom: 2px solid #000;
-                    padding: 8px;
-                    box-sizing: border-box;
-                    page-break-inside: avoid; /* Don't split the header */
-                }
-                .ptw-header-left { flex: 1; }
-                .ptw-doc-info div { font-size: 9px; }
-                .ptw-header-center { flex: 2; text-align: center; }
-                .ptw-title { font-size: 18px; font-weight: bold; text-transform: uppercase; }
-                .ptw-header-right { flex: 1; text-align: right; }
-                .ptw-logo-text { font-size: 12px; font-weight: bold; color: #0066cc; }
-                .ptw-logo-img { height: 24px; width: auto; object-fit: contain; }
-
-                /* --- Core Row Layout --- */
-                .ptw-main-content {
-                    /* REMOVED: display: flex, flex-direction, and flex: 1 */
-                    /* This is now just a simple div, allowing its children to break across pages */
-                    width: 100%;
-                    box-sizing: border-box;
-                }
-                .ptw-section-row {
-                    display: flex; /* Flex is needed HERE to put label + content side-by-side */
-                    flex-direction: row;
-                    border-bottom: 1px solid #999;
-                    width: 100%;
-                    box-sizing: border-box;
-                    /* Allow natural page breaks to avoid squashing content onto one page */
-                    page-break-inside: auto;
-                }
-                .ptw-section-row:last-child { border-bottom: none; }
-
-                /* 1. Sidebar Label Wrapper */
-                .ptw-sidebar-label-wrapper {
-                    width: 25mm;
-                    flex-shrink: 0;
-                    border-right: 2px solid #000;
-                    background: #333;
-                    color: #fff;
-                    display: flex; /* Use flex to center the vertical text */
-                    align-items: center;
-                    justify-content: center;
-                    padding: 4px 0;
-                    box-sizing: border-box;
-                }
-                .ptw-sidebar-label {
-                    writing-mode: vertical-rl;
-                    transform: rotate(180deg);
-                    font-size: 10px;
-                    font-weight: bold;
-                    text-align: center;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
-                    padding: 8px 0;
-                }
-                
-                /* 2. Content Wrapper */
-                .ptw-content-wrapper {
-                    flex: 1 1 auto;
-                    padding: 8px 10px;
-                    background: #fff;
-                    box-sizing: border-box;
-                    width: calc(100% - 25mm);
-                    /* Allow breaking inside long content */
-                    page-break-inside: auto;
-                }
-                
-                .ptw-component-wrapper {
-                     display: flex;
-                     flex-direction: column;
-                     gap: 4px;
-                }
-                .ptw-component-inner { width: 100%; }
-
-                /* --- Base Component Styles --- */
-                .ptw-label { font-size: 9px; font-weight: bold; margin-bottom: 2px; display: block; }
-                .ptw-input-line { border-bottom: 1px solid #000; height: 12px; margin-bottom: 5px; }
-                .ptw-textarea { border: 1px solid #000; height: 30px; margin-bottom: 5px; }
-                .ptw-signature-line { border-bottom: 1px solid #000; height: 20px; margin-bottom: 5px; }
-                .ptw-checkbox-grid { 
-                    display: grid; 
-                    grid-template-columns: repeat(4, minmax(0, 1fr)); 
-                    gap: 4px 10px; 
-                    width: 100%;
-                }
-                .ptw-checkbox-item, .ptw-radio-item { display: flex; align-items: center; font-size: 9px; }
-                .ptw-checkbox, .ptw-radio { margin-right: 4px; font-size: 11px; }
-                .ptw-checkbox-label, .ptw-radio-label { font-size: 9px; }
-                .ptw-radio-group { display: flex; gap: 12px; flex-wrap: wrap; }
-                .ptw-section-subtitle { font-weight: bold; font-size: 9px; }
-
-                .ptw-footer { 
-                    border-top: 2px solid #000; 
-                    padding: 5px 8px; 
-                    box-sizing: border-box; 
-                    page-break-inside: avoid; /* Don't split the footer */
-                }
-                .ptw-footer-content { display: flex; justify-content: space-between; font-size: 8px; }
-
-                /* 12 dashed lines block for Tools & Equipment */
-                .ptw-multi-lines-12 {
-                    margin-top: 6px;
-                    display: grid;
-                    grid-template-columns: repeat(6, 1fr);
-                    gap: 12px 16px; /* more spacing to fill area */
-                    align-items: end;
-                    width: 100%;
-                }
-                .ptw-list-line {
-                    height: 16px; /* taller lines */
-                    border-bottom: 1px dashed #000; /* small dashed */
-                    width: 100%;
-                }
-
-                /* ================================================================
-                === DYNAMIC GRID & LAYOUT OVERRIDES (Same as before) ==========
-                ================================================================ */
-
-                .ptw-field-horizontal { display: flex; flex-direction: row; align-items: baseline; gap: 5px; }
-                .ptw-field-horizontal .ptw-label { margin-bottom: 0; flex-shrink: 0; white-space: nowrap; }
-                .ptw-field-horizontal .ptw-input-line,
-                .ptw-field-horizontal .ptw-signature-line { flex: 1 1 auto; }
-
-                .ptw-section-row[data-section="work-description"] .ptw-component-wrapper {
-                    display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px 10px;
-                }
-                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(1) { grid-column: span 2; }
-                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(2) { grid-column: span 2; }
-                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(3) { grid-column: span 2; }
-                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(4) { grid-column: span 3; }
-                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(5) { grid-column: span 3; }
-                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(6) { grid-column: span 2; }
-                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(7) { grid-column: span 1; }
-                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(8) { grid-column: span 2; }
-                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(9) { grid-column: span 1; }
-                .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(10) { grid-column: span 6; }
-                 .ptw-section-row[data-section="work-description"] .ptw-component:nth-child(10) .ptw-component-inner { display: block; }
-
-                .ptw-section-row[data-section="tools-equipment"] .ptw-component-wrapper {
-                    display: grid; grid-template-columns: repeat(6, 1fr); gap: 0 10px;
-                }
-                .ptw-section-row[data-section="tools-equipment"] .ptw-component { grid-column: 1 / -1; }
-                .ptw-section-row[data-section="tools-equipment"] .ptw-label {
-                    white-space: nowrap; /* keep heading in one line */
-                }
-
-                /* --- PPE (YOUR REQUEST: 4 COLS) --- */
-                .ptw-section-row[data-section="ppe-checklist"] .ptw-checkbox-grid {
-                    grid-template-columns: repeat(4, 1fr);
-                }
-
-                /* --- HAZARD ID (YOUR REQUEST: 5 COLS) --- */
-                .ptw-section-row[data-section="hazard-identification"] .ptw-checkbox-grid {
-                    grid-template-columns: repeat(5, 1fr);
-                }
-
-                .ptw-section-row[data-section="certificate"] .ptw-component-wrapper {
-                    display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 10px;
-                }
-                 .ptw-section-row[data-section="certificate"] .ptw-component { display: flex; flex-direction: column; }
-
-                .ptw-section-row[data-section="last-minute-risk"] .ptw-component-wrapper {
-                    display: grid; grid-template-columns: 1fr; gap: 6px 10px;
-                }
-
-                .ptw-section-row[data-section="declaration"] .ptw-component-wrapper {
-                    display: grid; grid-template-columns: 1fr 1fr; gap: 5px 15px;
-                }
-                .ptw-section-row[data-section="declaration"] .ptw-component:nth-child(1) { grid-column: 1 / -1; }
-                .ptw-section-row[data-section="declaration"] .ptw-component:nth-child(2) { grid-column: 1; grid-row: 2; }
-                .ptw-section-row[data-section="declaration"] .ptw-component:nth-child(3) { grid-column: 2; grid-row: 2; }
-                .ptw-section-row[data-section="declaration"] .ptw-component:nth-child(4) { grid-column: 2; grid-row: 3; }
-
-                .ptw-section-row[data-section="opening-ptw"] .ptw-component-wrapper {
-                    display: grid; grid-template-columns: 1fr 1fr; gap: 5px 15px;
-                }
-                .ptw-section-row[data-section="opening-ptw"] .ptw-component:first-child { grid-column: 1 / -1; }
-
-                .ptw-section-row[data-section="closure"] .ptw-component-wrapper {
-                    display: grid; grid-template-columns: 1fr 1fr; gap: 5px 15px;
-                }
-                
-                /* --- Print Media Query (Updated for multi-page) --- */
                 @media print {
-                   @page {
-                       size: A4;
-                       margin: 10mm;
-                   }
-                   html, body {
-                       margin: 0;
-                       padding: 0;
-                       height: auto !important;
-                       overflow: visible !important;
-                       background: #fff; /* Ensure background is white */
-                   }
-                   /* Neutralize transforms and sticky/fixed positions which can cause duplicate first page */
-                   body *, html * { transform: none !important; filter: none !important; }
-                   .sticky { position: static !important; top: auto !important; }
-                   .fixed { position: static !important; }
-                   .overflow-hidden, .overflow-y-auto, .overflow-x-auto { overflow: visible !important; }
-                   #root, body > div, .min-h-screen, .h-screen { height: auto !important; }
-                   /* Unconstrain common app containers that may clip content */
-                   #root, body > div, .min-h-screen, .h-screen, .overflow-hidden {
-                       height: auto !important;
-                       overflow: visible !important;
-                   }
-                   .ptw-form-print {
-                       width: auto;
-                       min-height: auto;
-                       margin: 0;
-                       padding: 0;
-                       border: none;
-                       box-shadow: none;
-                   }
-                   /* Force intentional page breaks after heavy sections */
-                   .ptw-page-break { page-break-after: always; break-after: page; }
-                   .no-print {
-                       display: none !important;
-                   }
-                   /* Ensure checklists and large text areas can split across pages */
-                   .ptw-checkbox-grid,
-                   .ptw-radio-group,
-                   .ptw-textarea,
-                   .ptw-component-wrapper {
-                       page-break-inside: auto;
-                   }
-                   /* Allow sections to split across pages to prevent cloning/duplication */
-                   .ptw-section-row { break-inside: auto; page-break-inside: auto; }
-                   /* Keep the narrow vertical label from splitting mid-page */
-                   .ptw-sidebar-label-wrapper { break-inside: avoid; page-break-inside: avoid; }
-                   /* Avoid repeating headers/footers by ensuring they are not fixed */
-                   .ptw-header, .ptw-footer { position: static !important; }
+                    /* 1. Hide the header controls */
+                    .no-print {
+                        display: none !important;
+                    }
+
+                    /* 2. Reset global page styles for printing */
+                    html, body, #root {
+                        height: auto !important;
+                        min-height: auto !important;
+                        overflow: visible !important;
+                        background: white !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+
+                    /* 3. Reset the main wrapper (was min-h-screen flex...) */
+                    .min-h-screen {
+                        height: auto !important;
+                        min-height: 0 !important;
+                        display: block !important;
+                        padding: 0 !important;
+                        background: white !important;
+                    }
+
+                    /* 4. Reset the preview container */
+                    #printable-content {
+                        margin: 0 !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        border-radius: 0 !important;
+                        width: 100% !important;
+                        max-width: none !important;
+                        overflow: visible !important;
+                    }
+
+                    /* 5. Ensure text/graphics are visible */
+                    * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
                 }
             `}</style>
+
+            {/* Controls */}
+            <div className="fixed top-0 left-0 right-0 bg-white border-b shadow-md z-50 p-4 flex justify-between items-center no-print">
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            if (onToggleView) onToggleView();
+                            else
+                                try {
+                                    navigate({ to: builderPath });
+                                } catch {
+                                    window.history.back();
+                                }
+                        }}
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" /> Back
+                    </Button>
+                    <h2 className="font-semibold text-lg text-slate-800">
+                        Print Preview
+                    </h2>
+                </div>
+                <Button
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={handlePrint}
+                >
+                    <Printer className="w-4 h-4 mr-2" /> Print Form
+                </Button>
+            </div>
+
+            {/* Preview Container */}
+            <div
+                className="mt-20 shadow-2xl border border-slate-300 rounded-sm overflow-hidden"
+                id="printable-content"
+            >
+                <PrintableContent
+                    formData={formData}
+                    customSectionNames={customSectionNames}
+                    closureData={closureData}
+                />
             </div>
         </div>
     );

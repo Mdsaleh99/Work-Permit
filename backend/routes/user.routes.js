@@ -62,14 +62,14 @@ router.route("/current-user").get(verifyJWT, getCurrentUser);
 router
     .route("/resend-email-verification")
     .post(verifyJWT, resendEmailVerification);
-    
+
 router
     .route("/create-super-admin/:companyId")
     .post(
         createCompanySuperAdminValidator(),
         validate,
         verifyJWT,
-        authorizeRoles(UserRolesEnum.SUPER_ADMIN),
+        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
         createCompanySuperAdmin
     );
 
@@ -79,18 +79,16 @@ router
         createCompanyAdminValidator(),
         validate,
         verifyJWT,
-        authorizeRoles(UserRolesEnum.SUPER_ADMIN),
+        authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
         createCompanyAdmin
     );
 
-router
-    .route("/company/:companyId/super-admins")
-    .get(
-        verifyEitherJWT,
-        // authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
-        // authorizeRoles(CompanyMemberRolesEnum.COMPANY_MEMBER),
-        getCompanySuperAdmins
-    );
+router.route("/company/:companyId/super-admins").get(
+    verifyEitherJWT,
+    // authorizeRoles(UserRolesEnum.ADMIN, UserRolesEnum.SUPER_ADMIN),
+    // authorizeRoles(CompanyMemberRolesEnum.COMPANY_MEMBER),
+    getCompanySuperAdmins
+);
 
 router
     .route("/company/:companyId/admins")
@@ -110,7 +108,6 @@ router
         changeCurrentPassword
     );
 
-
 // SSO routes
 router.route("/google").get(
     // this route for frontend to show the emails page to choose the email and when i click any email googleCallback() function triggers
@@ -128,7 +125,6 @@ router.route("/google/callback").get(
     }),
     googleCallback
 );
-
 
 // router
 //     .route("/get-all")

@@ -10,7 +10,10 @@ import {
 import { UserRolesEnum } from "../utils/constants.js";
 
 export const createCompany = asyncHandler(async (req, res) => {
-    if (req.user.role === UserRolesEnum.SUPER_ADMIN) {
+    if (
+        req.user.role === UserRolesEnum.ADMIN ||
+        req.user.role === UserRolesEnum.SUPER_ADMIN
+    ) {
         const { compName, description, email, mobileNo } = req.body;
         const userId = req.user.id;
 
@@ -112,7 +115,10 @@ export const createCompany = asyncHandler(async (req, res) => {
 });
 
 export const getCompanyByUser = asyncHandler(async (req, res) => {
-    if (req.user.role === UserRolesEnum.ADMIN || req.user.role === UserRolesEnum.SUPER_ADMIN) {
+    if (
+        req.user.role === UserRolesEnum.ADMIN ||
+        req.user.role === UserRolesEnum.SUPER_ADMIN
+    ) {
         const userId = req.user.id;
         if (!userId) {
             throw new ApiError(401, "User id is required");
@@ -198,15 +204,16 @@ export const createCompanyMember = asyncHandler(async (req, res) => {
                 name,
                 email,
                 password,
-                ...(
-                    Array.isArray(allowedWorkPermitIds) && allowedWorkPermitIds.length // If the condition is true, spread the resulting object (which is allowedWorkPermits) into the parent object; if not, spread an empty object (which adds nothing).
-                    ?   {
-                            allowedWorkPermits: {
-                                connect: allowedWorkPermitIds.map((id) => ({id})), // connect -> Adds new relations without touching existing ones.Think of it as “append”.
-                            },
-                        }
-                    : {}
-                ),
+                ...(Array.isArray(allowedWorkPermitIds) &&
+                allowedWorkPermitIds.length // If the condition is true, spread the resulting object (which is allowedWorkPermits) into the parent object; if not, spread an empty object (which adds nothing).
+                    ? {
+                          allowedWorkPermits: {
+                              connect: allowedWorkPermitIds.map((id) => ({
+                                  id,
+                              })), // connect -> Adds new relations without touching existing ones.Think of it as “append”.
+                          },
+                      }
+                    : {}),
             },
             include: {
                 allowedWorkPermits: {
@@ -392,70 +399,78 @@ export const updateCompanyMemberRole = asyncHandler(async (req, res) => {
     }
 });
 
-export const updateCompanyMemberAllowedPermits = asyncHandler(async (req, res) => {
-    if (req.user.role === UserRolesEnum.ADMIN || req.user.role === UserRolesEnum.SUPER_ADMIN) {
-        const { companyId, memberId } = req.params;
-        const { allowedWorkPermitIds } = req.body;
+export const updateCompanyMemberAllowedPermits = asyncHandler(
+    async (req, res) => {
+        if (
+            req.user.role === UserRolesEnum.ADMIN ||
+            req.user.role === UserRolesEnum.SUPER_ADMIN
+        ) {
+            const { companyId, memberId } = req.params;
+            const { allowedWorkPermitIds } = req.body;
 
-        if (!companyId || !memberId) {
-            throw new ApiError(400, "companyId and memberId are required");
-        }
+            if (!companyId || !memberId) {
+                throw new ApiError(400, "companyId and memberId are required");
+            }
 
-        const company = await db.company.findUnique({
-            where: {
-                id: companyId
-            },
-        });
-
-        if (!company) throw new ApiError(404, "Company not found");
-
-        const member = await db.companyMember.findUnique({
-            where: {
-                id: memberId
-            },
-        });
-
-        if (!member) throw new ApiError(404, "Member not found");
-
-        if (!Array.isArray(allowedWorkPermitIds)) {
-            throw new ApiError(400, "allowedWorkPermitIds must be an array");
-        }
-
-        const updated = await db.companyMember.update({
-            where: {
-                id: memberId
-            },
-            data: {
-                allowedWorkPermits: {
-                    set: allowedWorkPermitIds.map((id) => ({ id })), // set -> Replaces all existing relations with the new ones. Think of it as “overwrite”.
+            const company = await db.company.findUnique({
+                where: {
+                    id: companyId,
                 },
-            },
-            include: {
-                allowedWorkPermits: {
-                    select: {
-                        id: true,
-                        title: true,
-                        workPermitNo: true
+            });
+
+            if (!company) throw new ApiError(404, "Company not found");
+
+            const member = await db.companyMember.findUnique({
+                where: {
+                    id: memberId,
+                },
+            });
+
+            if (!member) throw new ApiError(404, "Member not found");
+
+            if (!Array.isArray(allowedWorkPermitIds)) {
+                throw new ApiError(
+                    400,
+                    "allowedWorkPermitIds must be an array"
+                );
+            }
+
+            const updated = await db.companyMember.update({
+                where: {
+                    id: memberId,
+                },
+                data: {
+                    allowedWorkPermits: {
+                        set: allowedWorkPermitIds.map((id) => ({ id })), // set -> Replaces all existing relations with the new ones. Think of it as “overwrite”.
                     },
                 },
-            },
-            omit: {
-                password: true,
-                refreshToken: true
-            },
-        });
+                include: {
+                    allowedWorkPermits: {
+                        select: {
+                            id: true,
+                            title: true,
+                            workPermitNo: true,
+                        },
+                    },
+                },
+                omit: {
+                    password: true,
+                    refreshToken: true,
+                },
+            });
 
-        return res
-            .status(200)
-            .json(
-                new ApiResponse(
-                    200,
-                    updated,
-                    "Allowed permits updated successfully"
-                )
-            );
+            return res
+                .status(200)
+                .json(
+                    new ApiResponse(
+                        200,
+                        updated,
+                        "Allowed permits updated successfully"
+                    )
+                );
+        }
     }
-});
+);
 
 export const companyMemberSignIn = asyncHandler(async (req, res) => {
     const { companyId } = req.params;

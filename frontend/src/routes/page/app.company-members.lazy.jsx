@@ -14,7 +14,14 @@ import { useAuthStore } from "@/store/useAuthStore";
 import AddMemberModal from "@/components/company/AddMemberModal";
 import { SuperAdminCreateInline } from "@/components/auth/super-admin-create-inline";
 import { AdminCreateInline } from "@/components/auth/admin-create-inline";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import {
     DropdownMenu,
@@ -97,15 +104,29 @@ function RouteComponent() {
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* Buttons shown based on role */}
-                        {useAuthStore.getState().authUser?.role === 'SUPER_ADMIN' ? (
+                        {/* Buttons shown for both ADMIN and SUPER_ADMIN */}
+                        {useAuthStore.getState().authUser?.role ===
+                            "SUPER_ADMIN" ||
+                        useAuthStore.getState().authUser?.role === "ADMIN" ? (
                             <>
-                                <Button onClick={() => setOpenModal(true)} size="sm" className="cursor-pointer">Add Member</Button>
+                                <Button
+                                    onClick={() => setOpenModal(true)}
+                                    size="sm"
+                                    className="cursor-pointer"
+                                >
+                                    Add Member
+                                </Button>
                                 <SuperAdminCreateInline />
                                 <AdminCreateInline />
                             </>
                         ) : (
-                            <Button onClick={() => setOpenModal(true)} size="sm" className="cursor-pointer">Add Member</Button>
+                            <Button
+                                onClick={() => setOpenModal(true)}
+                                size="sm"
+                                className="cursor-pointer"
+                            >
+                                Add Member
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -221,7 +242,10 @@ function RouteComponent() {
                                                         ))}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
-                                                <AllowPermitButton companyId={company?.id} member={m} />
+                                                <AllowPermitButton
+                                                    companyId={company?.id}
+                                                    member={m}
+                                                />
                                                 <Popover
                                                     open={
                                                         confirmDeleteFor ===
@@ -240,7 +264,7 @@ function RouteComponent() {
                                                             className="cursor-pointer"
                                                             onClick={() =>
                                                                 setConfirmDeleteFor(
-                                                                    m.id
+                                                                    m.id,
                                                                 )
                                                             }
                                                         >
@@ -338,7 +362,7 @@ function AllowPermitButton({ companyId, member }) {
     const [selected, setSelected] = React.useState(
         Array.isArray(member?.allowedWorkPermits)
             ? member.allowedWorkPermits.map((p) => p.id)
-            : []
+            : [],
     );
 
     React.useEffect(() => {
@@ -346,12 +370,20 @@ function AllowPermitButton({ companyId, member }) {
         (async () => {
             try {
                 // Reset selected from latest member.allowedWorkPermits when opening
-                setSelected(Array.isArray(member?.allowedWorkPermits) ? member.allowedWorkPermits.map(p => p.id) : []);
+                setSelected(
+                    Array.isArray(member?.allowedWorkPermits)
+                        ? member.allowedWorkPermits.map((p) => p.id)
+                        : [],
+                );
                 const companyData = await getCompanyByUser();
                 // const store = ;
                 const all = await getAllWorkPermits();
                 const filtered = Array.isArray(all)
-                    ? all.filter((p) => !companyData?.id || p.companyId === companyData.id)
+                    ? all.filter(
+                          (p) =>
+                              !companyData?.id ||
+                              p.companyId === companyData.id,
+                      )
                     : [];
                 setList(filtered);
             } catch (err) {
@@ -361,14 +393,20 @@ function AllowPermitButton({ companyId, member }) {
     }, [open, member]);
 
     const toggle = (id) => {
-        setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+        setSelected((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+        );
     };
 
     const submit = async () => {
         if (!companyId || !member?.id) return;
         setLoading(true);
         try {
-            const updated = await updateCompanyMemberAllowedPermits(companyId, member.id, selected);
+            const updated = await updateCompanyMemberAllowedPermits(
+                companyId,
+                member.id,
+                selected,
+            );
             // Update local member reference so it stays checked after refresh/reopen
             if (updated && Array.isArray(updated.allowedWorkPermits)) {
                 member.allowedWorkPermits = updated.allowedWorkPermits;
@@ -392,31 +430,55 @@ function AllowPermitButton({ companyId, member }) {
                 <DialogHeader>
                     <DialogTitle>Allow Permits</DialogTitle>
                     <DialogDescription>
-                        Select which work permits this member can access and fill out.
+                        Select which work permits this member can access and
+                        fill out.
                     </DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="max-h-72 overflow-auto space-y-2">
                     {list.length === 0 ? (
                         <div className="text-sm text-gray-500">No permits</div>
                     ) : (
                         list.map((p) => (
-                            <label key={p.id} className="flex items-center gap-2 text-sm">
+                            <label
+                                key={p.id}
+                                className="flex items-center gap-2 text-sm"
+                            >
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4"
                                     checked={selected.includes(p.id)}
                                     onChange={() => toggle(p.id)}
                                 />
-                                <span>{p.title}{p.workPermitNo ? ` — ${p.workPermitNo}` : ""}</span>
+                                <span>
+                                    {p.title}
+                                    {p.workPermitNo
+                                        ? ` — ${p.workPermitNo}`
+                                        : ""}
+                                </span>
                             </label>
                         ))
                     )}
                 </div>
-                
+
                 <div className="flex items-center justify-end gap-2">
-                    <Button size="sm" variant="outline" className="cursor-pointer" onClick={() => setOpen(false)} disabled={loading}>Cancel</Button>
-                    <Button size="sm" className="cursor-pointer" onClick={submit} disabled={loading}>{loading ? "Saving…" : "Save"}</Button>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="cursor-pointer"
+                        onClick={() => setOpen(false)}
+                        disabled={loading}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        size="sm"
+                        className="cursor-pointer"
+                        onClick={submit}
+                        disabled={loading}
+                    >
+                        {loading ? "Saving…" : "Save"}
+                    </Button>
                 </div>
             </DialogContent>
         </Dialog>
@@ -424,7 +486,8 @@ function AllowPermitButton({ companyId, member }) {
 }
 
 function SuperAdminsSection() {
-    const { getSuperAdmins, superAdmins, isCreatingSuperAdmin } = useAuthStore();
+    const { getSuperAdmins, superAdmins, isCreatingSuperAdmin } =
+        useAuthStore();
     const { getCompanyByUser } = useCompanyStore();
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState("");
@@ -440,7 +503,7 @@ function SuperAdminsSection() {
             }
             await getSuperAdmins(companyId);
         } catch (e) {
-            setError(e?.message || 'Failed to load super admins');
+            setError(e?.message || "Failed to load super admins");
         } finally {
             setLoading(false);
         }
@@ -454,7 +517,9 @@ function SuperAdminsSection() {
         <div className="max-w-6xl mx-auto p-4">
             <h2 className="text-base font-semibold mb-2">Super Admins</h2>
             {error && (
-                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {error}
+                </div>
             )}
             {loading ? (
                 <div className="text-sm text-gray-600">Loading…</div>
@@ -473,16 +538,27 @@ function SuperAdminsSection() {
                         <TableBody>
                             {superAdmins.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center text-sm text-gray-500 py-8">No super admins</TableCell>
+                                    <TableCell
+                                        colSpan={5}
+                                        className="text-center text-sm text-gray-500 py-8"
+                                    >
+                                        No super admins
+                                    </TableCell>
                                 </TableRow>
                             ) : (
                                 superAdmins.map((u, idx) => (
                                     <TableRow key={u.id}>
                                         <TableCell>{idx + 1}</TableCell>
-                                        <TableCell>{u.name || '-'}</TableCell>
+                                        <TableCell>{u.name || "-"}</TableCell>
                                         <TableCell>{u.email}</TableCell>
                                         <TableCell>{u.role}</TableCell>
-                                        <TableCell>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</TableCell>
+                                        <TableCell>
+                                            {u.createdAt
+                                                ? new Date(
+                                                      u.createdAt,
+                                                  ).toLocaleDateString()
+                                                : "-"}
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}
@@ -509,19 +585,23 @@ function AdminsSection() {
             if (!companyId) return;
             await getAdmins(companyId);
         } catch (e) {
-            setError(e?.message || 'Failed to load admins');
+            setError(e?.message || "Failed to load admins");
         } finally {
             setLoading(false);
         }
     }, [getAdmins, getCompanyByUser]);
 
-    React.useEffect(() => { load(); }, [load]);
+    React.useEffect(() => {
+        load();
+    }, [load]);
 
     return (
         <div className="max-w-6xl mx-auto p-4">
             <h2 className="text-base font-semibold mb-2">Admins</h2>
             {error && (
-                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+                <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {error}
+                </div>
             )}
             {loading ? (
                 <div className="text-sm text-gray-600">Loading…</div>
@@ -540,16 +620,27 @@ function AdminsSection() {
                         <TableBody>
                             {(admins || []).length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center text-sm text-gray-500 py-8">No admins</TableCell>
+                                    <TableCell
+                                        colSpan={5}
+                                        className="text-center text-sm text-gray-500 py-8"
+                                    >
+                                        No admins
+                                    </TableCell>
                                 </TableRow>
                             ) : (
                                 (admins || []).map((u, idx) => (
                                     <TableRow key={u.id || idx}>
                                         <TableCell>{idx + 1}</TableCell>
-                                        <TableCell>{u.name || '-'}</TableCell>
+                                        <TableCell>{u.name || "-"}</TableCell>
                                         <TableCell>{u.email}</TableCell>
                                         <TableCell>{u.role}</TableCell>
-                                        <TableCell>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</TableCell>
+                                        <TableCell>
+                                            {u.createdAt
+                                                ? new Date(
+                                                      u.createdAt,
+                                                  ).toLocaleDateString()
+                                                : "-"}
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}
